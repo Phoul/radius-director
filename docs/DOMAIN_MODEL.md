@@ -8,9 +8,9 @@ Configuration generation is derived from this model.
 
 ---
 
-# Platform
+# Global Objects
 
-The platform contains reusable Global Objects that may be referenced by one or more tenants.
+Global Objects are reusable objects that may be referenced by one or more tenants.
 
 Global Objects include:
 
