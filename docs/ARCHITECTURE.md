@@ -42,7 +42,7 @@ Each layer has a single responsibility.
 
 # Global Objects
 
-Global Objects are reusable definitions that exist once within the platform.
+Global Objects are reusable definitions that exist once globally.
 
 They may be referenced by one or more tenants.
 
@@ -105,23 +105,20 @@ This allows multiple tenants to reference the same physical NAS while applying d
 # Object Ownership
 
 ```
-Platform
-│
-├── Global Objects
-│   ├── Credential Profiles
-│   ├── Authentication Profiles
-│   ├── Accounting Profiles
-│   ├── Monitoring Profiles
-│   └── NAS Devices
-│
-└── Tenants
-    │
-    ├── Database
-    ├── RADIUS Servers
-    └── NAS Assignments
+Global Objects
+├── Credential Profiles
+├── Authentication Profiles
+├── Accounting Profiles
+├── Monitoring Profiles
+└── NAS Devices
+
+Tenants
+├── Database
+├── RADIUS Servers
+└── NAS Assignments
 ```
 
-Global Objects are shared across the platform.
+Global Objects are shared.
 
 Tenant Objects belong exclusively to a single tenant.
 
