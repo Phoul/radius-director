@@ -10,30 +10,51 @@ Configuration generation is derived from this model.
 
 # Platform
 
-Represents a RADIUS Director installation.
+The platform contains reusable Global Objects that may be referenced by one or more tenants.
 
-A platform contains:
+Global Objects include:
 
 - Credential Profiles
 - Authentication Profiles
 - Accounting Profiles
 - Monitoring Profiles
-- Tenants
+- NAS Devices
 
 ---
 
 # Tenant
 
-A tenant represents an independent RADIUS deployment.
+Each tenant contains tenant-specific infrastructure.
 
-A tenant owns:
+Tenant Objects include:
 
 - Database
-- NAS definitions
 - RADIUS Servers
-- Deployments
+- NAS Assignments
 
-Tenants reference reusable platform-level profiles where appropriate.
+Tenants reference Global Objects rather than duplicating them.
+
+---
+
+# Relationship Objects
+
+Some objects exist primarily to describe relationships between other objects.
+
+Relationship Objects allow reusable Global Objects to be composed into tenant-specific deployments.
+
+The primary Relationship Object is:
+
+- NAS Assignment
+
+A NAS Assignment references:
+
+- NAS Device
+- Credential Profile
+- Authentication Profile
+- Accounting Profile
+- Monitoring Profile
+
+while remaining owned by a single tenant.
 
 ---
 
