@@ -106,12 +106,20 @@ Typical properties:
 
 # Database
 
-Represents an external database used by FreeRADIUS.
+Represents the primary database backing a tenant's RADIUS deployment.
 
-Examples include:
+Typical properties include:
 
-- Authentication database
-- Accounting database
+- Database engine
+- Host
+- Port
+- Database name
+- Authentication credentials
+- TLS configuration
+
+Each tenant owns its own database definition.
+
+Future versions may support additional backend services where appropriate.
 
 ---
 
