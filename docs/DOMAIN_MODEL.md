@@ -67,7 +67,7 @@ Typical properties include:
 - RADIUS shared secret
 - CoA shared secret
 
-Multiple NAS devices may reference the same credential profile.
+Multiple NAS Assignments may reference the same Credential Profile.
 
 ---
 
@@ -82,6 +82,8 @@ Examples include:
 - SQL policies
 - Vendor-specific behaviour
 
+Authentication Profiles are referenced by NAS Assignments.
+
 ---
 
 # Accounting Profile
@@ -94,6 +96,8 @@ Examples include:
 - Interim update handling
 - Session cleanup
 - Retention policies
+
+Accounting Profiles are referenced by NAS Assignments.
 
 ---
 
@@ -108,20 +112,44 @@ Examples include:
 - CoA tests
 - SNMP verification
 
+Monitoring Profiles are referenced by NAS Assignments.
+
 ---
 
-# NAS
+# NAS Device
 
-Represents a RADIUS client.
+Represents a physical or virtual RADIUS client.
 
-Typical properties:
+A NAS Device is a reusable Global Object that describes the device itself, independent of how it is used by any particular tenant.
+
+Typical properties include:
 
 - Name
 - Address
 - Vendor
+- Model
+- Description
+- Tags
+
+Operational behaviour such as credentials, authentication, accounting, and monitoring is defined through NAS Assignments rather than directly on the NAS Device.
+
+---
+
+# NAS Assignment
+
+Represents how a tenant uses a NAS Device.
+
+A NAS Assignment is a Relationship Object that combines reusable Global Objects into a tenant-specific configuration.
+
+Each NAS Assignment references:
+
+- NAS Device
 - Credential Profile
 - Authentication Profile
+- Accounting Profile
 - Monitoring Profile
+
+Multiple tenants may reference the same NAS Device while applying different operational policies through separate NAS Assignments.
 
 ---
 
@@ -146,14 +174,13 @@ Future versions may support additional backend services where appropriate.
 
 # RADIUS Server
 
-Represents a FreeRADIUS instance.
+Represents a FreeRADIUS instance belonging to a tenant.
 
-A server consumes generated configuration and participates in one or more deployments.
+A RADIUS Server consumes generated configuration and services authentication, authorization, accounting, proxying, and Change of Authorization (CoA) requests for the tenant.
 
----
+Typical properties include:
 
-# Deployment
-
-Represents a generated configuration deployed to one or more RADIUS servers.
-
-Future versions may include deployment history and rollback support.
+- Name
+- Hostname or Address
+- Role
+- Description
