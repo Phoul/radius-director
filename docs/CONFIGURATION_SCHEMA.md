@@ -23,19 +23,17 @@ YAML is currently the preferred configuration format.
 # High-Level Structure
 
 ```yaml
-platform:
+global_objects:
 
-  global_objects:
+  credential_profiles:
 
-    credential_profiles:
+  authentication_profiles:
 
-    authentication_profiles:
+  accounting_profiles:
 
-    accounting_profiles:
+  monitoring_profiles:
 
-    monitoring_profiles:
-
-    nas_devices:
+  nas_devices:
 
 tenants:
 ```
