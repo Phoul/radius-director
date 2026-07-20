@@ -4,6 +4,17 @@ This document tracks the migration from the existing production FreeRADIUS deplo
 
 ---
 
+# Phase 0 - Documentation
+
+- [x] Define project vision
+- [x] Define architecture
+- [ ] Finalize domain model
+- [ ] Finalize object model
+- [ ] Finalize configuration schema
+- [ ] Record architectural decisions
+
+---
+
 # Phase 1 - Discovery
 
 - [x] Reverse engineer existing deployment
@@ -16,7 +27,9 @@ This document tracks the migration from the existing production FreeRADIUS deplo
 
 # Phase 2 - Design
 
+- [ ] Finalize architecture
 - [ ] Finalize domain model
+- [ ] Finalize object model
 - [ ] Finalize configuration schema
 - [ ] Define generator architecture
 
@@ -25,6 +38,7 @@ This document tracks the migration from the existing production FreeRADIUS deplo
 # Phase 3 - Generator
 
 - [ ] Parse configuration
+- [ ] Resolve object relationships
 - [ ] Validate configuration
 - [ ] Generate clients.conf
 - [ ] Generate proxy.conf
@@ -39,6 +53,7 @@ This document tracks the migration from the existing production FreeRADIUS deplo
 - [ ] Verify authentication
 - [ ] Verify accounting
 - [ ] Verify CoA
+- [ ] Validate generated configuration
 - [ ] Compare generated configuration with production
 
 ---
@@ -57,7 +72,8 @@ This document tracks the migration from the existing production FreeRADIUS deplo
 
 Migration is complete when:
 
-- Generated configuration replaces manually maintained configuration.
+- Declarative configuration replaces manually maintained FreeRADIUS configuration.
+- Generated configuration is functionally equivalent to the existing production deployment.
 - Production authentication is fully operational.
 - Production accounting is fully operational.
 - Disconnect and CoA requests function correctly.
