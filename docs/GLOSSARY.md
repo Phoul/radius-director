@@ -134,7 +134,14 @@ Examples include:
 
 A complete RADIUS Director installation.
 
-A platform may contain one or more tenants.
+A platform owns reusable configuration objects that may be shared by multiple tenants, including:
+
+- Credential Profiles
+- Authentication Profiles
+- Accounting Profiles
+- Monitoring Profiles
+
+The platform also manages one or more tenants.
 
 ---
 
@@ -186,16 +193,14 @@ Examples include RFC 2865, RFC 2866, and RFC 5176.
 
 An independent RADIUS deployment managed by a platform.
 
-A tenant owns its own configuration objects, including:
+Each tenant owns its operational infrastructure, including:
 
-- Credential Profiles
-- Authentication Profiles
-- Accounting Profiles
-- Monitoring Profiles
+- Database
 - NAS definitions
-- Database definitions
 - RADIUS servers
 - Deployments
+
+Tenants reference reusable platform-level profiles for authentication, accounting, monitoring, and credentials.
 
 ---
 
