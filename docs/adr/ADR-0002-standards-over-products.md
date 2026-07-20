@@ -26,17 +26,23 @@ RADIUS Director models industry standards and operational concepts rather than i
 
 The domain model should represent concepts defined by RADIUS and related standards whenever possible.
 
+Reusable operational behaviour should be represented as platform-level objects.
+
 Examples include:
 
-- Authentication
-- Authorization
-- Accounting
-- Disconnect Requests
-- Change of Authorization (CoA)
-- RADIUS Clients
+- Credential Profiles
+- Authentication Profiles
+- Accounting Profiles
+- Monitoring Profiles
+
+Tenant-specific infrastructure should remain isolated within each tenant.
+
+Examples include:
+
+- Databases
+- NAS definitions
 - RADIUS Servers
-- Shared Secrets
-- Session Accounting
+- Deployments
 
 Vendor-specific behaviour should only be introduced where it represents a capability that cannot be expressed through a standard model.
 
@@ -46,17 +52,21 @@ Vendor-specific behaviour should only be introduced where it represents a capabi
 
 ## Preferred
 
-Model:
+Model reusable behaviour separately from deployment infrastructure.
+
+Platform-level objects:
 
 - Credential Profile
 - Authentication Profile
 - Accounting Profile
+- Monitoring Profile
+
+Tenant-level objects:
+
+- Database
 - NAS
 - RADIUS Server
-- Database
 - Deployment
-
-These concepts remain valid regardless of the products in use.
 
 ---
 
