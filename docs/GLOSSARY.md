@@ -95,6 +95,16 @@ Generated configuration should be deterministic and reproducible.
 
 ---
 
+# Global Object
+
+A reusable object defined once within the platform.
+
+Global Objects may be referenced by one or more tenants.
+
+Examples include Credential Profiles and NAS Devices.
+
+---
+
 # Infrastructure as Code (IaC)
 
 The practice of managing infrastructure through version-controlled configuration rather than manual changes.
@@ -127,6 +137,12 @@ Examples include:
 - VPN concentrators
 - routers
 - switches
+
+---
+
+# NAS Assignment
+
+A Relationship Object that associates a NAS Device with one or more operational profiles within a tenant.
 
 ---
 
@@ -171,6 +187,14 @@ A deployment may contain one or more RADIUS servers.
 
 ---
 
+# Relationship Object
+
+An object that describes how Global Objects are composed into a tenant deployment.
+
+Relationship Objects belong to a tenant.
+
+---
+
 # Source of Truth
 
 The authoritative representation of the desired system state.
@@ -201,6 +225,14 @@ Each tenant owns its operational infrastructure, including:
 - Deployments
 
 Tenants reference reusable platform-level profiles for authentication, accounting, monitoring, and credentials.
+
+---
+
+# Tenant Object
+
+An object owned exclusively by a tenant.
+
+Tenant Objects define tenant-specific infrastructure.
 
 ---
 
