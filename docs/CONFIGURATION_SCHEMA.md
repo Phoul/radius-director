@@ -25,24 +25,34 @@ YAML is currently the preferred configuration format.
 ```yaml
 platform:
 
+  global_objects:
+
+    credential_profiles:
+
+    authentication_profiles:
+
+    accounting_profiles:
+
+    monitoring_profiles:
+
+    nas_devices:
+
 tenants:
-
-credential_profiles:
-
-authentication_profiles:
-
-accounting_profiles:
-
-monitoring_profiles:
-
-nas:
-
-databases:
-
-radius_servers:
 ```
 
 Detailed schema definitions will be added as the domain model is finalized.
+
+The schema will distinguish between:
+
+- Global Objects
+- Tenant Objects
+- Relationship Objects
+
+Global Objects are defined once and may be referenced by multiple tenants.
+
+Tenant Objects define infrastructure owned by a single tenant.
+
+Relationship Objects describe how Global Objects are composed into tenant-specific configurations.
 
 ---
 
