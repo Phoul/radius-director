@@ -1,10 +1,8 @@
 # RADIUS Director
 
-RADIUS Director is an open-source configuration, deployment, and operations platform for standards-based RADIUS infrastructure.
+RADIUS Director is a configuration platform for FreeRADIUS.
 
-It is designed to generate FreeRADIUS configuration from a reusable domain model rather than editing configuration files directly.
-
-Reusable operational profiles can be shared across multiple RADIUS deployments while infrastructure remains isolated within each tenant.
+It models RADIUS deployments using reusable Global Objects and tenant-specific configuration, then generates complete, validated FreeRADIUS configuration.
 
 ## Project Status
 
