@@ -90,13 +90,13 @@ Generated configuration should remain understandable by experienced FreeRADIUS a
 
 ---
 
-## Reusable Configuration
+## Reusable Global Objects
 
-Operational behaviour should be defined once and reused wherever possible.
+Reusable configuration should be defined once and referenced wherever possible.
 
-Profiles such as credentials, authentication, accounting, and monitoring may be shared across multiple tenants.
+Tenant-specific infrastructure should remain isolated.
 
-Infrastructure such as databases, NAS devices, and RADIUS servers remain tenant-specific.
+This minimizes duplication while allowing multiple tenants to share common operational definitions.
 
 ---
 
