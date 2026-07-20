@@ -16,6 +16,8 @@ The process of recording information about a user's RADIUS session, including se
 
 A reusable object that defines how accounting is handled for one or more NAS devices.
 
+Accounting Profiles are referenced by NAS Assignments.
+
 Examples include:
 
 - accounting storage
@@ -34,6 +36,8 @@ The process of verifying a user's identity and determining whether access should
 # Authentication Profile
 
 A reusable object that defines authentication behaviour.
+
+Authentication Profiles are referenced by NAS Assignments.
 
 Examples include:
 
@@ -54,20 +58,12 @@ CoA is defined by RFC 5176.
 
 # Credential Profile
 
-A reusable object containing shared credentials used by one or more NAS devices.
+A reusable object containing shared credentials referenced by one or more NAS Assignments.
 
 Typical credentials include:
 
 - RADIUS shared secret
 - CoA shared secret
-
----
-
-# Deployment
-
-A generated configuration that has been deployed to one or more RADIUS servers.
-
-Future versions may include deployment history and rollback support.
 
 ---
 
@@ -97,11 +93,17 @@ Generated configuration should be deterministic and reproducible.
 
 # Global Object
 
-A reusable object defined once within the platform.
+A reusable object defined once within a RADIUS Director platform.
 
-Global Objects may be referenced by one or more tenants.
+Global Objects may be referenced by one or more tenants and should not contain tenant-specific configuration.
 
-Examples include Credential Profiles and NAS Devices.
+Examples include:
+
+- Credential Profiles
+- Authentication Profiles
+- Accounting Profiles
+- Monitoring Profiles
+- NAS Devices
 
 ---
 
@@ -117,6 +119,8 @@ RADIUS Director adopts Infrastructure as Code principles wherever practical.
 
 A reusable object that defines operational monitoring for one or more NAS devices.
 
+Monitoring Profiles are referenced by NAS Assignments.
+
 Examples include:
 
 - connectivity tests
@@ -126,23 +130,36 @@ Examples include:
 
 ---
 
-# NAS (Network Access Server)
+# NAS Device
 
-A device that communicates with a RADIUS server to perform authentication, authorization, and accounting.
+A reusable Global Object representing a physical or virtual RADIUS client.
 
-Examples include:
+A NAS Device describes the device itself rather than how it is used.
 
-- wireless access points
-- broadband access servers
-- VPN concentrators
-- routers
-- switches
+Typical properties include:
+
+- Name
+- Address
+- Vendor
+- Model
+- Description
+
+Operational behaviour such as credentials, authentication, accounting, and monitoring is defined through NAS Assignments.
 
 ---
 
 # NAS Assignment
 
-A Relationship Object that associates a NAS Device with one or more operational profiles within a tenant.
+A Relationship Object that describes how a tenant uses a NAS Device.
+
+A NAS Assignment associates a NAS Device with one or more operational profiles, including:
+
+- Credential Profile
+- Authentication Profile
+- Accounting Profile
+- Monitoring Profile
+
+Multiple tenants may reference the same NAS Device while maintaining independent NAS Assignments.
 
 ---
 
@@ -150,12 +167,15 @@ A Relationship Object that associates a NAS Device with one or more operational 
 
 A complete RADIUS Director installation.
 
-A platform owns reusable configuration objects that may be shared by multiple tenants, including:
+A platform owns reusable Global Objects that may be referenced by one or more tenants.
+
+These include:
 
 - Credential Profiles
 - Authentication Profiles
 - Accounting Profiles
 - Monitoring Profiles
+- NAS Devices
 
 The platform also manages one or more tenants.
 
@@ -217,14 +237,13 @@ Examples include RFC 2865, RFC 2866, and RFC 5176.
 
 An independent RADIUS deployment managed by a platform.
 
-Each tenant owns its operational infrastructure, including:
+Each tenant owns its tenant-specific infrastructure, including:
 
 - Database
-- NAS definitions
-- RADIUS servers
-- Deployments
+- RADIUS Servers
+- NAS Assignments
 
-Tenants reference reusable platform-level profiles for authentication, accounting, monitoring, and credentials.
+Tenants reference reusable Global Objects rather than duplicating them.
 
 ---
 
