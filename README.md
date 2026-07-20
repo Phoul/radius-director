@@ -1,6 +1,6 @@
 # RADIUS Director
 
-RADIUS Director is a configuration platform for FreeRADIUS.
+RADIUS Director is a configuration management system for FreeRADIUS.
 
 It models RADIUS deployments using reusable Global Objects and tenant-specific configuration, then generates complete, validated FreeRADIUS configuration.
 
