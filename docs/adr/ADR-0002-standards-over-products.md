@@ -26,7 +26,7 @@ RADIUS Director models industry standards and operational concepts rather than i
 
 The domain model should represent concepts defined by RADIUS and related standards whenever possible.
 
-Reusable operational behaviour should be represented as platform-level objects.
+Reusable operational behaviour should be represented as global objects.
 
 Examples include:
 
