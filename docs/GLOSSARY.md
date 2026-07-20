@@ -93,7 +93,7 @@ Generated configuration should be deterministic and reproducible.
 
 # Global Object
 
-A reusable object defined once within a RADIUS Director platform.
+A reusable object defined once within a RADIUS Director installation.
 
 Global Objects may be referenced by one or more tenants and should not contain tenant-specific configuration.
 
@@ -163,24 +163,6 @@ Multiple tenants may reference the same NAS Device while maintaining independent
 
 ---
 
-# Platform
-
-A complete RADIUS Director installation.
-
-A platform owns reusable Global Objects that may be referenced by one or more tenants.
-
-These include:
-
-- Credential Profiles
-- Authentication Profiles
-- Accounting Profiles
-- Monitoring Profiles
-- NAS Devices
-
-The platform also manages one or more tenants.
-
----
-
 # Proxying
 
 The process of forwarding RADIUS requests to another RADIUS server.
@@ -235,7 +217,7 @@ Examples include RFC 2865, RFC 2866, and RFC 5176.
 
 # Tenant
 
-An independent RADIUS deployment managed by a platform.
+An independent RADIUS deployment managed by RADIUS Director.
 
 Each tenant owns its tenant-specific infrastructure, including:
 
