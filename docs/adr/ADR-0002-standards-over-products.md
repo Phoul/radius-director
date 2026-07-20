@@ -52,21 +52,21 @@ Vendor-specific behaviour should only be introduced where it represents a capabi
 
 ## Preferred
 
-Model reusable behaviour separately from deployment infrastructure.
+Model reusable Global Objects separately from tenant-owned infrastructure.
 
-Platform-level objects:
+Global Objects:
 
 - Credential Profile
 - Authentication Profile
 - Accounting Profile
 - Monitoring Profile
+- NAS Device
 
-Tenant-level objects:
+Tenant Objects:
 
 - Database
-- NAS
 - RADIUS Server
-- Deployment
+- NAS Assignment
 
 ---
 
