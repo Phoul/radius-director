@@ -22,7 +22,7 @@ Global Objects include:
 
 ---
 
-# Tenant
+# Tenant Objects
 
 Each tenant contains tenant-specific infrastructure.
 
