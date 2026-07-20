@@ -12,7 +12,13 @@ Configuration generation is derived from this model.
 
 Represents a RADIUS Director installation.
 
-A platform may contain one or more tenants.
+A platform contains:
+
+- Credential Profiles
+- Authentication Profiles
+- Accounting Profiles
+- Monitoring Profiles
+- Tenants
 
 ---
 
@@ -22,14 +28,12 @@ A tenant represents an independent RADIUS deployment.
 
 A tenant owns:
 
-- Credential Profiles
-- Authentication Profiles
-- Accounting Profiles
-- Monitoring Profiles
+- Database
 - NAS definitions
-- Database definitions
 - RADIUS Servers
 - Deployments
+
+Tenants reference reusable platform-level profiles where appropriate.
 
 ---
 
