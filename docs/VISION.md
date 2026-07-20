@@ -90,6 +90,16 @@ Generated configuration should remain understandable by experienced FreeRADIUS a
 
 ---
 
+## Reusable Configuration
+
+Operational behaviour should be defined once and reused wherever possible.
+
+Profiles such as credentials, authentication, accounting, and monitoring may be shared across multiple tenants.
+
+Infrastructure such as databases, NAS devices, and RADIUS servers remain tenant-specific.
+
+---
+
 # Non-Goals
 
 RADIUS Director is not intended to:
