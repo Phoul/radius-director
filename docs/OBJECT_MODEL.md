@@ -1,0 +1,343 @@
+# Object Model
+
+This document defines each object in the RADIUS Director domain model.
+
+Every object describes a single operational concept and follows the same structure:
+
+- Purpose
+- Ownership
+- Properties
+- Relationships
+- Validation
+- Generation
+
+The object model serves as the blueprint for configuration validation and FreeRADIUS configuration generation.
+
+---
+
+# General Principles
+
+## Object Identifiers
+
+Every object is identified by its key within the configuration.
+
+For example:
+
+```yaml
+nas_devices:
+
+  mt-core-01.gobcn.ca:
+    ip_address: 10.10.10.1
+    vendor: mikrotik
+```
+
+The key (`mt-core-01.gobcn.ca`) is the object's identifier.
+
+Object identifiers:
+
+- must be unique within their collection
+- are referenced by other objects
+- should remain stable over time
+
+---
+
+# Credential Profile
+
+## Purpose
+
+Defines shared authentication credentials for one or more NAS devices.
+
+## Ownership
+
+Global Object
+
+## Properties
+
+- shared_secret
+- coa_shared_secret
+
+## Relationships
+
+Referenced by one or more NAS Assignments.
+
+## Validation
+
+- shared_secret must be present
+- coa_shared_secret must be present
+
+## Generation
+
+Used when generating client definitions and CoA proxy configuration.
+
+---
+
+# Authentication Profile
+
+## Purpose
+
+Defines authentication behaviour.
+
+## Ownership
+
+Global Object
+
+## Properties
+
+Initially implementation-specific.
+
+Examples may include:
+
+- simultaneous use
+- SQL policies
+- session verification
+
+## Relationships
+
+Referenced by one or more NAS Assignments.
+
+## Validation
+
+Profile-specific validation rules.
+
+## Generation
+
+Used when generating authentication policies.
+
+---
+
+# Accounting Profile
+
+## Purpose
+
+Defines accounting behaviour.
+
+## Ownership
+
+Global Object
+
+## Properties
+
+Initially implementation-specific.
+
+Examples may include:
+
+- accounting storage
+- interim update handling
+- session cleanup
+
+## Relationships
+
+Referenced by one or more NAS Assignments.
+
+## Validation
+
+Profile-specific validation rules.
+
+## Generation
+
+Used when generating accounting configuration.
+
+---
+
+# Monitoring Profile
+
+## Purpose
+
+Defines operational monitoring.
+
+## Ownership
+
+Global Object
+
+## Properties
+
+Initially implementation-specific.
+
+Examples may include:
+
+- authentication tests
+- CoA tests
+- SNMP verification
+
+## Relationships
+
+Referenced by one or more NAS Assignments.
+
+## Validation
+
+Profile-specific validation rules.
+
+## Generation
+
+Used when generating monitoring configuration.
+
+---
+
+# NAS Device
+
+## Purpose
+
+Represents a physical or virtual RADIUS client.
+
+## Ownership
+
+Global Object
+
+## Properties
+
+- ip_address
+- vendor
+
+## Relationships
+
+Referenced by one or more NAS Assignments.
+
+## Validation
+
+- ip_address must be a valid IP address
+- vendor must be supported
+
+## Generation
+
+Used when generating FreeRADIUS client definitions.
+
+---
+
+# Tenant
+
+## Purpose
+
+Represents an independent RADIUS deployment.
+
+## Ownership
+
+Top-level object.
+
+## Properties
+
+None.
+
+A tenant is composed of other Tenant Objects.
+
+## Relationships
+
+Contains:
+
+- Database
+- RADIUS Servers
+- NAS Assignments
+
+## Validation
+
+- must contain exactly one Database
+- must contain at least one RADIUS Server
+
+## Generation
+
+Defines the scope of generated configuration.
+
+---
+
+# Database
+
+## Purpose
+
+Defines the primary database used by a tenant.
+
+## Ownership
+
+Tenant Object
+
+## Properties
+
+- engine
+- host
+- port
+- database
+- username
+- password
+
+## Relationships
+
+Owned by a Tenant.
+
+## Validation
+
+- host must be specified
+- database must be specified
+- credentials must be valid
+
+## Generation
+
+Used when generating SQL configuration.
+
+---
+
+# RADIUS Server
+
+## Purpose
+
+Represents a FreeRADIUS instance.
+
+## Ownership
+
+Tenant Object
+
+## Properties
+
+Initially minimal.
+
+Future versions may define server-specific properties.
+
+## Relationships
+
+Owned by a Tenant.
+
+## Validation
+
+Server-specific validation rules.
+
+## Generation
+
+Defines where generated configuration is deployed.
+
+---
+
+# NAS Assignment
+
+## Purpose
+
+Defines how a tenant uses a NAS Device.
+
+## Ownership
+
+Relationship Object
+
+## Properties
+
+- nas_device
+- credential_profile
+- authentication_profile
+- accounting_profile
+- monitoring_profile
+
+## Relationships
+
+References:
+
+- NAS Device
+- Credential Profile
+- Authentication Profile
+- Accounting Profile
+- Monitoring Profile
+
+Owned by a Tenant.
+
+## Validation
+
+- every referenced object must exist
+- duplicate assignments are not permitted
+
+## Generation
+
+Combines Global Objects into a tenant-specific configuration used to generate FreeRADIUS configuration.
