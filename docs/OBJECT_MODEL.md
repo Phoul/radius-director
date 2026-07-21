@@ -45,7 +45,7 @@ Object identifiers:
 
 ## Purpose
 
-Defines shared authentication credentials for one or more NAS devices.
+Defines the shared RADIUS credentials used when communicating with a NAS Device.
 
 ## Ownership
 
@@ -54,7 +54,6 @@ Global Object
 ## Properties
 
 - shared_secret
-- coa_shared_secret
 
 ## Relationships
 
@@ -63,7 +62,6 @@ Referenced by one or more NAS Assignments.
 ## Validation
 
 - shared_secret must be present
-- coa_shared_secret must be present
 
 ## Generation
 
