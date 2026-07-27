@@ -5,10 +5,16 @@ import (
 	"flag"
 	"fmt"
 	"io"
+
+	"github.com/gobcn/radius-director/internal/config"
 )
 
 // Run executes the command-line interface and returns its exit code.
 func Run(args []string, stdout, stderr io.Writer) int {
+	if len(args) > 0 && args[0] == "validate" {
+		return runValidate(args[1:], stdout, stderr)
+	}
+
 	flags := flag.NewFlagSet("radius-director", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	help := flags.Bool("help", false, "Show this help message.")
@@ -17,7 +23,7 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stdout, "RADIUS Director manages declarative FreeRADIUS configuration.")
 		fmt.Fprintln(stdout)
 		fmt.Fprintln(stdout, "Usage:")
-		fmt.Fprintln(stdout, "  radius-director [options]")
+		fmt.Fprintln(stdout, "  radius-director validate <config.yaml>")
 		fmt.Fprintln(stdout)
 		fmt.Fprintln(stdout, "Options:")
 		fmt.Fprintln(stdout, "  -h, --help")
@@ -40,5 +46,26 @@ func Run(args []string, stdout, stderr io.Writer) int {
 	}
 
 	flags.Usage()
+	return 0
+}
+
+func runValidate(args []string, stdout, stderr io.Writer) int {
+	if len(args) == 1 && (args[0] == "-h" || args[0] == "--help") {
+		fmt.Fprintln(stdout, "Usage:")
+		fmt.Fprintln(stdout, "  radius-director validate <config.yaml>")
+		return 0
+	}
+
+	if len(args) != 1 {
+		fmt.Fprintln(stderr, "validate requires exactly one configuration file")
+		return 2
+	}
+
+	if _, err := config.Load(args[0]); err != nil {
+		fmt.Fprintln(stderr, err)
+		return 1
+	}
+
+	fmt.Fprintln(stdout, "Configuration parsed successfully.")
 	return 0
 }

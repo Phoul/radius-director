@@ -1,0 +1,33 @@
+global_objects:
+  credential_profiles:
+    default:
+      shared_secret: shared-secret
+  authentication_profiles:
+    default: {}
+  accounting_profiles:
+    default: {}
+  monitoring_profiles:
+    default: {}
+  nas_devices:
+    mt-core-01.gobcn.ca:
+      ip_address: 10.10.10.1
+      vendor: mikrotik
+
+tenants:
+  customer-a:
+    database:
+      engine: postgresql
+      host: db.example.com
+      port: 5432
+      database: radius
+      username: radius
+      password: password
+    radius_servers:
+      radius-1: {}
+    nas_assignments:
+      core-router:
+        nas_device: mt-core-01.gobcn.ca
+        credential_profile: default
+        authentication_profile: default
+        accounting_profile: default
+        monitoring_profile: default
