@@ -39,7 +39,7 @@ func TestRunValidate(t *testing.T) {
 	if exitCode := Run([]string{"validate", path}, &stdout, &stderr); exitCode != 0 {
 		t.Fatalf("Run() exit code = %d, want 0", exitCode)
 	}
-	if got := stdout.String(); got != "Configuration parsed successfully.\n" {
+	if got := stdout.String(); got != "Configuration parsed and validated successfully.\n" {
 		t.Fatalf("stdout = %q, want success message", got)
 	}
 	if stderr.Len() != 0 {

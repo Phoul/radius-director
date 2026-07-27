@@ -7,6 +7,7 @@ import (
 	"io"
 
 	"github.com/gobcn/radius-director/internal/config"
+	"github.com/gobcn/radius-director/internal/validation"
 )
 
 // Run executes the command-line interface and returns its exit code.
@@ -61,11 +62,17 @@ func runValidate(args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 
-	if _, err := config.Load(args[0]); err != nil {
+	configuration, err := config.Load(args[0])
+	if err != nil {
 		fmt.Fprintln(stderr, err)
 		return 1
 	}
 
-	fmt.Fprintln(stdout, "Configuration parsed successfully.")
+	if err := validation.Validate(configuration); err != nil {
+		fmt.Fprintln(stderr, err)
+		return 1
+	}
+
+	fmt.Fprintln(stdout, "Configuration parsed and validated successfully.")
 	return 0
 }
