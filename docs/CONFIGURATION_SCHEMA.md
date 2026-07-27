@@ -20,7 +20,14 @@ YAML is currently the preferred configuration format.
 
 ---
 
-# High-Level Structure
+# Root Configuration
+
+A RADIUS Director configuration consists of a single root configuration document.
+
+The root contains two top-level collections:
+
+- Global Objects
+- Tenants
 
 ```yaml
 global_objects:
@@ -38,19 +45,116 @@ global_objects:
 tenants:
 ```
 
-Detailed schema definitions will be added as the domain model is finalized.
+---
 
-The schema will distinguish between:
+# Global Objects
 
-- Global Objects
-- Tenant Objects
-- Relationship Objects
+Global Objects are defined once and may be referenced by one or more tenants.
 
-Global Objects are defined once and may be referenced by multiple tenants.
+The following Global Object collections are supported:
 
-Tenant Objects define infrastructure owned by a single tenant.
+| Collection | Object |
+|------------|--------|
+| credential_profiles | Credential Profile |
+| authentication_profiles | Authentication Profile |
+| accounting_profiles | Accounting Profile |
+| monitoring_profiles | Monitoring Profile |
+| nas_devices | NAS Device |
 
-Relationship Objects describe how Global Objects are composed into tenant-specific configurations.
+Each object is identified by its YAML key.
+
+Example:
+
+```yaml
+global_objects:
+
+  credential_profiles:
+
+    default:
+      shared_secret: mysecret
+
+  nas_devices:
+
+    mt-core-01.gobcn.ca:
+      ip_address: 10.10.10.1
+      vendor: mikrotik
+```
+
+---
+
+# Tenants
+
+The `tenants` collection contains one or more Tenant objects.
+
+Each tenant is identified by its YAML key.
+
+Example:
+
+```yaml
+tenants:
+
+  customer-a:
+
+    database:
+
+    radius_servers:
+
+    nas_assignments:
+```
+
+Each Tenant owns:
+
+- one Database
+- one or more RADIUS Servers
+- zero or more NAS Assignments
+
+---
+
+# Object Collections
+
+Every object collection uses the same pattern.
+
+The YAML key is the object's identifier.
+
+Example:
+
+```yaml
+credential_profiles:
+
+  default:
+    shared_secret: secret1
+
+  backup:
+    shared_secret: secret2
+```
+
+The identifiers (`default` and `backup`) become the object identifiers referenced throughout the configuration.
+
+---
+
+# Relationships
+
+Relationship Objects reference other objects by identifier.
+
+For example:
+
+```yaml
+nas_assignments:
+
+  core-router:
+
+    nas_device: mt-core-01.gobcn.ca
+
+    credential_profile: default
+
+    authentication_profile: default
+
+    accounting_profile: default
+
+    monitoring_profile: default
+```
+
+Relationship Objects never duplicate configuration owned by other objects.
 
 ---
 

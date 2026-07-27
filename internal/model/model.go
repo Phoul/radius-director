@@ -1,0 +1,75 @@
+// Package model defines the RADIUS Director configuration object model.
+package model
+
+// Configuration represents a root RADIUS Director configuration document.
+type Configuration struct {
+	GlobalObjects GlobalObjects     `yaml:"global_objects"`
+	Tenants       map[string]Tenant `yaml:"tenants"`
+}
+
+// GlobalObjects contains the globally reusable configuration objects.
+type GlobalObjects struct {
+	CredentialProfiles     map[string]CredentialProfile     `yaml:"credential_profiles"`
+	AuthenticationProfiles map[string]AuthenticationProfile `yaml:"authentication_profiles"`
+	AccountingProfiles     map[string]AccountingProfile     `yaml:"accounting_profiles"`
+	MonitoringProfiles     map[string]MonitoringProfile     `yaml:"monitoring_profiles"`
+	NASDevices             map[string]NASDevice             `yaml:"nas_devices"`
+}
+
+// CredentialProfile defines the shared RADIUS credentials used to communicate
+// with a NAS device.
+type CredentialProfile struct {
+	SharedSecret string `yaml:"shared_secret"`
+}
+
+// AuthenticationProfile defines authentication behaviour.
+//
+// Its properties are implementation-specific and are not defined yet.
+type AuthenticationProfile struct{}
+
+// AccountingProfile defines accounting behaviour.
+//
+// Its properties are implementation-specific and are not defined yet.
+type AccountingProfile struct{}
+
+// MonitoringProfile defines operational monitoring.
+//
+// Its properties are implementation-specific and are not defined yet.
+type MonitoringProfile struct{}
+
+// NASDevice represents a physical or virtual RADIUS client.
+type NASDevice struct {
+	IPAddress string `yaml:"ip_address"`
+	Vendor    string `yaml:"vendor"`
+}
+
+// Tenant represents an independent RADIUS deployment.
+type Tenant struct {
+	Database       Database                 `yaml:"database"`
+	RADIUSServers  map[string]RADIUSServer  `yaml:"radius_servers"`
+	NASAssignments map[string]NASAssignment `yaml:"nas_assignments"`
+}
+
+// Database defines the primary database used by a tenant.
+type Database struct {
+	Engine   string `yaml:"engine"`
+	Host     string `yaml:"host"`
+	Port     int    `yaml:"port"`
+	Database string `yaml:"database"`
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
+}
+
+// RADIUSServer represents a FreeRADIUS instance.
+//
+// Its properties are not defined yet.
+type RADIUSServer struct{}
+
+// NASAssignment defines how a tenant uses a NAS device.
+type NASAssignment struct {
+	NASDevice             string `yaml:"nas_device"`
+	CredentialProfile     string `yaml:"credential_profile"`
+	AuthenticationProfile string `yaml:"authentication_profile"`
+	AccountingProfile     string `yaml:"accounting_profile"`
+	MonitoringProfile     string `yaml:"monitoring_profile"`
+}
