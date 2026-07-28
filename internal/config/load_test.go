@@ -19,9 +19,9 @@ func TestLoad(t *testing.T) {
 tenants:
   customer-a:
     database:
-      engine: postgresql
+      engine: mysql
       host: db.example.com
-      port: 5432
+      port: 3306
       database: radius
       username: radius
       password: secret

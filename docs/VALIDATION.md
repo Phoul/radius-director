@@ -192,6 +192,12 @@ Validation rules:
 - username must be specified
 - password must be specified
 
+Supported database engines:
+
+- mysql
+
+Additional database engines may be added in future releases.
+
 ---
 
 ## RADIUS Server

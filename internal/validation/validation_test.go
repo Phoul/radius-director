@@ -28,6 +28,14 @@ func TestValidate(t *testing.T) {
 		},
 		Tenants: map[string]model.Tenant{
 			"customer-a": {
+				Database: model.Database{
+					Engine:   "mysql",
+					Host:     "db.example.com",
+					Port:     3306,
+					Database: "radius",
+					Username: "radius",
+					Password: "secret",
+				},
 				RADIUSServers: map[string]model.RADIUSServer{
 					"radius-1": {},
 				},
@@ -40,6 +48,183 @@ func TestValidate(t *testing.T) {
 
 	if err := Validate(configuration); err != nil {
 		t.Fatalf("Validate() error = %v, want nil", err)
+	}
+}
+
+func TestValidateDatabase(t *testing.T) {
+	validDatabase := model.Database{
+		Engine:   "mysql",
+		Host:     "db.example.com",
+		Port:     3306,
+		Database: "radius",
+		Username: "radius",
+		Password: "secret",
+	}
+
+	tests := []struct {
+		name     string
+		database model.Database
+		wantErrs []string
+	}{
+		{
+			name:     "valid database",
+			database: validDatabase,
+		},
+		{
+			name: "minimum valid port",
+			database: model.Database{
+				Engine:   validDatabase.Engine,
+				Host:     validDatabase.Host,
+				Port:     1,
+				Database: validDatabase.Database,
+				Username: validDatabase.Username,
+				Password: validDatabase.Password,
+			},
+		},
+		{
+			name: "maximum valid port",
+			database: model.Database{
+				Engine:   validDatabase.Engine,
+				Host:     validDatabase.Host,
+				Port:     65535,
+				Database: validDatabase.Database,
+				Username: validDatabase.Username,
+				Password: validDatabase.Password,
+			},
+		},
+		{
+			name: "engine missing",
+			database: model.Database{
+				Host:     validDatabase.Host,
+				Port:     validDatabase.Port,
+				Database: validDatabase.Database,
+				Username: validDatabase.Username,
+				Password: validDatabase.Password,
+			},
+			wantErrs: []string{
+				`tenant "customer-a": database engine must be specified`,
+			},
+		},
+		{
+			name: "engine unsupported",
+			database: model.Database{
+				Engine:   "postgresql",
+				Host:     validDatabase.Host,
+				Port:     validDatabase.Port,
+				Database: validDatabase.Database,
+				Username: validDatabase.Username,
+				Password: validDatabase.Password,
+			},
+			wantErrs: []string{
+				`tenant "customer-a": database engine "postgresql" is not supported`,
+			},
+		},
+		{
+			name: "host missing",
+			database: model.Database{
+				Engine:   validDatabase.Engine,
+				Port:     validDatabase.Port,
+				Database: validDatabase.Database,
+				Username: validDatabase.Username,
+				Password: validDatabase.Password,
+			},
+			wantErrs: []string{
+				`tenant "customer-a": database host must be specified`,
+			},
+		},
+		{
+			name: "port below range",
+			database: model.Database{
+				Engine:   validDatabase.Engine,
+				Host:     validDatabase.Host,
+				Port:     0,
+				Database: validDatabase.Database,
+				Username: validDatabase.Username,
+				Password: validDatabase.Password,
+			},
+			wantErrs: []string{
+				`tenant "customer-a": database port must be between 1 and 65535`,
+			},
+		},
+		{
+			name: "port above range",
+			database: model.Database{
+				Engine:   validDatabase.Engine,
+				Host:     validDatabase.Host,
+				Port:     65536,
+				Database: validDatabase.Database,
+				Username: validDatabase.Username,
+				Password: validDatabase.Password,
+			},
+			wantErrs: []string{
+				`tenant "customer-a": database port must be between 1 and 65535`,
+			},
+		},
+		{
+			name: "database name missing",
+			database: model.Database{
+				Engine:   validDatabase.Engine,
+				Host:     validDatabase.Host,
+				Port:     validDatabase.Port,
+				Username: validDatabase.Username,
+				Password: validDatabase.Password,
+			},
+			wantErrs: []string{
+				`tenant "customer-a": database name must be specified`,
+			},
+		},
+		{
+			name: "username missing",
+			database: model.Database{
+				Engine:   validDatabase.Engine,
+				Host:     validDatabase.Host,
+				Port:     validDatabase.Port,
+				Database: validDatabase.Database,
+				Password: validDatabase.Password,
+			},
+			wantErrs: []string{
+				`tenant "customer-a": database username must be specified`,
+			},
+		},
+		{
+			name: "password missing",
+			database: model.Database{
+				Engine:   validDatabase.Engine,
+				Host:     validDatabase.Host,
+				Port:     validDatabase.Port,
+				Database: validDatabase.Database,
+				Username: validDatabase.Username,
+			},
+			wantErrs: []string{
+				`tenant "customer-a": database password must be specified`,
+			},
+		},
+		{
+			name: "multiple invalid properties",
+			wantErrs: []string{
+				`tenant "customer-a": database engine must be specified`,
+				`tenant "customer-a": database host must be specified`,
+				`tenant "customer-a": database port must be between 1 and 65535`,
+				`tenant "customer-a": database name must be specified`,
+				`tenant "customer-a": database username must be specified`,
+				`tenant "customer-a": database password must be specified`,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			validationErrors := validateDatabase("customer-a", test.database)
+			if len(validationErrors) != len(test.wantErrs) {
+				t.Fatalf("validateDatabase() returned %d errors, want %d", len(validationErrors), len(test.wantErrs))
+			}
+
+			for index, wantErr := range test.wantErrs {
+				if got := validationErrors[index].Error(); got != wantErr {
+					t.Errorf("validateDatabase() error = %q, want %q", got, wantErr)
+				}
+			}
+		})
 	}
 }
 
