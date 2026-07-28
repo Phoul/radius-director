@@ -202,7 +202,11 @@ Additional database engines may be added in future releases.
 
 ## RADIUS Server
 
-Validation rules are implementation specific.
+Validation rules:
+
+- authentication_port must be between 1 and 65535
+- accounting_port must be between 1 and 65535
+- coa_port must be between 1 and 65535
 
 ---
 
@@ -211,6 +215,11 @@ Validation rules are implementation specific.
 Validation rules:
 
 - identifier must be unique
+- nas_device must be specified
+- credential_profile must be specified
+- authentication_profile must be specified
+- accounting_profile must be specified
+- monitoring_profile must be specified
 - referenced NAS Device must exist
 - referenced Credential Profile must exist
 - referenced Authentication Profile must exist

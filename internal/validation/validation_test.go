@@ -36,8 +36,10 @@ func TestValidate(t *testing.T) {
 					Username: "radius",
 					Password: "secret",
 				},
-				RADIUSServers: map[string]model.RADIUSServer{
-					"radius-1": {},
+				RADIUSServer: model.RADIUSServer{
+					AuthenticationPort: 1812,
+					AccountingPort:     1813,
+					COAPort:            3799,
 				},
 				NASAssignments: map[string]model.NASAssignment{
 					"core": {},
@@ -61,8 +63,10 @@ func TestValidateTenant(t *testing.T) {
 			Username: "radius",
 			Password: "secret",
 		},
-		RADIUSServers: map[string]model.RADIUSServer{
-			"radius-1": {},
+		RADIUSServer: model.RADIUSServer{
+			AuthenticationPort: 1812,
+			AccountingPort:     1813,
+			COAPort:            3799,
 		},
 		NASAssignments: map[string]model.NASAssignment{
 			"core": {},
@@ -81,7 +85,7 @@ func TestValidateTenant(t *testing.T) {
 		{
 			name: "database missing",
 			tenant: model.Tenant{
-				RADIUSServers:  validTenant.RADIUSServers,
+				RADIUSServer:   validTenant.RADIUSServer,
 				NASAssignments: validTenant.NASAssignments,
 			},
 			wantErrs: []string{
@@ -89,20 +93,20 @@ func TestValidateTenant(t *testing.T) {
 			},
 		},
 		{
-			name: "RADIUS servers missing",
+			name: "RADIUS Server missing",
 			tenant: model.Tenant{
 				Database:       validTenant.Database,
 				NASAssignments: validTenant.NASAssignments,
 			},
 			wantErrs: []string{
-				`tenant "customer-a": at least one radius server must be defined`,
+				`tenant "customer-a": exactly one radius server must be defined`,
 			},
 		},
 		{
 			name: "NAS assignments missing",
 			tenant: model.Tenant{
-				Database:      validTenant.Database,
-				RADIUSServers: validTenant.RADIUSServers,
+				Database:     validTenant.Database,
+				RADIUSServer: validTenant.RADIUSServer,
 			},
 			wantErrs: []string{
 				`tenant "customer-a": at least one nas assignment must be defined`,
@@ -112,7 +116,7 @@ func TestValidateTenant(t *testing.T) {
 			name: "all required tenant objects missing",
 			wantErrs: []string{
 				`tenant "customer-a": exactly one database must be defined`,
-				`tenant "customer-a": at least one radius server must be defined`,
+				`tenant "customer-a": exactly one radius server must be defined`,
 				`tenant "customer-a": at least one nas assignment must be defined`,
 			},
 		},
@@ -135,9 +139,128 @@ func TestValidateTenant(t *testing.T) {
 }
 
 func TestValidateRADIUSServer(t *testing.T) {
-	errs := validateRADIUSServer("customer-a", "radius-1", model.RADIUSServer{})
-	if len(errs) != 0 {
-		t.Fatalf("validateRADIUSServer() returned %d errors, want none", len(errs))
+	validServer := model.RADIUSServer{
+		AuthenticationPort: 1812,
+		AccountingPort:     1813,
+		COAPort:            3799,
+	}
+
+	tests := []struct {
+		name     string
+		server   model.RADIUSServer
+		wantErrs []string
+	}{
+		{
+			name:   "valid RADIUS Server",
+			server: validServer,
+		},
+		{
+			name: "minimum valid ports",
+			server: model.RADIUSServer{
+				AuthenticationPort: 1,
+				AccountingPort:     1,
+				COAPort:            1,
+			},
+		},
+		{
+			name: "maximum valid ports",
+			server: model.RADIUSServer{
+				AuthenticationPort: 65535,
+				AccountingPort:     65535,
+				COAPort:            65535,
+			},
+		},
+		{
+			name: "authentication port missing",
+			server: model.RADIUSServer{
+				AccountingPort: validServer.AccountingPort,
+				COAPort:        validServer.COAPort,
+			},
+			wantErrs: []string{
+				`tenant "customer-a": radius server authentication_port must be between 1 and 65535`,
+			},
+		},
+		{
+			name: "authentication port above range",
+			server: model.RADIUSServer{
+				AuthenticationPort: 65536,
+				AccountingPort:     validServer.AccountingPort,
+				COAPort:            validServer.COAPort,
+			},
+			wantErrs: []string{
+				`tenant "customer-a": radius server authentication_port must be between 1 and 65535`,
+			},
+		},
+		{
+			name: "accounting port missing",
+			server: model.RADIUSServer{
+				AuthenticationPort: validServer.AuthenticationPort,
+				COAPort:            validServer.COAPort,
+			},
+			wantErrs: []string{
+				`tenant "customer-a": radius server accounting_port must be between 1 and 65535`,
+			},
+		},
+		{
+			name: "accounting port above range",
+			server: model.RADIUSServer{
+				AuthenticationPort: validServer.AuthenticationPort,
+				AccountingPort:     65536,
+				COAPort:            validServer.COAPort,
+			},
+			wantErrs: []string{
+				`tenant "customer-a": radius server accounting_port must be between 1 and 65535`,
+			},
+		},
+		{
+			name: "CoA port missing",
+			server: model.RADIUSServer{
+				AuthenticationPort: validServer.AuthenticationPort,
+				AccountingPort:     validServer.AccountingPort,
+			},
+			wantErrs: []string{
+				`tenant "customer-a": radius server coa_port must be between 1 and 65535`,
+			},
+		},
+		{
+			name: "CoA port above range",
+			server: model.RADIUSServer{
+				AuthenticationPort: validServer.AuthenticationPort,
+				AccountingPort:     validServer.AccountingPort,
+				COAPort:            65536,
+			},
+			wantErrs: []string{
+				`tenant "customer-a": radius server coa_port must be between 1 and 65535`,
+			},
+		},
+		{
+			name: "multiple invalid ports",
+			server: model.RADIUSServer{
+				AuthenticationPort: 0,
+				AccountingPort:     65536,
+				COAPort:            -1,
+			},
+			wantErrs: []string{
+				`tenant "customer-a": radius server authentication_port must be between 1 and 65535`,
+				`tenant "customer-a": radius server accounting_port must be between 1 and 65535`,
+				`tenant "customer-a": radius server coa_port must be between 1 and 65535`,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			validationErrors := validateRADIUSServer("customer-a", test.server)
+			if len(validationErrors) != len(test.wantErrs) {
+				t.Fatalf("validateRADIUSServer() returned %d errors, want %d", len(validationErrors), len(test.wantErrs))
+			}
+
+			for index, wantErr := range test.wantErrs {
+				if got := validationErrors[index].Error(); got != wantErr {
+					t.Errorf("validateRADIUSServer() error = %q, want %q", got, wantErr)
+				}
+			}
+		})
 	}
 }
 

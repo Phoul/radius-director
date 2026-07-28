@@ -46,7 +46,7 @@ type NASDevice struct {
 // Tenant represents an independent RADIUS deployment.
 type Tenant struct {
 	Database       Database                 `yaml:"database"`
-	RADIUSServers  map[string]RADIUSServer  `yaml:"radius_servers"`
+	RADIUSServer   RADIUSServer             `yaml:"radius_server"`
 	NASAssignments map[string]NASAssignment `yaml:"nas_assignments"`
 }
 
@@ -61,9 +61,11 @@ type Database struct {
 }
 
 // RADIUSServer represents a FreeRADIUS instance.
-//
-// Its properties are not defined yet.
-type RADIUSServer struct{}
+type RADIUSServer struct {
+	AuthenticationPort int `yaml:"authentication_port"`
+	AccountingPort     int `yaml:"accounting_port"`
+	COAPort            int `yaml:"coa_port"`
+}
 
 // NASAssignment defines how a tenant uses a NAS device.
 type NASAssignment struct {

@@ -25,8 +25,10 @@ tenants:
       database: radius
       username: radius
       password: secret
-    radius_servers:
-      radius-1: {}
+    radius_server:
+      authentication_port: 1812
+      accounting_port: 1813
+      coa_port: 3799
     nas_assignments:
       core:
         nas_device: core
@@ -49,6 +51,9 @@ tenants:
 	}
 	if got := configuration.Tenants["customer-a"].NASAssignments["core"].NASDevice; got != "core" {
 		t.Fatalf("NAS assignment device = %q, want %q", got, "core")
+	}
+	if got := configuration.Tenants["customer-a"].RADIUSServer.AuthenticationPort; got != 1812 {
+		t.Fatalf("RADIUS Server authentication port = %d, want 1812", got)
 	}
 }
 

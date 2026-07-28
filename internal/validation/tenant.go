@@ -22,10 +22,10 @@ func validateTenant(identifier string, tenant model.Tenant) []error {
 	} else {
 		validationErrors = append(validationErrors, validateDatabase(identifier, tenant.Database)...)
 	}
-	if len(tenant.RADIUSServers) == 0 {
-		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: at least one radius server must be defined", identifier))
+	if tenant.RADIUSServer == (model.RADIUSServer{}) {
+		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: exactly one radius server must be defined", identifier))
 	} else {
-		validationErrors = append(validationErrors, validateRADIUSServers(identifier, tenant.RADIUSServers)...)
+		validationErrors = append(validationErrors, validateRADIUSServer(identifier, tenant.RADIUSServer)...)
 	}
 	if len(tenant.NASAssignments) == 0 {
 		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: at least one nas assignment must be defined", identifier))
@@ -62,17 +62,19 @@ func validateDatabase(tenantIdentifier string, database model.Database) []error 
 	return validationErrors
 }
 
-func validateRADIUSServers(tenantIdentifier string, servers map[string]model.RADIUSServer) []error {
+func validateRADIUSServer(tenantIdentifier string, server model.RADIUSServer) []error {
 	var validationErrors []error
-	for _, identifier := range sortedKeys(servers) {
-		validationErrors = append(validationErrors, validateRADIUSServer(tenantIdentifier, identifier, servers[identifier])...)
+	if server.AuthenticationPort < 1 || server.AuthenticationPort > 65535 {
+		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: radius server authentication_port must be between 1 and 65535", tenantIdentifier))
+	}
+	if server.AccountingPort < 1 || server.AccountingPort > 65535 {
+		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: radius server accounting_port must be between 1 and 65535", tenantIdentifier))
+	}
+	if server.COAPort < 1 || server.COAPort > 65535 {
+		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: radius server coa_port must be between 1 and 65535", tenantIdentifier))
 	}
 
 	return validationErrors
-}
-
-func validateRADIUSServer(tenantIdentifier, identifier string, server model.RADIUSServer) []error {
-	return nil
 }
 
 func validateNASAssignments(tenantIdentifier string, assignments map[string]model.NASAssignment) []error {
@@ -85,5 +87,22 @@ func validateNASAssignments(tenantIdentifier string, assignments map[string]mode
 }
 
 func validateNASAssignment(tenantIdentifier, identifier string, assignment model.NASAssignment) []error {
-	return nil
+	var validationErrors []error
+	if assignment.NASDevice == "" {
+		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: nas assignment %q: nas_device must be specified", tenantIdentifier, identifier))
+	}
+	if assignment.CredentialProfile == "" {
+		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: nas assignment %q: credential_profile must be specified", tenantIdentifier, identifier))
+	}
+	if assignment.AuthenticationProfile == "" {
+		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: nas assignment %q: authentication_profile must be specified", tenantIdentifier, identifier))
+	}
+	if assignment.AccountingProfile == "" {
+		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: nas assignment %q: accounting_profile must be specified", tenantIdentifier, identifier))
+	}
+	if assignment.MonitoringProfile == "" {
+		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: nas assignment %q: monitoring_profile must be specified", tenantIdentifier, identifier))
+	}
+
+	return validationErrors
 }

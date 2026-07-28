@@ -293,7 +293,9 @@ Owned by a Tenant.
 
 ## Validation
 
-Server-specific validation rules.
+- authentication_port must be between 1 and 65535
+- accounting_port must be between 1 and 65535
+- coa_port must be between 1 and 65535
 
 ## Generation
 
@@ -333,6 +335,11 @@ Owned by a Tenant.
 
 ## Validation
 
+- nas_device must be specified
+- credential_profile must be specified
+- authentication_profile must be specified
+- accounting_profile must be specified
+- monitoring_profile must be specified
 - every referenced object must exist
 - duplicate assignments are not permitted
 
