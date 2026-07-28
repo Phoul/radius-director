@@ -326,6 +326,119 @@ func TestValidateNASAssignmentReferences(t *testing.T) {
 	}
 }
 
+func TestValidateTenantRelationships(t *testing.T) {
+	globalObjects := model.GlobalObjects{
+		NASDevices: map[string]model.NASDevice{
+			"core":    {},
+			"edge":    {},
+			"gateway": {},
+		},
+	}
+
+	tests := []struct {
+		name     string
+		tenant   model.Tenant
+		wantErrs []string
+	}{
+		{
+			name: "no duplicates",
+			tenant: model.Tenant{
+				NASAssignments: map[string]model.NASAssignment{
+					"assignment-a": {NASDevice: "core"},
+					"assignment-b": {NASDevice: "edge"},
+				},
+			},
+		},
+		{
+			name: "one duplicate pair",
+			tenant: model.Tenant{
+				NASAssignments: map[string]model.NASAssignment{
+					"assignment-a": {NASDevice: "core"},
+					"assignment-b": {NASDevice: "core"},
+				},
+			},
+			wantErrs: []string{
+				`tenant "customer-a": nas device "core" is assigned by both nas assignments "assignment-a" and "assignment-b"`,
+			},
+		},
+		{
+			name: "multiple independent duplicates",
+			tenant: model.Tenant{
+				NASAssignments: map[string]model.NASAssignment{
+					"assignment-a": {NASDevice: "core"},
+					"assignment-b": {NASDevice: "core"},
+					"assignment-c": {NASDevice: "edge"},
+					"assignment-d": {NASDevice: "edge"},
+				},
+			},
+			wantErrs: []string{
+				`tenant "customer-a": nas device "core" is assigned by both nas assignments "assignment-a" and "assignment-b"`,
+				`tenant "customer-a": nas device "edge" is assigned by both nas assignments "assignment-c" and "assignment-d"`,
+			},
+		},
+		{
+			name: "all duplicate assignments reported",
+			tenant: model.Tenant{
+				NASAssignments: map[string]model.NASAssignment{
+					"assignment-a": {NASDevice: "core"},
+					"assignment-b": {NASDevice: "core"},
+					"assignment-c": {NASDevice: "core"},
+				},
+			},
+			wantErrs: []string{
+				`tenant "customer-a": nas device "core" is assigned by both nas assignments "assignment-a" and "assignment-b"`,
+				`tenant "customer-a": nas device "core" is assigned by both nas assignments "assignment-a" and "assignment-c"`,
+			},
+		},
+		{
+			name: "duplicate mixed with valid assignments",
+			tenant: model.Tenant{
+				NASAssignments: map[string]model.NASAssignment{
+					"assignment-a": {NASDevice: "core"},
+					"assignment-b": {NASDevice: "core"},
+					"assignment-c": {NASDevice: "gateway"},
+				},
+			},
+			wantErrs: []string{
+				`tenant "customer-a": nas device "core" is assigned by both nas assignments "assignment-a" and "assignment-b"`,
+			},
+		},
+		{
+			name: "missing NAS Device does not produce relationship errors",
+			tenant: model.Tenant{
+				NASAssignments: map[string]model.NASAssignment{
+					"assignment-a": {},
+					"assignment-b": {},
+				},
+			},
+		},
+		{
+			name: "nonexistent NAS Device does not produce relationship errors",
+			tenant: model.Tenant{
+				NASAssignments: map[string]model.NASAssignment{
+					"assignment-a": {NASDevice: "missing-device"},
+					"assignment-b": {NASDevice: "missing-device"},
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			validationErrors := validateTenantRelationships("customer-a", test.tenant, globalObjects)
+			if len(validationErrors) != len(test.wantErrs) {
+				t.Fatalf("validateTenantRelationships() returned %d errors, want %d", len(validationErrors), len(test.wantErrs))
+			}
+
+			for index, wantErr := range test.wantErrs {
+				if got := validationErrors[index].Error(); got != wantErr {
+					t.Errorf("validateTenantRelationships() error = %q, want %q", got, wantErr)
+				}
+			}
+		})
+	}
+}
+
 func TestValidateTenant(t *testing.T) {
 	validTenant := model.Tenant{
 		Database: model.Database{

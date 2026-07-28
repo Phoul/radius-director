@@ -13,6 +13,7 @@ func Validate(configuration model.Configuration) error {
 	validationErrors := validateGlobalObjects(configuration.GlobalObjects)
 	validationErrors = append(validationErrors, validateTenants(configuration.Tenants)...)
 	validationErrors = append(validationErrors, validateReferences(configuration)...)
+	validationErrors = append(validationErrors, validateRelationships(configuration)...)
 
 	return errors.Join(validationErrors...)
 }
