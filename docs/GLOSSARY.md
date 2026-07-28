@@ -185,7 +185,7 @@ It is not a RADIUS server.
 
 A running instance of FreeRADIUS that consumes generated configuration.
 
-A deployment may contain one or more RADIUS servers.
+Each tenant contains exactly one RADIUS Server. Its authentication, accounting, and CoA ports are host ports used by the generated RADIUS service. The generator maps them to the container as appropriate.
 
 ---
 
@@ -222,7 +222,7 @@ An independent RADIUS deployment managed by RADIUS Director.
 Each tenant owns its tenant-specific infrastructure, including:
 
 - Database
-- RADIUS Servers
+- RADIUS Server
 - NAS Assignments
 
 Tenants reference reusable Global Objects rather than duplicating them.

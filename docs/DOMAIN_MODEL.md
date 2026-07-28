@@ -29,7 +29,7 @@ Each tenant contains tenant-specific infrastructure.
 Tenant Objects include:
 
 - Database
-- RADIUS Servers
+- RADIUS Server
 - NAS Assignments
 
 Tenants reference Global Objects rather than duplicating them.
@@ -180,7 +180,8 @@ A RADIUS Server consumes generated configuration and services authentication, au
 
 Typical properties include:
 
-- Name
-- Hostname or Address
-- Role
-- Description
+- Authentication port
+- Accounting port
+- CoA port
+
+These properties define the host ports used by the generated RADIUS service. The generator is responsible for mapping them to the container as appropriate.

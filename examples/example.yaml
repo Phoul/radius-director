@@ -22,8 +22,10 @@ tenants:
       database: radius
       username: radius
       password: password
-    radius_servers:
-      radius-1: {}
+    radius_server:
+      authentication_port: 1812
+      accounting_port: 1813
+      coa_port: 3799
     nas_assignments:
       core-router:
         nas_device: mt-core-01.gobcn.ca

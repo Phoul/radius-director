@@ -222,13 +222,13 @@ A tenant is composed of other Tenant Objects.
 Contains:
 
 - Database
-- RADIUS Servers
+- RADIUS Server
 - NAS Assignments
 
 ## Validation
 
 - must contain exactly one Database
-- must contain at least one RADIUS Server
+- must contain exactly one RADIUS Server
 
 ## Generation
 
@@ -283,9 +283,9 @@ Tenant Object
 
 ## Properties
 
-Initially minimal.
-
-Future versions may define server-specific properties.
+- authentication_port
+- accounting_port
+- coa_port
 
 ## Relationships
 
@@ -297,7 +297,7 @@ Server-specific validation rules.
 
 ## Generation
 
-Defines where generated configuration is deployed.
+The port properties define the host ports used by the generated RADIUS service. The generator is responsible for mapping them to the container as appropriate.
 
 ---
 

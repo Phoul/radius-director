@@ -41,7 +41,7 @@ Examples include:
 
 - Databases
 - NAS definitions
-- RADIUS Servers
+- RADIUS Server
 - Deployments
 
 Vendor-specific behaviour should only be introduced where it represents a capability that cannot be expressed through a standard model.

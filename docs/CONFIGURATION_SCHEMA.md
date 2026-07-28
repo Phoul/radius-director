@@ -97,7 +97,7 @@ tenants:
 
     database:
 
-    radius_servers:
+    radius_server:
 
     nas_assignments:
 ```
@@ -105,10 +105,23 @@ tenants:
 Each Tenant owns:
 
 - exactly one Database
-- one or more RADIUS Servers
+- exactly one RADIUS Server
 - one or more NAS Assignments
 
 A tenant represents a complete, deployable RADIUS configuration. A tenant without any NAS Assignments is considered incomplete and is not valid.
+
+## RADIUS Server
+
+Each Tenant contains one `radius_server` object.
+
+```yaml
+radius_server:
+  authentication_port: 1812
+  accounting_port: 1813
+  coa_port: 3799
+```
+
+The port properties define the host ports used by the generated RADIUS service. The generator is responsible for mapping them to the container as appropriate.
 
 ---
 

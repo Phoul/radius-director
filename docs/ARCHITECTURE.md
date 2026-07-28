@@ -69,7 +69,7 @@ Each tenant owns the infrastructure required for its deployment.
 Examples include:
 
 - Database
-- RADIUS Servers
+- RADIUS Server
 - NAS Assignments
 
 Tenant Objects are isolated from one another.
@@ -114,7 +114,7 @@ Global Objects
 
 Tenants
 ├── Database
-├── RADIUS Servers
+├── RADIUS Server
 └── NAS Assignments
 ```
 
@@ -144,7 +144,7 @@ Tenant
 
 Database
 
-RADIUS Servers
+RADIUS Server
 
 NAS Assignment
 ```

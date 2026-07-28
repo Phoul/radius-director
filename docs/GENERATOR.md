@@ -80,7 +80,7 @@ Examples include:
 - NAS Assignments locating NAS Devices
 - NAS Assignments locating Credential Profiles
 - Tenants locating Databases
-- Tenants locating RADIUS Servers
+- Tenants locating RADIUS Server
 
 After this stage, the object graph is fully connected.
 

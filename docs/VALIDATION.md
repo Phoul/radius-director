@@ -113,7 +113,7 @@ Verifies that sufficient information exists to generate FreeRADIUS configuration
 Examples include:
 
 - every tenant has a database
-- every tenant has at least one RADIUS Server
+- every tenant has exactly one RADIUS Server
 - every tenant has at least one NAS Assignment
 
 ---
@@ -176,7 +176,7 @@ Validation rules:
 
 - identifier must be unique
 - exactly one Database must be defined
-- at least one RADIUS Server must be defined
+- exactly one RADIUS Server must be defined
 - at least one NAS Assignment must be defined
 
 ---
@@ -202,11 +202,7 @@ Additional database engines may be added in future releases.
 
 ## RADIUS Server
 
-Validation rules:
-
-- identifier must be unique
-
-Additional validation is implementation specific.
+Validation rules are implementation specific.
 
 ---
 
