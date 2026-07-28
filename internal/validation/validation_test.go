@@ -177,6 +177,155 @@ func TestValidateNASAssignment(t *testing.T) {
 	}
 }
 
+func TestValidateNASAssignmentReferences(t *testing.T) {
+	globalObjects := model.GlobalObjects{
+		CredentialProfiles: map[string]model.CredentialProfile{
+			"default": {},
+		},
+		AuthenticationProfiles: map[string]model.AuthenticationProfile{
+			"default": {},
+		},
+		AccountingProfiles: map[string]model.AccountingProfile{
+			"default": {},
+		},
+		MonitoringProfiles: map[string]model.MonitoringProfile{
+			"default": {},
+		},
+		NASDevices: map[string]model.NASDevice{
+			"core": {},
+		},
+	}
+	validAssignment := model.NASAssignment{
+		NASDevice:             "core",
+		CredentialProfile:     "default",
+		AuthenticationProfile: "default",
+		AccountingProfile:     "default",
+		MonitoringProfile:     "default",
+	}
+
+	tests := []struct {
+		name       string
+		assignment model.NASAssignment
+		wantErrs   []string
+	}{
+		{
+			name:       "valid references",
+			assignment: validAssignment,
+		},
+		{
+			name: "NAS Device missing",
+			assignment: model.NASAssignment{
+				NASDevice:             "missing-device",
+				CredentialProfile:     validAssignment.CredentialProfile,
+				AuthenticationProfile: validAssignment.AuthenticationProfile,
+				AccountingProfile:     validAssignment.AccountingProfile,
+				MonitoringProfile:     validAssignment.MonitoringProfile,
+			},
+			wantErrs: []string{
+				`tenant "customer-a": nas assignment "core": nas device "missing-device" does not exist`,
+			},
+		},
+		{
+			name: "credential profile missing",
+			assignment: model.NASAssignment{
+				NASDevice:             validAssignment.NASDevice,
+				CredentialProfile:     "missing-credential-profile",
+				AuthenticationProfile: validAssignment.AuthenticationProfile,
+				AccountingProfile:     validAssignment.AccountingProfile,
+				MonitoringProfile:     validAssignment.MonitoringProfile,
+			},
+			wantErrs: []string{
+				`tenant "customer-a": nas assignment "core": credential profile "missing-credential-profile" does not exist`,
+			},
+		},
+		{
+			name: "authentication profile missing",
+			assignment: model.NASAssignment{
+				NASDevice:             validAssignment.NASDevice,
+				CredentialProfile:     validAssignment.CredentialProfile,
+				AuthenticationProfile: "missing-authentication-profile",
+				AccountingProfile:     validAssignment.AccountingProfile,
+				MonitoringProfile:     validAssignment.MonitoringProfile,
+			},
+			wantErrs: []string{
+				`tenant "customer-a": nas assignment "core": authentication profile "missing-authentication-profile" does not exist`,
+			},
+		},
+		{
+			name: "accounting profile missing",
+			assignment: model.NASAssignment{
+				NASDevice:             validAssignment.NASDevice,
+				CredentialProfile:     validAssignment.CredentialProfile,
+				AuthenticationProfile: validAssignment.AuthenticationProfile,
+				AccountingProfile:     "missing-accounting-profile",
+				MonitoringProfile:     validAssignment.MonitoringProfile,
+			},
+			wantErrs: []string{
+				`tenant "customer-a": nas assignment "core": accounting profile "missing-accounting-profile" does not exist`,
+			},
+		},
+		{
+			name: "monitoring profile missing",
+			assignment: model.NASAssignment{
+				NASDevice:             validAssignment.NASDevice,
+				CredentialProfile:     validAssignment.CredentialProfile,
+				AuthenticationProfile: validAssignment.AuthenticationProfile,
+				AccountingProfile:     validAssignment.AccountingProfile,
+				MonitoringProfile:     "missing-monitoring-profile",
+			},
+			wantErrs: []string{
+				`tenant "customer-a": nas assignment "core": monitoring profile "missing-monitoring-profile" does not exist`,
+			},
+		},
+		{
+			name: "multiple references missing",
+			assignment: model.NASAssignment{
+				NASDevice:             "missing-device",
+				CredentialProfile:     validAssignment.CredentialProfile,
+				AuthenticationProfile: validAssignment.AuthenticationProfile,
+				AccountingProfile:     "missing-accounting-profile",
+				MonitoringProfile:     validAssignment.MonitoringProfile,
+			},
+			wantErrs: []string{
+				`tenant "customer-a": nas assignment "core": nas device "missing-device" does not exist`,
+				`tenant "customer-a": nas assignment "core": accounting profile "missing-accounting-profile" does not exist`,
+			},
+		},
+		{
+			name: "all references missing",
+			assignment: model.NASAssignment{
+				NASDevice:             "missing-device",
+				CredentialProfile:     "missing-credential-profile",
+				AuthenticationProfile: "missing-authentication-profile",
+				AccountingProfile:     "missing-accounting-profile",
+				MonitoringProfile:     "missing-monitoring-profile",
+			},
+			wantErrs: []string{
+				`tenant "customer-a": nas assignment "core": nas device "missing-device" does not exist`,
+				`tenant "customer-a": nas assignment "core": credential profile "missing-credential-profile" does not exist`,
+				`tenant "customer-a": nas assignment "core": authentication profile "missing-authentication-profile" does not exist`,
+				`tenant "customer-a": nas assignment "core": accounting profile "missing-accounting-profile" does not exist`,
+				`tenant "customer-a": nas assignment "core": monitoring profile "missing-monitoring-profile" does not exist`,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			validationErrors := validateNASAssignmentReferences("customer-a", "core", test.assignment, globalObjects)
+			if len(validationErrors) != len(test.wantErrs) {
+				t.Fatalf("validateNASAssignmentReferences() returned %d errors, want %d", len(validationErrors), len(test.wantErrs))
+			}
+
+			for index, wantErr := range test.wantErrs {
+				if got := validationErrors[index].Error(); got != wantErr {
+					t.Errorf("validateNASAssignmentReferences() error = %q, want %q", got, wantErr)
+				}
+			}
+		})
+	}
+}
+
 func TestValidateTenant(t *testing.T) {
 	validTenant := model.Tenant{
 		Database: model.Database{
