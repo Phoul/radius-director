@@ -16,9 +16,22 @@ func validateTenants(tenants map[string]model.Tenant) []error {
 }
 
 func validateTenant(identifier string, tenant model.Tenant) []error {
-	validationErrors := validateDatabase(identifier, tenant.Database)
-	validationErrors = append(validationErrors, validateRADIUSServers(identifier, tenant.RADIUSServers)...)
-	validationErrors = append(validationErrors, validateNASAssignments(identifier, tenant.NASAssignments)...)
+	var validationErrors []error
+	if tenant.Database == (model.Database{}) {
+		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: exactly one database must be defined", identifier))
+	} else {
+		validationErrors = append(validationErrors, validateDatabase(identifier, tenant.Database)...)
+	}
+	if len(tenant.RADIUSServers) == 0 {
+		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: at least one radius server must be defined", identifier))
+	} else {
+		validationErrors = append(validationErrors, validateRADIUSServers(identifier, tenant.RADIUSServers)...)
+	}
+	if len(tenant.NASAssignments) == 0 {
+		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: at least one nas assignment must be defined", identifier))
+	} else {
+		validationErrors = append(validationErrors, validateNASAssignments(identifier, tenant.NASAssignments)...)
+	}
 
 	return validationErrors
 }

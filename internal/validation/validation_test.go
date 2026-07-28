@@ -51,6 +51,96 @@ func TestValidate(t *testing.T) {
 	}
 }
 
+func TestValidateTenant(t *testing.T) {
+	validTenant := model.Tenant{
+		Database: model.Database{
+			Engine:   "mysql",
+			Host:     "db.example.com",
+			Port:     3306,
+			Database: "radius",
+			Username: "radius",
+			Password: "secret",
+		},
+		RADIUSServers: map[string]model.RADIUSServer{
+			"radius-1": {},
+		},
+		NASAssignments: map[string]model.NASAssignment{
+			"core": {},
+		},
+	}
+
+	tests := []struct {
+		name     string
+		tenant   model.Tenant
+		wantErrs []string
+	}{
+		{
+			name:   "valid tenant",
+			tenant: validTenant,
+		},
+		{
+			name: "database missing",
+			tenant: model.Tenant{
+				RADIUSServers:  validTenant.RADIUSServers,
+				NASAssignments: validTenant.NASAssignments,
+			},
+			wantErrs: []string{
+				`tenant "customer-a": exactly one database must be defined`,
+			},
+		},
+		{
+			name: "RADIUS servers missing",
+			tenant: model.Tenant{
+				Database:       validTenant.Database,
+				NASAssignments: validTenant.NASAssignments,
+			},
+			wantErrs: []string{
+				`tenant "customer-a": at least one radius server must be defined`,
+			},
+		},
+		{
+			name: "NAS assignments missing",
+			tenant: model.Tenant{
+				Database:      validTenant.Database,
+				RADIUSServers: validTenant.RADIUSServers,
+			},
+			wantErrs: []string{
+				`tenant "customer-a": at least one nas assignment must be defined`,
+			},
+		},
+		{
+			name: "all required tenant objects missing",
+			wantErrs: []string{
+				`tenant "customer-a": exactly one database must be defined`,
+				`tenant "customer-a": at least one radius server must be defined`,
+				`tenant "customer-a": at least one nas assignment must be defined`,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			validationErrors := validateTenant("customer-a", test.tenant)
+			if len(validationErrors) != len(test.wantErrs) {
+				t.Fatalf("validateTenant() returned %d errors, want %d", len(validationErrors), len(test.wantErrs))
+			}
+
+			for index, wantErr := range test.wantErrs {
+				if got := validationErrors[index].Error(); got != wantErr {
+					t.Errorf("validateTenant() error = %q, want %q", got, wantErr)
+				}
+			}
+		})
+	}
+}
+
+func TestValidateRADIUSServer(t *testing.T) {
+	errs := validateRADIUSServer("customer-a", "radius-1", model.RADIUSServer{})
+	if len(errs) != 0 {
+		t.Fatalf("validateRADIUSServer() returned %d errors, want none", len(errs))
+	}
+}
+
 func TestValidateDatabase(t *testing.T) {
 	validDatabase := model.Database{
 		Engine:   "mysql",
