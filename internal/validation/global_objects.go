@@ -1,6 +1,11 @@
 package validation
 
-import "github.com/gobcn/radius-director/internal/model"
+import (
+	"fmt"
+	"net"
+
+	"github.com/gobcn/radius-director/internal/model"
+)
 
 func validateGlobalObjects(globalObjects model.GlobalObjects) []error {
 	validationErrors := validateCredentialProfiles(globalObjects.CredentialProfiles)
@@ -22,6 +27,10 @@ func validateCredentialProfiles(profiles map[string]model.CredentialProfile) []e
 }
 
 func validateCredentialProfile(identifier string, profile model.CredentialProfile) []error {
+	if profile.SharedSecret == "" {
+		return []error{fmt.Errorf("credential profile %q: shared_secret must be specified", identifier)}
+	}
+
 	return nil
 }
 
@@ -74,5 +83,13 @@ func validateNASDevices(devices map[string]model.NASDevice) []error {
 }
 
 func validateNASDevice(identifier string, device model.NASDevice) []error {
-	return nil
+	var validationErrors []error
+	if net.ParseIP(device.IPAddress) == nil {
+		validationErrors = append(validationErrors, fmt.Errorf("nas device %q: ip_address must be a valid IPv4 or IPv6 address", identifier))
+	}
+	if device.Vendor == "" {
+		validationErrors = append(validationErrors, fmt.Errorf("nas device %q: vendor must be specified", identifier))
+	}
+
+	return validationErrors
 }
