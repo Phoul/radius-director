@@ -123,8 +123,8 @@ func TestValidateCredentialProfile(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			errors := validateCredentialProfile("default", test.profile)
-			if len(errors) == 0 {
+			errs := validateCredentialProfile("default", test.profile)
+			if len(errs) == 0 {
 				if test.wantErr != "" {
 					t.Fatal("validateCredentialProfile() returned no errors")
 				}
@@ -132,9 +132,9 @@ func TestValidateCredentialProfile(t *testing.T) {
 			}
 
 			if test.wantErr == "" {
-				t.Fatalf("validateCredentialProfile() error = %v, want none", errors[0])
+				t.Fatalf("validateCredentialProfile() error = %v, want none", errs[0])
 			}
-			if got := errors[0].Error(); got != test.wantErr {
+			if got := errs[0].Error(); got != test.wantErr {
 				t.Fatalf("validateCredentialProfile() error = %q, want %q", got, test.wantErr)
 			}
 		})

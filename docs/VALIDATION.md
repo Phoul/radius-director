@@ -2,9 +2,9 @@
 
 This document defines the validation rules applied to the RADIUS Director configuration model.
 
-Validation ensures that configuration is internally consistent before any FreeRADIUS configuration is generated.
+Validation ensures that the configuration is internally consistent before any FreeRADIUS configuration is generated.
 
-Generation must not proceed if validation fails.
+Configuration generation **must not** proceed if validation fails.
 
 ---
 
@@ -14,8 +14,32 @@ Validation should:
 
 - detect configuration errors as early as possible
 - produce clear and actionable error messages
+- report as many independent errors as practical in a single run
 - prevent generation of invalid FreeRADIUS configuration
 - validate the configuration model rather than generated files
+
+---
+
+# Validation Philosophy
+
+Validation should be strict.
+
+Configuration that cannot be generated correctly must be rejected.
+
+The validator should:
+
+- continue validation where practical
+- report as many independent errors as possible during a single execution
+- avoid stopping after the first error
+- avoid reporting cascading errors that are only a consequence of an earlier failure
+
+For example:
+
+- A missing shared secret and an invalid NAS IP address should both be reported.
+- An invalid database configuration should not prevent unrelated NAS Devices from being validated.
+- A missing referenced object should be reported once as a reference validation error. The validator should not attempt to validate an object that does not exist.
+
+The validator should never generate configuration that is known to be invalid.
 
 ---
 
@@ -38,7 +62,9 @@ Examples include:
 
 ## 2. Object Validation
 
-Each object validates its own properties.
+Each object validates only its own properties.
+
+Object validation should not depend on other objects.
 
 Examples include:
 
@@ -53,6 +79,8 @@ Examples include:
 
 Ensures that all object references exist.
 
+Reference validation verifies relationships between objects but does not validate the referenced object's internal state.
+
 Examples include:
 
 - NAS Assignment references an existing NAS Device
@@ -65,26 +93,28 @@ Examples include:
 
 ## 4. Relationship Validation
 
-Ensures that object relationships are valid.
+Ensures that relationships across the configuration are valid.
+
+Unlike Object Validation, these rules consider multiple objects together.
 
 Examples include:
 
-- duplicate object identifiers
 - duplicate IP addresses
 - duplicate NAS Assignments
+- conflicting object relationships
 - unsupported object combinations
 
 ---
 
 ## 5. Generation Validation
 
-Verifies that sufficient information exists to generate configuration.
+Verifies that sufficient information exists to generate FreeRADIUS configuration.
 
 Examples include:
 
 - every tenant has a database
 - every tenant has at least one RADIUS Server
-- every NAS Assignment is complete
+- every tenant has at least one NAS Assignment
 
 ---
 
@@ -194,28 +224,18 @@ Validation errors should:
 - identify the object containing the error
 - identify the property causing the error
 - describe the problem clearly
-- provide enough information to locate the error
+- provide enough information for the user to locate and correct the problem
 
 Example:
 
 ```
-ERROR
-
-Tenant: residential
-
-NAS Assignment: mt-core-01.gobcn.ca
-
-Credential Profile "default" does not exist.
+tenant "residential":
+nas assignment "mt-core-01.gobcn.ca":
+credential profile "default" does not exist
 ```
 
-Validation should continue where practical so that multiple errors can be reported in a single run.
+Error messages should follow normal Go conventions:
 
----
-
-# Validation Philosophy
-
-Validation should be strict.
-
-Configuration that cannot be generated correctly should be rejected.
-
-The validator should fail early, fail clearly, and never generate configuration that is known to be invalid.
+- begin with a lowercase letter
+- avoid trailing punctuation
+- include sufficient context to uniquely identify the object being validated
