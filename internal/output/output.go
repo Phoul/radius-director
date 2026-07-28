@@ -2,6 +2,8 @@
 package output
 
 import (
+	"path/filepath"
+
 	"github.com/gobcn/radius-director/internal/generator"
 	"github.com/gobcn/radius-director/internal/renderer"
 )
@@ -25,17 +27,21 @@ type File struct {
 
 // Build assembles generated files from an intermediate configuration model.
 func Build(configuration generator.Configuration) (Output, error) {
-	clients, err := renderClients(configuration)
-	if err != nil {
-		return Output{}, err
+	generated := Output{
+		Files: make([]File, 0, len(configuration.Tenants)),
 	}
 
-	return Output{
-		Files: []File{
-			{
-				Path:    ClientsFile,
-				Content: clients,
-			},
-		},
-	}, nil
+	for _, tenant := range configuration.Tenants {
+		clients, err := renderClients(tenant)
+		if err != nil {
+			return Output{}, err
+		}
+
+		generated.Files = append(generated.Files, File{
+			Path:    filepath.Join(tenant.Identifier, ClientsFile),
+			Content: clients,
+		})
+	}
+
+	return generated, nil
 }

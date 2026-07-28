@@ -2,6 +2,7 @@ package output
 
 import (
 	"errors"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -9,9 +10,13 @@ import (
 	"github.com/gobcn/radius-director/internal/renderer"
 )
 
-func TestBuildCreatesClientsFile(t *testing.T) {
+func TestBuildCreatesClientsFileForEachTenant(t *testing.T) {
 	configuration := testConfiguration()
-	wantContent, err := renderer.RenderClients(configuration)
+	wantCustomerA, err := renderer.RenderClients(configuration.Tenants[0])
+	if err != nil {
+		t.Fatalf("RenderClients() error = %v", err)
+	}
+	wantCustomerB, err := renderer.RenderClients(configuration.Tenants[1])
 	if err != nil {
 		t.Fatalf("RenderClients() error = %v", err)
 	}
@@ -22,7 +27,8 @@ func TestBuildCreatesClientsFile(t *testing.T) {
 	}
 	want := Output{
 		Files: []File{
-			{Path: ClientsFile, Content: wantContent},
+			{Path: filepath.Join("customer-a", ClientsFile), Content: wantCustomerA},
+			{Path: filepath.Join("customer-b", ClientsFile), Content: wantCustomerB},
 		},
 	}
 	if !reflect.DeepEqual(generated, want) {
@@ -49,7 +55,7 @@ func TestBuildIsDeterministic(t *testing.T) {
 func TestBuildPropagatesRendererError(t *testing.T) {
 	want := errors.New("render clients failed")
 	originalRenderClients := renderClients
-	renderClients = func(generator.Configuration) (string, error) {
+	renderClients = func(generator.Tenant) (string, error) {
 		return "", want
 	}
 	t.Cleanup(func() {
@@ -75,6 +81,16 @@ func testConfiguration() generator.Configuration {
 						Identifier:   "core-router",
 						IPAddress:    "10.10.10.1",
 						SharedSecret: "shared-secret",
+					},
+				},
+			},
+			{
+				Identifier: "customer-b",
+				Clients: []generator.Client{
+					{
+						Identifier:   "edge-router",
+						IPAddress:    "10.20.20.1",
+						SharedSecret: "other-secret",
 					},
 				},
 			},

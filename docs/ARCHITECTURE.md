@@ -8,7 +8,11 @@ It provides a declarative domain model from which complete, validated FreeRADIUS
 
 The architecture is built around a simple principle:
 
-> **Global Objects define reusable resources. Tenants compose those resources into independent RADIUS deployments.**
+> **Global Objects define reusable resources. Tenants compose those resources into independent FreeRADIUS deployments.**
+
+Each tenant represents a complete, independent FreeRADIUS configuration tree.
+
+The generated configuration for one tenant is entirely isolated from every other tenant and can be deployed independently.
 
 FreeRADIUS remains the runtime responsible for processing RADIUS requests.
 
@@ -62,7 +66,7 @@ They should not contain tenant-specific configuration.
 
 # Tenant Objects
 
-A tenant represents a complete, independent RADIUS deployment.
+A tenant represents a complete, independent FreeRADIUS deployment.
 
 Each tenant owns the infrastructure required for its deployment.
 
@@ -75,6 +79,8 @@ Examples include:
 Tenant Objects are isolated from one another.
 
 A tenant references Global Objects rather than duplicating them.
+
+Each tenant ultimately produces its own complete FreeRADIUS configuration tree.
 
 ---
 
@@ -155,7 +161,11 @@ The NAS Assignment references the reusable Global Objects while remaining owned 
 
 # Configuration Generator
 
-The generator transforms the domain model into standard FreeRADIUS configuration.
+The generator transforms the validated domain model into standard FreeRADIUS configuration.
+
+Generation is performed independently for each tenant.
+
+Each tenant produces a complete, self-contained FreeRADIUS configuration tree.
 
 Generation should always be:
 
@@ -172,14 +182,39 @@ Changes should always be made to the source model.
 
 # Generated Configuration
 
-Generated configuration consists of standard FreeRADIUS configuration files.
+Each tenant generates its own independent FreeRADIUS configuration tree.
+
+For example:
+
+```
+output/
+├── customer-a/
+│   ├── clients.conf
+│   ├── mods-available/
+│   ├── mods-enabled/
+│   ├── sites-available/
+│   └── sites-enabled/
+│
+└── customer-b/
+    ├── clients.conf
+    ├── mods-available/
+    ├── mods-enabled/
+    ├── sites-available/
+    └── sites-enabled/
+```
+
+Each generated tree can be deployed independently.
+
+Generated configuration consists entirely of standard FreeRADIUS configuration files.
 
 Examples include:
 
 - clients.conf
 - proxy.conf
+- mods-available/
 - mods-enabled/
 - mods-config/
+- sites-available/
 - sites-enabled/
 
 These files are implementation artifacts.
@@ -189,6 +224,8 @@ They are not the authoritative source of configuration.
 ---
 
 # FreeRADIUS Runtime
+
+Each generated configuration tree is intended to be executed by an independent FreeRADIUS instance.
 
 FreeRADIUS remains responsible for:
 
@@ -218,6 +255,9 @@ Validation
 Generation
       │
       ▼
+Per-Tenant Configuration Trees
+      │
+      ▼
 FreeRADIUS
 ```
 
@@ -236,8 +276,10 @@ The architecture follows several fundamental principles.
 - Infrastructure as Code
 - Global Reusable Objects
 - Independent Tenant Infrastructure
+- One Configuration Tree Per Tenant
 - Relationship-Based Composition
 - Validation Before Generation
+- Deterministic Generation
 - Generated Configuration
 - Vendor Neutrality
 - Human-Readable Output

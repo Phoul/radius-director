@@ -7,22 +7,18 @@ import (
 )
 
 func TestRenderClientsOneTenantOneClient(t *testing.T) {
-	configuration := generator.Configuration{
-		Tenants: []generator.Tenant{
+	tenant := generator.Tenant{
+		Identifier: "customer-a",
+		Clients: []generator.Client{
 			{
-				Identifier: "customer-a",
-				Clients: []generator.Client{
-					{
-						Identifier:   "core-router",
-						IPAddress:    "10.10.10.1",
-						SharedSecret: "shared-secret",
-					},
-				},
+				Identifier:   "core-router",
+				IPAddress:    "10.10.10.1",
+				SharedSecret: "shared-secret",
 			},
 		},
 	}
 
-	got, err := RenderClients(configuration)
+	got, err := RenderClients(tenant)
 	if err != nil {
 		t.Fatalf("RenderClients() error = %v", err)
 	}
@@ -37,19 +33,15 @@ func TestRenderClientsOneTenantOneClient(t *testing.T) {
 }
 
 func TestRenderClientsOneTenantMultipleClients(t *testing.T) {
-	configuration := generator.Configuration{
-		Tenants: []generator.Tenant{
-			{
-				Identifier: "customer-a",
-				Clients: []generator.Client{
-					{Identifier: "core-router", IPAddress: "10.10.10.1", SharedSecret: "core-secret"},
-					{Identifier: "edge-router", IPAddress: "10.10.10.2", SharedSecret: "edge-secret"},
-				},
-			},
+	tenant := generator.Tenant{
+		Identifier: "customer-a",
+		Clients: []generator.Client{
+			{Identifier: "core-router", IPAddress: "10.10.10.1", SharedSecret: "core-secret"},
+			{Identifier: "edge-router", IPAddress: "10.10.10.2", SharedSecret: "edge-secret"},
 		},
 	}
 
-	got, err := RenderClients(configuration)
+	got, err := RenderClients(tenant)
 	if err != nil {
 		t.Fatalf("RenderClients() error = %v", err)
 	}
@@ -67,56 +59,17 @@ func TestRenderClientsOneTenantMultipleClients(t *testing.T) {
 	}
 }
 
-func TestRenderClientsMultipleTenants(t *testing.T) {
-	configuration := generator.Configuration{
-		Tenants: []generator.Tenant{
-			{
-				Identifier: "customer-a",
-				Clients: []generator.Client{
-					{Identifier: "core-router", IPAddress: "10.10.10.1", SharedSecret: "core-secret"},
-				},
-			},
-			{
-				Identifier: "customer-b",
-				Clients: []generator.Client{
-					{Identifier: "edge-router", IPAddress: "10.20.20.1", SharedSecret: "edge-secret"},
-				},
-			},
-		},
-	}
-
-	got, err := RenderClients(configuration)
-	if err != nil {
-		t.Fatalf("RenderClients() error = %v", err)
-	}
-	want := "# Tenant: customer-a\n" +
-		"client core-router {\n" +
-		"    ipaddr = 10.10.10.1\n" +
-		"    secret = core-secret\n" +
-		"}\n\n" +
-		"# Tenant: customer-b\n" +
-		"client edge-router {\n" +
-		"    ipaddr = 10.20.20.1\n" +
-		"    secret = edge-secret\n" +
-		"}\n"
-	if got != want {
-		t.Fatalf("RenderClients() = %q, want %q", got, want)
-	}
-}
-
 func TestRenderClientsIsDeterministic(t *testing.T) {
-	configuration := generator.Configuration{
-		Tenants: []generator.Tenant{
-			{Identifier: "tenant-a", Clients: []generator.Client{{Identifier: "a", IPAddress: "10.0.0.1", SharedSecret: "a-secret"}}},
-			{Identifier: "tenant-b", Clients: []generator.Client{{Identifier: "b", IPAddress: "10.0.0.2", SharedSecret: "b-secret"}}},
-		},
+	tenant := generator.Tenant{
+		Identifier: "tenant-a",
+		Clients:    []generator.Client{{Identifier: "a", IPAddress: "10.0.0.1", SharedSecret: "a-secret"}},
 	}
 
-	first, err := RenderClients(configuration)
+	first, err := RenderClients(tenant)
 	if err != nil {
 		t.Fatalf("first RenderClients() error = %v", err)
 	}
-	second, err := RenderClients(configuration)
+	second, err := RenderClients(tenant)
 	if err != nil {
 		t.Fatalf("second RenderClients() error = %v", err)
 	}
