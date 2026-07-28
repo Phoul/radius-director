@@ -17,6 +17,14 @@ func Generate(configuration model.Configuration) Configuration {
 		generatedTenant := Tenant{
 			Identifier: tenantIdentifier,
 			Clients:    make([]Client, 0, len(tenant.NASAssignments)),
+			SQL: SQL{
+				Engine:   tenant.Database.Engine,
+				Host:     tenant.Database.Host,
+				Port:     tenant.Database.Port,
+				Database: tenant.Database.Database,
+				Username: tenant.Database.Username,
+				Password: tenant.Database.Password,
+			},
 		}
 
 		for _, assignmentIdentifier := range sortedKeys(tenant.NASAssignments) {

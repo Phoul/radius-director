@@ -11,6 +11,7 @@ type Configuration struct {
 type Tenant struct {
 	Identifier string
 	Clients    []Client
+	SQL        SQL
 }
 
 // Client contains the information needed to render a FreeRADIUS client definition.
@@ -18,4 +19,14 @@ type Client struct {
 	Identifier   string
 	IPAddress    string
 	SharedSecret string
+}
+
+// SQL contains the information needed to render a FreeRADIUS sql module.
+type SQL struct {
+	Engine   string
+	Host     string
+	Port     int
+	Database string
+	Username string
+	Password string
 }

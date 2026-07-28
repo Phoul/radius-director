@@ -19,6 +19,7 @@ func TestGenerateOneNASAssignmentCreatesOneClient(t *testing.T) {
 		},
 		Tenants: map[string]model.Tenant{
 			"customer-a": {
+				Database: testDatabase("customer_a"),
 				NASAssignments: map[string]model.NASAssignment{
 					"core-router": {
 						NASDevice:         "core",
@@ -59,6 +60,7 @@ func TestGenerateMultipleNASAssignmentsCreatesMultipleClients(t *testing.T) {
 		},
 		Tenants: map[string]model.Tenant{
 			"customer-a": {
+				Database: testDatabase("customer_a"),
 				NASAssignments: map[string]model.NASAssignment{
 					"edge-router": {
 						NASDevice:         "edge",
@@ -90,5 +92,88 @@ func TestGenerateMultipleNASAssignmentsCreatesMultipleClients(t *testing.T) {
 		},
 	}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("generated clients = %#v, want %#v", got, want)
+	}
+}
+
+func TestGenerateOneTenantCreatesOneSQL(t *testing.T) {
+	database := model.Database{
+		Engine:   "mysql",
+		Host:     "database.internal",
+		Port:     3306,
+		Database: "customer_a",
+		Username: "radius",
+		Password: "database-password",
+	}
+	configuration := model.Configuration{
+		Tenants: map[string]model.Tenant{
+			"customer-a": {Database: database},
+		},
+	}
+
+	generated := Generate(configuration)
+	if len(generated.Tenants) != 1 {
+		t.Fatalf("generated tenants = %d, want 1", len(generated.Tenants))
+	}
+	want := SQL{
+		Engine:   "mysql",
+		Host:     "database.internal",
+		Port:     3306,
+		Database: "customer_a",
+		Username: "radius",
+		Password: "database-password",
+	}
+	if got := generated.Tenants[0].SQL; got != want {
+		t.Fatalf("generated SQL = %#v, want %#v", got, want)
+	}
+}
+
+func TestGenerateMultipleTenantsCreatesSQLInDeterministicOrder(t *testing.T) {
+	configuration := model.Configuration{
+		Tenants: map[string]model.Tenant{
+			"tenant-b": {Database: testDatabase("tenant_b")},
+			"tenant-a": {Database: testDatabase("tenant_a")},
+		},
+	}
+
+	generated := Generate(configuration)
+	want := []Tenant{
+		{
+			Identifier: "tenant-a",
+			Clients:    []Client{},
+			SQL: SQL{
+				Engine:   "mysql",
+				Host:     "database.tenant_a.internal",
+				Port:     3306,
+				Database: "tenant_a",
+				Username: "radius-tenant_a",
+				Password: "password-tenant_a",
+			},
+		},
+		{
+			Identifier: "tenant-b",
+			Clients:    []Client{},
+			SQL: SQL{
+				Engine:   "mysql",
+				Host:     "database.tenant_b.internal",
+				Port:     3306,
+				Database: "tenant_b",
+				Username: "radius-tenant_b",
+				Password: "password-tenant_b",
+			},
+		},
+	}
+	if got := generated.Tenants; !reflect.DeepEqual(got, want) {
+		t.Fatalf("generated tenants = %#v, want %#v", got, want)
+	}
+}
+
+func testDatabase(name string) model.Database {
+	return model.Database{
+		Engine:   "mysql",
+		Host:     "database." + name + ".internal",
+		Port:     3306,
+		Database: name,
+		Username: "radius-" + name,
+		Password: "password-" + name,
 	}
 }
