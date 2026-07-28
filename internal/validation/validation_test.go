@@ -42,7 +42,13 @@ func TestValidate(t *testing.T) {
 					COAPort:            3799,
 				},
 				NASAssignments: map[string]model.NASAssignment{
-					"core": {},
+					"core": {
+						NASDevice:             "core",
+						CredentialProfile:     "default",
+						AuthenticationProfile: "default",
+						AccountingProfile:     "default",
+						MonitoringProfile:     "default",
+					},
 				},
 			},
 		},
@@ -50,6 +56,124 @@ func TestValidate(t *testing.T) {
 
 	if err := Validate(configuration); err != nil {
 		t.Fatalf("Validate() error = %v, want nil", err)
+	}
+}
+
+func TestValidateNASAssignment(t *testing.T) {
+	validAssignment := model.NASAssignment{
+		NASDevice:             "core",
+		CredentialProfile:     "default",
+		AuthenticationProfile: "default",
+		AccountingProfile:     "default",
+		MonitoringProfile:     "default",
+	}
+
+	tests := []struct {
+		name       string
+		assignment model.NASAssignment
+		wantErrs   []string
+	}{
+		{
+			name:       "valid NAS Assignment",
+			assignment: validAssignment,
+		},
+		{
+			name: "NAS Device missing",
+			assignment: model.NASAssignment{
+				CredentialProfile:     validAssignment.CredentialProfile,
+				AuthenticationProfile: validAssignment.AuthenticationProfile,
+				AccountingProfile:     validAssignment.AccountingProfile,
+				MonitoringProfile:     validAssignment.MonitoringProfile,
+			},
+			wantErrs: []string{
+				`tenant "customer-a": nas assignment "core": nas_device must be specified`,
+			},
+		},
+		{
+			name: "credential profile missing",
+			assignment: model.NASAssignment{
+				NASDevice:             validAssignment.NASDevice,
+				AuthenticationProfile: validAssignment.AuthenticationProfile,
+				AccountingProfile:     validAssignment.AccountingProfile,
+				MonitoringProfile:     validAssignment.MonitoringProfile,
+			},
+			wantErrs: []string{
+				`tenant "customer-a": nas assignment "core": credential_profile must be specified`,
+			},
+		},
+		{
+			name: "authentication profile missing",
+			assignment: model.NASAssignment{
+				NASDevice:         validAssignment.NASDevice,
+				CredentialProfile: validAssignment.CredentialProfile,
+				AccountingProfile: validAssignment.AccountingProfile,
+				MonitoringProfile: validAssignment.MonitoringProfile,
+			},
+			wantErrs: []string{
+				`tenant "customer-a": nas assignment "core": authentication_profile must be specified`,
+			},
+		},
+		{
+			name: "accounting profile missing",
+			assignment: model.NASAssignment{
+				NASDevice:             validAssignment.NASDevice,
+				CredentialProfile:     validAssignment.CredentialProfile,
+				AuthenticationProfile: validAssignment.AuthenticationProfile,
+				MonitoringProfile:     validAssignment.MonitoringProfile,
+			},
+			wantErrs: []string{
+				`tenant "customer-a": nas assignment "core": accounting_profile must be specified`,
+			},
+		},
+		{
+			name: "monitoring profile missing",
+			assignment: model.NASAssignment{
+				NASDevice:             validAssignment.NASDevice,
+				CredentialProfile:     validAssignment.CredentialProfile,
+				AuthenticationProfile: validAssignment.AuthenticationProfile,
+				AccountingProfile:     validAssignment.AccountingProfile,
+			},
+			wantErrs: []string{
+				`tenant "customer-a": nas assignment "core": monitoring_profile must be specified`,
+			},
+		},
+		{
+			name: "multiple properties missing",
+			assignment: model.NASAssignment{
+				NASDevice:             validAssignment.NASDevice,
+				AuthenticationProfile: validAssignment.AuthenticationProfile,
+				MonitoringProfile:     validAssignment.MonitoringProfile,
+			},
+			wantErrs: []string{
+				`tenant "customer-a": nas assignment "core": credential_profile must be specified`,
+				`tenant "customer-a": nas assignment "core": accounting_profile must be specified`,
+			},
+		},
+		{
+			name: "all properties missing",
+			wantErrs: []string{
+				`tenant "customer-a": nas assignment "core": nas_device must be specified`,
+				`tenant "customer-a": nas assignment "core": credential_profile must be specified`,
+				`tenant "customer-a": nas assignment "core": authentication_profile must be specified`,
+				`tenant "customer-a": nas assignment "core": accounting_profile must be specified`,
+				`tenant "customer-a": nas assignment "core": monitoring_profile must be specified`,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			validationErrors := validateNASAssignment("customer-a", "core", test.assignment)
+			if len(validationErrors) != len(test.wantErrs) {
+				t.Fatalf("validateNASAssignment() returned %d errors, want %d", len(validationErrors), len(test.wantErrs))
+			}
+
+			for index, wantErr := range test.wantErrs {
+				if got := validationErrors[index].Error(); got != wantErr {
+					t.Errorf("validateNASAssignment() error = %q, want %q", got, wantErr)
+				}
+			}
+		})
 	}
 }
 
@@ -69,7 +193,13 @@ func TestValidateTenant(t *testing.T) {
 			COAPort:            3799,
 		},
 		NASAssignments: map[string]model.NASAssignment{
-			"core": {},
+			"core": {
+				NASDevice:             "core",
+				CredentialProfile:     "default",
+				AuthenticationProfile: "default",
+				AccountingProfile:     "default",
+				MonitoringProfile:     "default",
+			},
 		},
 	}
 
