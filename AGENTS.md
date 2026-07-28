@@ -107,6 +107,118 @@ Generation should never attempt to compensate for invalid configuration.
 
 ---
 
+# Current Architecture
+
+The implementation pipeline is:
+
+```
+Configuration
+    ↓
+Validation
+    ↓
+Generator
+    ↓
+Renderer
+    ↓
+Output
+    ↓
+Writer
+```
+
+Each stage has a single responsibility.
+
+## Validation
+
+Validation is responsible for:
+
+- object validation
+- reference validation
+- relationship validation
+
+Validation should report as many configuration errors as practical.
+
+Generation assumes validation has already succeeded.
+
+Validation must never modify configuration.
+
+---
+
+## Generator
+
+The generator performs a pure transformation from the validated configuration model into an internal generation model.
+
+The generator:
+
+- performs no validation
+- performs no filesystem operations
+- performs no rendering
+- contains no side effects
+
+The generated model should already be deterministic.
+
+Collections should be sorted here whenever ordering matters.
+
+---
+
+## Renderer
+
+Renderers convert the generation model into file contents.
+
+Renderers:
+
+- perform no validation
+- perform no filesystem operations
+- perform no business logic
+- do not reference the original configuration model
+
+Prefer straightforward Go code over text templates unless templates provide a clear advantage.
+
+---
+
+## Output
+
+The output package assembles rendered files into an `Output` object.
+
+It does not perform rendering itself.
+
+---
+
+## Writer
+
+The writer performs filesystem operations only.
+
+It:
+
+- creates directories
+- writes files
+- overwrites existing files
+- rejects path traversal
+
+It must not:
+
+- delete files
+- validate configuration
+- render templates
+- contain FreeRADIUS-specific logic
+
+---
+
+## Package Responsibilities
+
+Packages should remain independent.
+
+For example:
+
+- Validation must not render.
+- Generator must not validate.
+- Renderer must not generate.
+- Output must not perform rendering.
+- Writer must not know anything about FreeRADIUS.
+
+Keep responsibilities narrow and explicit.
+
+---
+
 # Repository Structure
 
 ```
@@ -211,11 +323,15 @@ Discuss introducing significant new dependencies before implementation.
 
 New functionality should include tests where practical.
 
-Prefer table-driven tests.
+Prefer table-driven tests where they improve readability.
+
+Tests should be deterministic and independent.
 
 Validation should be thoroughly tested using both valid and invalid example configurations.
 
-Tests should be deterministic and independent.
+When adding a new package, include comprehensive unit tests before moving to the next stage.
+
+Prefer testing observable behaviour rather than implementation details.
 
 ---
 
@@ -225,9 +341,9 @@ Generation should be deterministic.
 
 Generated configuration should be reproducible.
 
-Business logic belongs in validation and the object model—not in templates.
+Business logic belongs in validation and the generator.
 
-Templates should remain as simple as possible.
+Renderers should contain only formatting logic.
 
 Generated files should never require manual modification.
 
@@ -279,3 +395,15 @@ Avoid clever solutions when a straightforward implementation is sufficient.
 When uncertain about a design decision, consult the documentation rather than making assumptions.
 
 The goal is to implement the documented design—not redesign the project.
+
+---
+
+# Important
+
+When implementing new functionality:
+
+- preserve the existing architecture
+- avoid moving responsibilities between packages
+- avoid introducing interfaces unless there is a demonstrated need
+- avoid speculative abstractions
+- if a requested change appears to conflict with this document or the project documentation, explain the conflict instead of making architectural changes
