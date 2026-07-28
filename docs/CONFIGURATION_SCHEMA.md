@@ -104,9 +104,11 @@ tenants:
 
 Each Tenant owns:
 
-- one Database
+- exactly one Database
 - one or more RADIUS Servers
-- zero or more NAS Assignments
+- one or more NAS Assignments
+
+A tenant represents a complete, deployable RADIUS configuration. A tenant without any NAS Assignments is considered incomplete and is not valid.
 
 ---
 
@@ -130,11 +132,13 @@ credential_profiles:
 
 The identifiers (`default` and `backup`) become the object identifiers referenced throughout the configuration.
 
+Object identifiers must be unique within their respective collection.
+
 ---
 
 # Relationships
 
-Relationship Objects reference other objects by identifier.
+Relationship objects reference other objects by identifier.
 
 For example:
 
@@ -154,7 +158,9 @@ nas_assignments:
     monitoring_profile: default
 ```
 
-Relationship Objects never duplicate configuration owned by other objects.
+Relationship objects never duplicate configuration owned by other objects.
+
+Referenced objects must exist within the configuration.
 
 ---
 
@@ -170,11 +176,17 @@ Breaking changes should include migration guidance.
 
 Configuration validation should detect:
 
+- invalid YAML structure
+- unsupported properties
+- missing required properties
+- invalid property types
 - missing references
 - duplicate identifiers
 - invalid IP addresses
 - invalid object relationships
-- unsupported combinations
+- unsupported object combinations
 - schema version mismatches
+
+Configuration validation should report as many independent errors as practical during a single execution.
 
 No configuration should be generated if validation fails.
