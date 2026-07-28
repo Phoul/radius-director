@@ -9,9 +9,10 @@ type Configuration struct {
 
 // Tenant contains generated configuration for one RADIUS Director tenant.
 type Tenant struct {
-	Identifier string
-	Clients    []Client
-	SQL        SQL
+	Identifier   string
+	Clients      []Client
+	SQL          SQL
+	RADIUSServer RADIUSServer
 }
 
 // Client contains the information needed to render a FreeRADIUS client definition.
@@ -29,4 +30,11 @@ type SQL struct {
 	Database string
 	Username string
 	Password string
+}
+
+// RADIUSServer contains the information needed to render a FreeRADIUS server.
+type RADIUSServer struct {
+	AuthenticationPort int
+	AccountingPort     int
+	COAPort            int
 }

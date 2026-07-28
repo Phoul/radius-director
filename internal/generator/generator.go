@@ -25,6 +25,11 @@ func Generate(configuration model.Configuration) Configuration {
 				Username: tenant.Database.Username,
 				Password: tenant.Database.Password,
 			},
+			RADIUSServer: RADIUSServer{
+				AuthenticationPort: tenant.RADIUSServer.AuthenticationPort,
+				AccountingPort:     tenant.RADIUSServer.AccountingPort,
+				COAPort:            tenant.RADIUSServer.COAPort,
+			},
 		}
 
 		for _, assignmentIdentifier := range sortedKeys(tenant.NASAssignments) {

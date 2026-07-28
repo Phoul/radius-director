@@ -167,6 +167,78 @@ func TestGenerateMultipleTenantsCreatesSQLInDeterministicOrder(t *testing.T) {
 	}
 }
 
+func TestGenerateOneTenantCreatesOneRADIUSServer(t *testing.T) {
+	radiusServer := model.RADIUSServer{
+		AuthenticationPort: 1812,
+		AccountingPort:     1813,
+		COAPort:            3799,
+	}
+	configuration := model.Configuration{
+		Tenants: map[string]model.Tenant{
+			"customer-a": {RADIUSServer: radiusServer},
+		},
+	}
+
+	generated := Generate(configuration)
+	if len(generated.Tenants) != 1 {
+		t.Fatalf("generated tenants = %d, want 1", len(generated.Tenants))
+	}
+	want := RADIUSServer{
+		AuthenticationPort: 1812,
+		AccountingPort:     1813,
+		COAPort:            3799,
+	}
+	if got := generated.Tenants[0].RADIUSServer; got != want {
+		t.Fatalf("generated RADIUS server = %#v, want %#v", got, want)
+	}
+}
+
+func TestGenerateMultipleTenantsCreatesRADIUSServersInDeterministicOrder(t *testing.T) {
+	configuration := model.Configuration{
+		Tenants: map[string]model.Tenant{
+			"tenant-b": {
+				RADIUSServer: model.RADIUSServer{
+					AuthenticationPort: 2812,
+					AccountingPort:     2813,
+					COAPort:            4799,
+				},
+			},
+			"tenant-a": {
+				RADIUSServer: model.RADIUSServer{
+					AuthenticationPort: 1812,
+					AccountingPort:     1813,
+					COAPort:            3799,
+				},
+			},
+		},
+	}
+
+	generated := Generate(configuration)
+	if len(generated.Tenants) != 2 {
+		t.Fatalf("generated tenants = %d, want 2", len(generated.Tenants))
+	}
+	if got, want := generated.Tenants[0].Identifier, "tenant-a"; got != want {
+		t.Fatalf("first tenant identifier = %q, want %q", got, want)
+	}
+	if got, want := generated.Tenants[0].RADIUSServer, (RADIUSServer{
+		AuthenticationPort: 1812,
+		AccountingPort:     1813,
+		COAPort:            3799,
+	}); got != want {
+		t.Fatalf("first generated RADIUS server = %#v, want %#v", got, want)
+	}
+	if got, want := generated.Tenants[1].Identifier, "tenant-b"; got != want {
+		t.Fatalf("second tenant identifier = %q, want %q", got, want)
+	}
+	if got, want := generated.Tenants[1].RADIUSServer, (RADIUSServer{
+		AuthenticationPort: 2812,
+		AccountingPort:     2813,
+		COAPort:            4799,
+	}); got != want {
+		t.Fatalf("second generated RADIUS server = %#v, want %#v", got, want)
+	}
+}
+
 func testDatabase(name string) model.Database {
 	return model.Database{
 		Engine:   "mysql",
