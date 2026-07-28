@@ -20,7 +20,13 @@ Generating every line of every configuration file in Go would require RADIUS Dir
 
 RADIUS Director SHALL generate configuration from managed FreeRADIUS templates.
 
-Templates SHALL be based on the upstream FreeRADIUS configuration and contain placeholders only for values managed by the domain model.
+Templates SHALL be based on the upstream FreeRADIUS configuration for a specific supported FreeRADIUS release.
+
+Templates SHALL be versioned alongside the supported FreeRADIUS version.
+
+The configured FreeRADIUS version determines which template set is used during generation.
+
+Templates SHALL contain placeholders only for values managed by the domain model.
 
 Renderers are responsible for supplying tenant-specific values.
 
@@ -31,6 +37,8 @@ Static configuration that is not managed by RADIUS Director SHALL remain in the 
 Advantages:
 
 - Remains closely aligned with upstream FreeRADIUS
+- Supports multiple FreeRADIUS versions simultaneously
+- Templates evolve independently for each supported release
 - Easier upgrades to newer FreeRADIUS versions
 - Smaller renderer implementations
 - Reduced maintenance burden

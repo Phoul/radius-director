@@ -2,7 +2,9 @@
 
 ## Purpose
 
-This repository contains the source code for **RADIUS Director**, a declarative configuration management system for FreeRADIUS.
+This repository contains the source code for **RADIUS Director**, a declarative deployment platform for FreeRADIUS.
+
+RADIUS Director models multi-tenant RADIUS infrastructure using a declarative domain model, validates that model, generates version-aware FreeRADIUS configuration, and deploys complete FreeRADIUS environments from a single source of truth.
 
 This document provides guidance for AI coding assistants contributing to the project.
 
@@ -123,6 +125,8 @@ Renderer
 Output
     ↓
 Writer
+    ↓
+Deployment
 ```
 
 Each stage has a single responsibility.
@@ -203,6 +207,31 @@ It must not:
 
 ---
 
+## Deployment
+
+The deployment package is responsible for transforming generated configuration into a runnable FreeRADIUS environment.
+
+Deployment responsibilities include:
+
+- selecting the target FreeRADIUS version
+- selecting version-compatible managed templates
+- generating deployment artifacts
+- deploying supporting infrastructure
+- deploying and updating FreeRADIUS instances
+
+Deployment must not:
+
+- perform validation
+- modify generated configuration
+- render configuration
+- contain business logic
+
+The deployment package should remain independent of the generator and renderer.
+
+Docker is the initial deployment target, but the deployment architecture should remain sufficiently abstract to support additional deployment targets in the future.
+
+---
+
 ## Package Responsibilities
 
 Packages should remain independent.
@@ -214,6 +243,7 @@ For example:
 - Renderer must not generate.
 - Output must not perform rendering.
 - Writer must not know anything about FreeRADIUS.
+- Deployment must not perform generation or rendering.
 
 Keep responsibilities narrow and explicit.
 
@@ -374,7 +404,9 @@ Current implementation order:
 5. CLI (`validate`)
 6. Internal generation model
 7. Configuration generation
-8. Testing
+8. Writer
+9. Deployment
+10. Testing
 
 Focus on completing the current stage before introducing functionality from later stages.
 
