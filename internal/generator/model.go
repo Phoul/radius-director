@@ -34,6 +34,7 @@ type SQL struct {
 
 // RADIUSServer contains the information needed to render a FreeRADIUS server.
 type RADIUSServer struct {
+	Version            string
 	AuthenticationPort int
 	AccountingPort     int
 	COAPort            int

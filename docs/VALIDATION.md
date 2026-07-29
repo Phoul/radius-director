@@ -204,9 +204,16 @@ Additional database engines may be added in future releases.
 
 Validation rules:
 
+- version must be specified
+- version must be supported
 - authentication_port must be between 1 and 65535
 - accounting_port must be between 1 and 65535
 - coa_port must be between 1 and 65535
+
+Supported FreeRADIUS versions:
+
+- 3.2.9
+- 3.4.0
 
 ---
 

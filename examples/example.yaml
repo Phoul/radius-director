@@ -23,6 +23,7 @@ tenants:
       username: radius
       password: password
     radius_server:
+      version: 3.2.9
       authentication_port: 1812
       accounting_port: 1813
       coa_port: 3799

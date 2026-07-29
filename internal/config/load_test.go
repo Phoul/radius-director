@@ -26,6 +26,7 @@ tenants:
       username: radius
       password: secret
     radius_server:
+      version: 3.2.9
       authentication_port: 1812
       accounting_port: 1813
       coa_port: 3799
@@ -54,6 +55,9 @@ tenants:
 	}
 	if got := configuration.Tenants["customer-a"].RADIUSServer.AuthenticationPort; got != 1812 {
 		t.Fatalf("RADIUS Server authentication port = %d, want 1812", got)
+	}
+	if got := configuration.Tenants["customer-a"].RADIUSServer.Version; got != "3.2.9" {
+		t.Fatalf("RADIUS Server version = %q, want %q", got, "3.2.9")
 	}
 }
 

@@ -26,6 +26,7 @@ func Generate(configuration model.Configuration) Configuration {
 				Password: tenant.Database.Password,
 			},
 			RADIUSServer: RADIUSServer{
+				Version:            tenant.RADIUSServer.Version,
 				AuthenticationPort: tenant.RADIUSServer.AuthenticationPort,
 				AccountingPort:     tenant.RADIUSServer.AccountingPort,
 				COAPort:            tenant.RADIUSServer.COAPort,

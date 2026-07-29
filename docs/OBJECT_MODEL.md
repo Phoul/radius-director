@@ -225,6 +225,10 @@ Contains:
 - RADIUS Server
 - NAS Assignments
 
+Each tenant represents a complete, independent FreeRADIUS deployment.
+
+The tenant's RADIUS Server object defines the target FreeRADIUS version for the deployment.
+
 ## Validation
 
 - must contain exactly one Database
@@ -267,7 +271,7 @@ Owned by a Tenant.
 
 ## Generation
 
-Used when generating SQL configuration.
+The deployment layer is responsible for determining how the database is connected to at runtime.
 
 ---
 
@@ -275,7 +279,7 @@ Used when generating SQL configuration.
 
 ## Purpose
 
-Represents a FreeRADIUS instance.
+Represents the desired runtime characteristics of a FreeRADIUS deployment.
 
 ## Ownership
 
@@ -283,6 +287,7 @@ Tenant Object
 
 ## Properties
 
+- version
 - authentication_port
 - accounting_port
 - coa_port
@@ -293,11 +298,21 @@ Owned by a Tenant.
 
 ## Validation
 
+- version must be specified
+- version must be supported by the current RADIUS Director release
 - authentication_port must be between 1 and 65535
 - accounting_port must be between 1 and 65535
 - coa_port must be between 1 and 65535
 
 ## Generation
+
+The RADIUS Server defines the runtime characteristics of the generated deployment.
+
+The configured version determines:
+
+- which managed template set is used
+- which deployment image is selected
+- which version-specific validation rules apply
 
 The port properties define the host ports used by the generated RADIUS service. The generator is responsible for mapping them to the container as appropriate.
 

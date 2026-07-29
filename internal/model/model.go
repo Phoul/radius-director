@@ -62,9 +62,10 @@ type Database struct {
 
 // RADIUSServer represents a FreeRADIUS instance.
 type RADIUSServer struct {
-	AuthenticationPort int `yaml:"authentication_port"`
-	AccountingPort     int `yaml:"accounting_port"`
-	COAPort            int `yaml:"coa_port"`
+	Version            string `yaml:"version"`
+	AuthenticationPort int    `yaml:"authentication_port"`
+	AccountingPort     int    `yaml:"accounting_port"`
+	COAPort            int    `yaml:"coa_port"`
 }
 
 // NASAssignment defines how a tenant uses a NAS device.

@@ -169,6 +169,7 @@ func TestGenerateMultipleTenantsCreatesSQLInDeterministicOrder(t *testing.T) {
 
 func TestGenerateOneTenantCreatesOneRADIUSServer(t *testing.T) {
 	radiusServer := model.RADIUSServer{
+		Version:            "3.2.9",
 		AuthenticationPort: 1812,
 		AccountingPort:     1813,
 		COAPort:            3799,
@@ -184,6 +185,7 @@ func TestGenerateOneTenantCreatesOneRADIUSServer(t *testing.T) {
 		t.Fatalf("generated tenants = %d, want 1", len(generated.Tenants))
 	}
 	want := RADIUSServer{
+		Version:            "3.2.9",
 		AuthenticationPort: 1812,
 		AccountingPort:     1813,
 		COAPort:            3799,
@@ -198,6 +200,7 @@ func TestGenerateMultipleTenantsCreatesRADIUSServersInDeterministicOrder(t *test
 		Tenants: map[string]model.Tenant{
 			"tenant-b": {
 				RADIUSServer: model.RADIUSServer{
+					Version:            "3.4.0",
 					AuthenticationPort: 2812,
 					AccountingPort:     2813,
 					COAPort:            4799,
@@ -205,6 +208,7 @@ func TestGenerateMultipleTenantsCreatesRADIUSServersInDeterministicOrder(t *test
 			},
 			"tenant-a": {
 				RADIUSServer: model.RADIUSServer{
+					Version:            "3.2.9",
 					AuthenticationPort: 1812,
 					AccountingPort:     1813,
 					COAPort:            3799,
@@ -221,6 +225,7 @@ func TestGenerateMultipleTenantsCreatesRADIUSServersInDeterministicOrder(t *test
 		t.Fatalf("first tenant identifier = %q, want %q", got, want)
 	}
 	if got, want := generated.Tenants[0].RADIUSServer, (RADIUSServer{
+		Version:            "3.2.9",
 		AuthenticationPort: 1812,
 		AccountingPort:     1813,
 		COAPort:            3799,
@@ -231,6 +236,7 @@ func TestGenerateMultipleTenantsCreatesRADIUSServersInDeterministicOrder(t *test
 		t.Fatalf("second tenant identifier = %q, want %q", got, want)
 	}
 	if got, want := generated.Tenants[1].RADIUSServer, (RADIUSServer{
+		Version:            "3.4.0",
 		AuthenticationPort: 2812,
 		AccountingPort:     2813,
 		COAPort:            4799,

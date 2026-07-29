@@ -37,6 +37,7 @@ func TestValidate(t *testing.T) {
 					Password: "secret",
 				},
 				RADIUSServer: model.RADIUSServer{
+					Version:            freeRADIUSVersion329,
 					AuthenticationPort: 1812,
 					AccountingPort:     1813,
 					COAPort:            3799,
@@ -450,6 +451,7 @@ func TestValidateTenant(t *testing.T) {
 			Password: "secret",
 		},
 		RADIUSServer: model.RADIUSServer{
+			Version:            freeRADIUSVersion329,
 			AuthenticationPort: 1812,
 			AccountingPort:     1813,
 			COAPort:            3799,
@@ -532,6 +534,7 @@ func TestValidateTenant(t *testing.T) {
 
 func TestValidateRADIUSServer(t *testing.T) {
 	validServer := model.RADIUSServer{
+		Version:            freeRADIUSVersion329,
 		AuthenticationPort: 1812,
 		AccountingPort:     1813,
 		COAPort:            3799,
@@ -547,8 +550,41 @@ func TestValidateRADIUSServer(t *testing.T) {
 			server: validServer,
 		},
 		{
+			name: "alternate supported version",
+			server: model.RADIUSServer{
+				Version:            freeRADIUSVersion340,
+				AuthenticationPort: 1812,
+				AccountingPort:     1813,
+				COAPort:            3799,
+			},
+		},
+		{
+			name: "version missing",
+			server: model.RADIUSServer{
+				AuthenticationPort: 1812,
+				AccountingPort:     1813,
+				COAPort:            3799,
+			},
+			wantErrs: []string{
+				`tenant "customer-a": radius server version must be specified`,
+			},
+		},
+		{
+			name: "version unsupported",
+			server: model.RADIUSServer{
+				Version:            "3.3.0",
+				AuthenticationPort: 1812,
+				AccountingPort:     1813,
+				COAPort:            3799,
+			},
+			wantErrs: []string{
+				`tenant "customer-a": radius server version "3.3.0" is not supported`,
+			},
+		},
+		{
 			name: "minimum valid ports",
 			server: model.RADIUSServer{
+				Version:            freeRADIUSVersion329,
 				AuthenticationPort: 1,
 				AccountingPort:     1,
 				COAPort:            1,
@@ -557,6 +593,7 @@ func TestValidateRADIUSServer(t *testing.T) {
 		{
 			name: "maximum valid ports",
 			server: model.RADIUSServer{
+				Version:            freeRADIUSVersion340,
 				AuthenticationPort: 65535,
 				AccountingPort:     65535,
 				COAPort:            65535,
@@ -565,6 +602,7 @@ func TestValidateRADIUSServer(t *testing.T) {
 		{
 			name: "authentication port missing",
 			server: model.RADIUSServer{
+				Version:        validServer.Version,
 				AccountingPort: validServer.AccountingPort,
 				COAPort:        validServer.COAPort,
 			},
@@ -575,6 +613,7 @@ func TestValidateRADIUSServer(t *testing.T) {
 		{
 			name: "authentication port above range",
 			server: model.RADIUSServer{
+				Version:            validServer.Version,
 				AuthenticationPort: 65536,
 				AccountingPort:     validServer.AccountingPort,
 				COAPort:            validServer.COAPort,
@@ -586,6 +625,7 @@ func TestValidateRADIUSServer(t *testing.T) {
 		{
 			name: "accounting port missing",
 			server: model.RADIUSServer{
+				Version:            validServer.Version,
 				AuthenticationPort: validServer.AuthenticationPort,
 				COAPort:            validServer.COAPort,
 			},
@@ -596,6 +636,7 @@ func TestValidateRADIUSServer(t *testing.T) {
 		{
 			name: "accounting port above range",
 			server: model.RADIUSServer{
+				Version:            validServer.Version,
 				AuthenticationPort: validServer.AuthenticationPort,
 				AccountingPort:     65536,
 				COAPort:            validServer.COAPort,
@@ -607,6 +648,7 @@ func TestValidateRADIUSServer(t *testing.T) {
 		{
 			name: "CoA port missing",
 			server: model.RADIUSServer{
+				Version:            validServer.Version,
 				AuthenticationPort: validServer.AuthenticationPort,
 				AccountingPort:     validServer.AccountingPort,
 			},
@@ -617,6 +659,7 @@ func TestValidateRADIUSServer(t *testing.T) {
 		{
 			name: "CoA port above range",
 			server: model.RADIUSServer{
+				Version:            validServer.Version,
 				AuthenticationPort: validServer.AuthenticationPort,
 				AccountingPort:     validServer.AccountingPort,
 				COAPort:            65536,
@@ -628,6 +671,7 @@ func TestValidateRADIUSServer(t *testing.T) {
 		{
 			name: "multiple invalid ports",
 			server: model.RADIUSServer{
+				Version:            validServer.Version,
 				AuthenticationPort: 0,
 				AccountingPort:     65536,
 				COAPort:            -1,

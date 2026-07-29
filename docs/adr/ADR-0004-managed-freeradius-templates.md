@@ -50,3 +50,22 @@ Trade-offs:
 - Upstream template changes must occasionally be incorporated.
 
 These trade-offs are preferable to reimplementing large FreeRADIUS configuration files in code.
+
+## Template Layout
+
+Template sets are organized by supported FreeRADIUS version.
+
+Example:
+
+```text
+internal/
+    templates/
+        3.2.9/
+            mods-available/
+            sites-available/
+
+        3.4.0/
+            ...
+```
+
+The deployment and rendering pipeline selects the appropriate template set using the tenant's configured `RADIUSServer.Version`.

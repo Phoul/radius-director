@@ -116,12 +116,15 @@ Each Tenant contains one `radius_server` object.
 
 ```yaml
 radius_server:
+  version: 3.2.9
   authentication_port: 1812
   accounting_port: 1813
   coa_port: 3799
 ```
 
 The port properties define the host ports used by the generated RADIUS service. The generator is responsible for mapping them to the container as appropriate.
+
+The version field is a required string field specifying the target FreeRADIUS version.
 
 ---
 

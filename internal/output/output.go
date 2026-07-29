@@ -9,6 +9,7 @@ import (
 )
 
 const (
+	// ClientsFile is the relative path of a tenant's FreeRADIUS clients file.
 	ClientsFile = "clients.conf"
 )
 
@@ -25,7 +26,7 @@ type File struct {
 	Content string
 }
 
-// Build assembles generated files from an intermediate configuration model.
+// Build renders each tenant's files and assembles them into an Output object.
 func Build(configuration generator.Configuration) (Output, error) {
 	generated := Output{
 		Files: make([]File, 0, len(configuration.Tenants)),
