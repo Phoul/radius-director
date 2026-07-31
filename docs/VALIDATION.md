@@ -210,10 +210,8 @@ Validation rules:
 - accounting_port must be between 1 and 65535
 - coa_port must be between 1 and 65535
 
-Supported FreeRADIUS versions:
-
-- 3.2.9
-- 3.4.0
+A FreeRADIUS version is supported when RADIUS Director includes an embedded
+managed template set for that version.
 
 ---
 

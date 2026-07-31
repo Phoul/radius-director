@@ -64,12 +64,9 @@ Example:
 ```text
 internal/
     templates/
-        3.2.9/
+        3.2.10/
             mods-available/
             sites-available/
-
-        3.4.0/
-            ...
 ```
 
 The deployment and rendering pipeline selects the appropriate template set using the tenant's configured `RADIUSServer.Version`.

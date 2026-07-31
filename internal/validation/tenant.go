@@ -4,11 +4,7 @@ import (
 	"fmt"
 
 	"github.com/gobcn/radius-director/internal/model"
-)
-
-const (
-	freeRADIUSVersion329 = "3.2.9"
-	freeRADIUSVersion340 = "3.4.0"
+	"github.com/gobcn/radius-director/internal/templates"
 )
 
 func validateTenants(tenants map[string]model.Tenant) []error {
@@ -71,7 +67,7 @@ func validateRADIUSServer(tenantIdentifier string, server model.RADIUSServer) []
 	var validationErrors []error
 	if server.Version == "" {
 		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: radius server version must be specified", tenantIdentifier))
-	} else if !isSupportedFreeRADIUSVersion(server.Version) {
+	} else if !templates.SupportsVersion(server.Version) {
 		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: radius server version %q is not supported", tenantIdentifier, server.Version))
 	}
 	if server.AuthenticationPort < 1 || server.AuthenticationPort > 65535 {
@@ -86,16 +82,6 @@ func validateRADIUSServer(tenantIdentifier string, server model.RADIUSServer) []
 
 	return validationErrors
 }
-
-func isSupportedFreeRADIUSVersion(version string) bool {
-	switch version {
-	case freeRADIUSVersion329, freeRADIUSVersion340:
-		return true
-	default:
-		return false
-	}
-}
-
 func validateNASAssignments(tenantIdentifier string, assignments map[string]model.NASAssignment) []error {
 	var validationErrors []error
 	for _, identifier := range sortedKeys(assignments) {

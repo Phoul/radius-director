@@ -120,7 +120,7 @@ Each Tenant contains one `radius_server` object.
 
 ```yaml
 radius_server:
-  version: 3.2.9
+  version: 3.2.10
   authentication_port: 1812
   accounting_port: 1813
   coa_port: 3799

@@ -10,7 +10,7 @@ import (
 	"text/template"
 )
 
-//go:embed all:3.2.9 all:3.4.0
+//go:embed all:*
 var embeddedFiles embed.FS
 
 // Executor executes a parsed managed configuration template.
@@ -33,8 +33,13 @@ func EmbeddedLoader() Loader {
 	return loader{files: embeddedFiles}
 }
 
+// SupportsVersion reports whether an embedded template set supports version.
+func SupportsVersion(version string) bool {
+	return loader{files: embeddedFiles}.supportsVersion(version)
+}
+
 func (l loader) Load(version, name string) (Executor, error) {
-	if !isSupportedVersion(version) {
+	if !l.supportsVersion(version) {
 		return nil, fmt.Errorf("FreeRADIUS version %q is not supported", version)
 	}
 	if !fs.ValidPath(name) {
@@ -50,11 +55,11 @@ func (l loader) Load(version, name string) (Executor, error) {
 	return parsed, nil
 }
 
-func isSupportedVersion(version string) bool {
-	switch version {
-	case "3.2.9", "3.4.0":
-		return true
-	default:
+func (l loader) supportsVersion(version string) bool {
+	if !fs.ValidPath(version) {
 		return false
 	}
+
+	info, err := fs.Stat(l.files, version)
+	return err == nil && info.IsDir()
 }

@@ -37,7 +37,7 @@ func TestValidate(t *testing.T) {
 					Password: "secret",
 				},
 				RADIUSServer: model.RADIUSServer{
-					Version:            freeRADIUSVersion329,
+					Version:            "3.2.10",
 					AuthenticationPort: 1812,
 					AccountingPort:     1813,
 					COAPort:            3799,
@@ -451,7 +451,7 @@ func TestValidateTenant(t *testing.T) {
 			Password: "secret",
 		},
 		RADIUSServer: model.RADIUSServer{
-			Version:            freeRADIUSVersion329,
+			Version:            "3.2.10",
 			AuthenticationPort: 1812,
 			AccountingPort:     1813,
 			COAPort:            3799,
@@ -534,7 +534,7 @@ func TestValidateTenant(t *testing.T) {
 
 func TestValidateRADIUSServer(t *testing.T) {
 	validServer := model.RADIUSServer{
-		Version:            freeRADIUSVersion329,
+		Version:            "3.2.10",
 		AuthenticationPort: 1812,
 		AccountingPort:     1813,
 		COAPort:            3799,
@@ -548,15 +548,6 @@ func TestValidateRADIUSServer(t *testing.T) {
 		{
 			name:   "valid RADIUS Server",
 			server: validServer,
-		},
-		{
-			name: "alternate supported version",
-			server: model.RADIUSServer{
-				Version:            freeRADIUSVersion340,
-				AuthenticationPort: 1812,
-				AccountingPort:     1813,
-				COAPort:            3799,
-			},
 		},
 		{
 			name: "version missing",
@@ -584,7 +575,7 @@ func TestValidateRADIUSServer(t *testing.T) {
 		{
 			name: "minimum valid ports",
 			server: model.RADIUSServer{
-				Version:            freeRADIUSVersion329,
+				Version:            "3.2.10",
 				AuthenticationPort: 1,
 				AccountingPort:     1,
 				COAPort:            1,
@@ -593,7 +584,7 @@ func TestValidateRADIUSServer(t *testing.T) {
 		{
 			name: "maximum valid ports",
 			server: model.RADIUSServer{
-				Version:            freeRADIUSVersion340,
+				Version:            "3.2.10",
 				AuthenticationPort: 65535,
 				AccountingPort:     65535,
 				COAPort:            65535,
