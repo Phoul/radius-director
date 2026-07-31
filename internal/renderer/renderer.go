@@ -2,10 +2,14 @@
 package renderer
 
 import (
+	"bytes"
 	"strings"
 
 	"github.com/gobcn/radius-director/internal/generator"
+	"github.com/gobcn/radius-director/internal/templates"
 )
+
+var sqlTemplateLoader = templates.EmbeddedLoader()
 
 // RenderClients renders the clients.conf content for a generated tenant.
 func RenderClients(tenant generator.Tenant) (string, error) {
@@ -25,6 +29,21 @@ func RenderClients(tenant generator.Tenant) (string, error) {
 		rendered.WriteString("    secret = ")
 		rendered.WriteString(client.SharedSecret)
 		rendered.WriteString("\n}\n")
+	}
+
+	return rendered.String(), nil
+}
+
+// RenderSQL renders the mods-available/sql content for a generated tenant.
+func RenderSQL(tenant generator.Tenant) (string, error) {
+	template, err := sqlTemplateLoader.Load(tenant.RADIUSServer.Version, "mods-available/sql")
+	if err != nil {
+		return "", err
+	}
+
+	var rendered bytes.Buffer
+	if err := template.Execute(&rendered, tenant.SQL); err != nil {
+		return "", err
 	}
 
 	return rendered.String(), nil

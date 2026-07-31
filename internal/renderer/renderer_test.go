@@ -1,9 +1,13 @@
 package renderer
 
 import (
+	"errors"
+	"io"
+	"strings"
 	"testing"
 
 	"github.com/gobcn/radius-director/internal/generator"
+	"github.com/gobcn/radius-director/internal/templates"
 )
 
 func TestRenderClientsOneTenantOneClient(t *testing.T) {
@@ -76,4 +80,114 @@ func TestRenderClientsIsDeterministic(t *testing.T) {
 	if first != second {
 		t.Fatalf("RenderClients() returned different results: %q and %q", first, second)
 	}
+}
+
+func TestRenderSQL(t *testing.T) {
+	tenant := generator.Tenant{
+		SQL: generator.SQL{
+			Engine:   "postgresql",
+			Host:     "db.example.com",
+			Port:     5432,
+			Database: "radius",
+			Username: "radius-user",
+			Password: "radius-password",
+		},
+		RADIUSServer: generator.RADIUSServer{Version: "3.2.10"},
+	}
+
+	got, err := RenderSQL(tenant)
+	if err != nil {
+		t.Fatalf("RenderSQL() error = %v", err)
+	}
+
+	for _, expected := range []string{
+		`dialect = "postgresql"`,
+		`server = "db.example.com"`,
+		"port = 5432",
+		`login = "radius-user"`,
+		`password = "radius-password"`,
+		`radius_db = "radius"`,
+	} {
+		if !strings.Contains(got, expected) {
+			t.Errorf("RenderSQL() output does not contain %q", expected)
+		}
+	}
+}
+
+func TestRenderSQLIsDeterministic(t *testing.T) {
+	tenant := generator.Tenant{
+		SQL:          generator.SQL{Engine: "mysql", Host: "db", Port: 3306},
+		RADIUSServer: generator.RADIUSServer{Version: "3.2.10"},
+	}
+
+	first, err := RenderSQL(tenant)
+	if err != nil {
+		t.Fatalf("first RenderSQL() error = %v", err)
+	}
+	second, err := RenderSQL(tenant)
+	if err != nil {
+		t.Fatalf("second RenderSQL() error = %v", err)
+	}
+	if first != second {
+		t.Fatalf("RenderSQL() returned different results")
+	}
+}
+
+func TestRenderSQLUnsupportedVersion(t *testing.T) {
+	_, err := RenderSQL(generator.Tenant{
+		RADIUSServer: generator.RADIUSServer{Version: "9.9.9"},
+	})
+	if err == nil || !strings.Contains(err.Error(), `FreeRADIUS version "9.9.9" is not supported`) {
+		t.Fatalf("RenderSQL() error = %v, want unsupported version error", err)
+	}
+}
+
+func TestRenderSQLPropagatesMissingTemplateError(t *testing.T) {
+	missingTemplate := errors.New("template does not exist")
+	useSQLTemplateLoader(t, testTemplateLoader{err: missingTemplate})
+
+	_, err := RenderSQL(generator.Tenant{
+		RADIUSServer: generator.RADIUSServer{Version: "3.2.10"},
+	})
+	if !errors.Is(err, missingTemplate) {
+		t.Fatalf("RenderSQL() error = %v, want %v", err, missingTemplate)
+	}
+}
+
+func TestRenderSQLPropagatesTemplateExecutionError(t *testing.T) {
+	executionError := errors.New("template execution failed")
+	useSQLTemplateLoader(t, testTemplateLoader{
+		executor: testTemplateExecutor{err: executionError},
+	})
+
+	_, err := RenderSQL(generator.Tenant{
+		RADIUSServer: generator.RADIUSServer{Version: "3.2.10"},
+	})
+	if !errors.Is(err, executionError) {
+		t.Fatalf("RenderSQL() error = %v, want %v", err, executionError)
+	}
+}
+
+func useSQLTemplateLoader(t *testing.T, loader templates.Loader) {
+	t.Helper()
+	original := sqlTemplateLoader
+	sqlTemplateLoader = loader
+	t.Cleanup(func() { sqlTemplateLoader = original })
+}
+
+type testTemplateLoader struct {
+	executor templates.Executor
+	err      error
+}
+
+func (l testTemplateLoader) Load(version, name string) (templates.Executor, error) {
+	return l.executor, l.err
+}
+
+type testTemplateExecutor struct {
+	err error
+}
+
+func (e testTemplateExecutor) Execute(io.Writer, any) error {
+	return e.err
 }
