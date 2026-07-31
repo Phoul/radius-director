@@ -108,7 +108,11 @@ Each Tenant owns:
 - exactly one RADIUS Server
 - one or more NAS Assignments
 
-A tenant represents a complete, deployable RADIUS configuration. A tenant without any NAS Assignments is considered incomplete and is not valid.
+Each tenant represents an independent FreeRADIUS deployment.
+
+Each tenant ultimately produces an independent managed FreeRADIUS configuration tree.
+
+A tenant without any NAS Assignments is considered incomplete and is not valid.
 
 ## RADIUS Server
 
@@ -122,9 +126,17 @@ radius_server:
   coa_port: 3799
 ```
 
-The port properties define the host ports used by the generated RADIUS service. The generator is responsible for mapping them to the container as appropriate.
+The `version` field specifies the target FreeRADIUS version for the deployment.
 
-The version field is a required string field specifying the target FreeRADIUS version.
+The configured version determines:
+
+- which managed template set is used
+- which deployment implementation is selected
+- which version-specific validation rules apply
+
+The port properties define the desired listener ports for the deployed FreeRADIUS instance.
+
+The deployment layer is responsible for exposing those ports in the target runtime environment.
 
 ---
 
@@ -205,4 +217,4 @@ Configuration validation should detect:
 
 Configuration validation should report as many independent errors as practical during a single execution.
 
-No configuration should be generated if validation fails.
+No managed configuration should be generated if validation fails.

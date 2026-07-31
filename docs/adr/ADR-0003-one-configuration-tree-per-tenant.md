@@ -16,13 +16,13 @@ Combining multiple tenants into a single generated configuration would unnecessa
 
 ## Decision
 
-Each tenant SHALL generate its own complete FreeRADIUS configuration tree.
+Each tenant SHALL generate its own complete managed FreeRADIUS configuration tree.
 
 The generated output for each tenant SHALL be entirely independent of every other tenant.
 
-The generation pipeline SHALL iterate over tenants and generate a complete configuration tree for each.
+The generation pipeline SHALL iterate over tenants and generate a complete managed configuration tree for each.
 
-Renderers SHALL operate on a single generated tenant rather than the complete configuration.
+Renderers SHALL operate on a single generated tenant rather than the complete managed configuration.
 
 ## Consequences
 

@@ -11,7 +11,7 @@ Every object describes a single operational concept and follows the same structu
 - Validation
 - Generation
 
-The object model serves as the blueprint for configuration validation and FreeRADIUS configuration generation.
+The object model serves as the blueprint for configuration validation and managed FreeRADIUS configuration generation.
 
 ---
 
@@ -65,7 +65,7 @@ Referenced by one or more NAS Assignments.
 
 ## Generation
 
-Used when generating client definitions and CoA proxy configuration.
+Used when rendering managed client definitions and CoA configuration.
 
 ---
 
@@ -197,7 +197,7 @@ Referenced by one or more NAS Assignments.
 
 ## Generation
 
-Used when generating FreeRADIUS client definitions.
+Used when rendering managed FreeRADIUS client definitions.
 
 ---
 
@@ -236,7 +236,9 @@ The tenant's RADIUS Server object defines the target FreeRADIUS version for the 
 
 ## Generation
 
-Defines the scope of generated configuration.
+Defines the scope of the managed configuration generated for the tenant.
+
+Each tenant produces an independent managed FreeRADIUS configuration tree.
 
 ---
 
@@ -314,7 +316,9 @@ The configured version determines:
 - which deployment image is selected
 - which version-specific validation rules apply
 
-The port properties define the host ports used by the generated RADIUS service. The generator is responsible for mapping them to the container as appropriate.
+The port properties define the desired listener ports for the deployed FreeRADIUS instance.
+
+The deployment layer is responsible for exposing those ports in the target runtime environment.
 
 ---
 
@@ -360,4 +364,4 @@ Owned by a Tenant.
 
 ## Generation
 
-Combines Global Objects into a tenant-specific configuration used to generate FreeRADIUS configuration.
+Combines Global Objects into tenant-specific managed configuration used to render the tenant's managed FreeRADIUS configuration tree.

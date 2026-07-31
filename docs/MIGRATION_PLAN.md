@@ -35,19 +35,29 @@ This document tracks the migration from the existing production FreeRADIUS deplo
 
 ---
 
-# Phase 3 - Generator
+# Phase 3 - Managed Configuration Generation
 
 - [ ] Parse configuration
 - [ ] Resolve object relationships
 - [ ] Validate configuration
 - [ ] Generate clients.conf
+- [ ] Generate radiusd.conf
 - [ ] Generate proxy.conf
-- [ ] Generate policy configuration
 - [ ] Generate SQL configuration
+- [ ] Generate managed virtual server configuration
+- [ ] Assemble managed configuration tree
 
 ---
 
-# Phase 4 - Testing
+# Phase 4 - Deployment
+
+- [ ] Materialize managed configuration trees on the target filesystem
+- [ ] Deploy managed configuration
+- [ ] Start FreeRADIUS
+
+---
+
+# Phase 5 - Testing
 
 - [ ] Deploy lab environment
 - [ ] Verify authentication
@@ -58,9 +68,9 @@ This document tracks the migration from the existing production FreeRADIUS deplo
 
 ---
 
-# Phase 5 - Cloud Deployment
+# Phase 6 - Cloud Deployment
 
-- [ ] Build production containers
+- [ ] Build production deployment artifacts
 - [ ] Deploy cloud infrastructure
 - [ ] Configure databases
 - [ ] Configure monitoring

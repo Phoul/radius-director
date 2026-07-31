@@ -4,17 +4,19 @@
 
 RADIUS Director is a declarative deployment platform for FreeRADIUS.
 
-It models multi-tenant RADIUS infrastructure using a declarative domain model from which complete, version-aware FreeRADIUS deployments are generated.
+It models multi-tenant RADIUS infrastructure using a declarative domain model from which version-aware FreeRADIUS deployments are generated.
+
+RADIUS Director generates and manages only the deployment-specific configuration required to realize the desired deployment. The underlying FreeRADIUS distribution, its default configuration, and runtime components remain the responsibility of FreeRADIUS.
 
 The architecture is built around a simple principle:
 
 > **Global Objects define reusable resources. Tenants compose those resources into independent FreeRADIUS deployments.**
 
-Each tenant represents a complete, independent FreeRADIUS configuration tree.
+Each tenant represents a complete, independent FreeRADIUS deployment.
 
 The generated configuration for one tenant is entirely isolated from every other tenant and can be deployed independently.
 
-RADIUS Director is responsible for modelling, validating, generating, and deploying complete FreeRADIUS environments.
+RADIUS Director is responsible for modelling, validating, generating, and deploying managed FreeRADIUS deployments.
 
 FreeRADIUS remains responsible for processing RADIUS requests at runtime.
 
@@ -22,7 +24,7 @@ FreeRADIUS remains responsible for processing RADIUS requests at runtime.
 
 # Architectural Layers
 
-The architecture consists of four logical layers.
+The architecture consists of several logical layers.
 
 ```
           Global Objects
@@ -37,7 +39,7 @@ The architecture consists of four logical layers.
       Generation Pipeline
                  │
                  ▼
- Per-Tenant Configuration Trees
+   Managed Configuration Trees
                  │
                  ▼
         Deployment Layer
@@ -95,7 +97,7 @@ Tenant Objects are isolated from one another.
 
 A tenant references Global Objects rather than duplicating them.
 
-Each tenant ultimately produces its own complete FreeRADIUS configuration tree.
+Each tenant ultimately produces its own managed FreeRADIUS configuration tree.
 
 ---
 
@@ -180,7 +182,7 @@ The generator transforms the validated domain model into standard FreeRADIUS con
 
 Generation is performed independently for each tenant.
 
-Each tenant produces a complete, self-contained FreeRADIUS configuration tree.
+Each tenant produces a complete, self-contained managed FreeRADIUS configuration tree.
 
 Generation should always be:
 
@@ -197,7 +199,7 @@ Changes should always be made to the source model.
 
 # Generated Configuration
 
-Each tenant generates its own independent FreeRADIUS configuration tree.
+Each tenant generates its own independent managed FreeRADIUS configuration tree.
 
 For example:
 
@@ -205,32 +207,45 @@ For example:
 output/
 ├── customer-a/
 │   ├── clients.conf
+│   ├── radiusd.conf
+│   ├── proxy.conf
 │   ├── mods-available/
+│   │   └── sql
 │   ├── mods-enabled/
+│   │   └── sql -> ../mods-available/sql
 │   ├── sites-available/
+│   │   ├── default
+│   │   └── coa
 │   └── sites-enabled/
-│
+│       ├── default -> ../sites-available/default
+│       └── coa -> ../sites-available/coa
 └── customer-b/
     ├── clients.conf
+    ├── radiusd.conf
+    ├── proxy.conf
     ├── mods-available/
+    │   └── sql
     ├── mods-enabled/
+    │   └── sql -> ../mods-available/sql
     ├── sites-available/
+    │   ├── default
+    │   └── coa
     └── sites-enabled/
+        ├── default -> ../sites-available/default
+        └── coa -> ../sites-available/coa
 ```
 
 Each generated tree can be deployed independently.
 
-Generated configuration consists entirely of standard FreeRADIUS configuration files.
+Generated configuration consists of the managed subset of standard FreeRADIUS configuration files required for the deployment.
 
 Examples include:
 
 - clients.conf
+- radiusd.conf
 - proxy.conf
 - mods-available/
-- mods-enabled/
-- mods-config/
 - sites-available/
-- sites-enabled/
 
 These files are implementation artifacts.
 
@@ -238,17 +253,75 @@ They are not the authoritative source of configuration.
 
 ---
 
+# Managed Configuration
+
+RADIUS Director manages only the configuration files required to describe a deployment.
+
+It does not replace or regenerate the complete FreeRADIUS configuration distributed with a FreeRADIUS installation.
+
+Typical managed files include:
+
+- clients.conf
+- radiusd.conf
+- proxy.conf
+- mods-available/
+- sites-available/
+
+The managed configuration tree may also include symbolic links required to enable managed modules or virtual servers, including:
+
+- mods-enabled/
+- sites-enabled/
+
+The following remain the responsibility of the installed FreeRADIUS distribution:
+
+- dictionaries
+- certificates
+- policy libraries
+- mods-config/
+- documentation
+- other runtime resources
+
+This separation minimizes maintenance, preserves compatibility with upstream FreeRADIUS releases, and allows RADIUS Director to focus on deployment-specific configuration.
+
+---
+
+# Ownership Boundaries
+
+```
+Declarative Model
+        │
+        ▼
+RADIUS Director
+        │
+        ▼
+Managed Configuration
+        │
+        ▼
+FreeRADIUS Distribution
+        │
+        ▼
+Running FreeRADIUS
+```
+
+The declarative model is the source of truth.
+
+RADIUS Director transforms the declarative model into managed configuration.
+
+The installed FreeRADIUS distribution provides the runtime, default configuration, and supporting resources.
+
+Each layer has a clearly defined owner and responsibility.
+
+---
+
 # Deployment
 
 Deployment transforms a generated configuration tree into a runnable FreeRADIUS environment.
 
-Responsibilities include:
+Deployment responsibilities include:
 
-- selecting the configured FreeRADIUS version
-- selecting version-compatible managed templates
-- generating deployment artifacts
+- installing the managed configuration tree
 - provisioning supporting infrastructure
-- deploying or updating FreeRADIUS instances
+- starting or updating FreeRADIUS instances
 
 The deployment layer is intentionally separated from configuration generation.
 
@@ -262,15 +335,22 @@ Deployment determines how that configuration is executed.
 
 Each generated configuration tree is intended to be executed by an independent FreeRADIUS instance.
 
+RADIUS Director does not replace the FreeRADIUS distribution.
+
 FreeRADIUS remains responsible for:
 
-- Authentication
-- Authorization
-- Accounting
-- Proxying
-- Policy execution
+- runtime execution
+- authentication
+- authorization
+- accounting
+- proxying
+- policy execution
+- module implementations
+- default configuration
+- dictionaries
+- certificates
 
-RADIUS Director does not replace FreeRADIUS.
+RADIUS Director manages only the deployment-specific configuration executed by FreeRADIUS.
 
 It manages the configuration that FreeRADIUS executes.
 
@@ -290,7 +370,7 @@ Validation
 Generation
       │
       ▼
-Per-Tenant Configuration Trees
+Managed Configuration Trees
       │
       ▼
 Deployment
@@ -323,5 +403,6 @@ The architecture follows several fundamental principles.
 - Human-Readable Output
 - Version-Aware Deployments
 - Separation of Generation and Deployment
+- Clear Ownership Boundaries
 
 These principles are further documented in the project's Architectural Decision Records (ADRs).

@@ -4,7 +4,7 @@ This document defines the core objects managed by RADIUS Director.
 
 The domain model intentionally describes operational concepts rather than FreeRADIUS configuration files.
 
-Configuration generation is derived from this model.
+Managed FreeRADIUS configuration is derived from this model.
 
 ---
 
@@ -31,6 +31,10 @@ Tenant Objects include:
 - Database
 - RADIUS Server
 - NAS Assignments
+
+Each tenant represents an independent FreeRADIUS deployment.
+
+Each tenant ultimately produces its own managed FreeRADIUS configuration tree.
 
 Tenants reference Global Objects rather than duplicating them.
 
@@ -139,7 +143,7 @@ Operational behaviour such as credentials, authentication, accounting, and monit
 
 Represents how a tenant uses a NAS Device.
 
-A NAS Assignment is a Relationship Object that combines reusable Global Objects into a tenant-specific configuration.
+A NAS Assignment is a Relationship Object that combines reusable Global Objects into tenant-specific managed configuration.
 
 Each NAS Assignment references:
 
@@ -168,20 +172,31 @@ Typical properties include:
 
 Each tenant owns its own database definition.
 
+The deployment layer determines how the configured database is connected to at runtime.
+
 Future versions may support additional backend services where appropriate.
 
 ---
 
 # RADIUS Server
 
-Represents a FreeRADIUS instance belonging to a tenant.
+Represents the desired runtime characteristics of a tenant's FreeRADIUS deployment.
 
-A RADIUS Server consumes generated configuration and services authentication, authorization, accounting, proxying, and Change of Authorization (CoA) requests for the tenant.
+A RADIUS Server defines how the tenant's managed configuration is rendered and how it is deployed.
 
 Typical properties include:
 
+- FreeRADIUS version
 - Authentication port
 - Accounting port
 - CoA port
 
-These properties define the host ports used by the generated RADIUS service. The generator is responsible for mapping them to the container as appropriate.
+The configured FreeRADIUS version determines:
+
+- which managed template set is used
+- which version-specific validation rules apply
+- which deployment implementation is selected
+
+The port properties define the desired listener ports for the deployed FreeRADIUS instance.
+
+The deployment layer is responsible for exposing those ports in the target runtime environment.

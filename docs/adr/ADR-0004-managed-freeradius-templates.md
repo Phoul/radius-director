@@ -12,7 +12,7 @@ Examples include:
 
 - mods-available/eap
 - mods-available/ldap
-- sites-enabled/default
+- sites-available/default
 
 Generating every line of every configuration file in Go would require RADIUS Director to duplicate large portions of the upstream FreeRADIUS configuration and continuously track upstream changes.
 
@@ -20,7 +20,7 @@ Generating every line of every configuration file in Go would require RADIUS Dir
 
 RADIUS Director SHALL generate configuration from managed FreeRADIUS templates.
 
-Templates SHALL be based on the upstream FreeRADIUS configuration for a specific supported FreeRADIUS release.
+Managed templates SHALL be based on the upstream FreeRADIUS configuration for a specific supported FreeRADIUS release.
 
 Templates SHALL be versioned alongside the supported FreeRADIUS version.
 
@@ -30,7 +30,11 @@ Templates SHALL contain placeholders only for values managed by the domain model
 
 Renderers are responsible for supplying tenant-specific values.
 
-Static configuration that is not managed by RADIUS Director SHALL remain in the template.
+Only configuration files that are managed by RADIUS Director are represented as templates.
+
+Within those managed templates, static configuration that is not controlled by the domain model SHALL remain unchanged from the corresponding upstream FreeRADIUS release.
+
+Configuration that is outside the managed configuration boundary remains the responsibility of the installed FreeRADIUS distribution and is not templated by RADIUS Director.
 
 ## Consequences
 
