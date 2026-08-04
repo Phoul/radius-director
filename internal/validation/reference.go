@@ -20,6 +20,9 @@ func validateTenantReferences(tenantIdentifier string, tenant model.Tenant, glob
 	for _, identifier := range sortedKeys(tenant.NASAssignments) {
 		validationErrors = append(validationErrors, validateNASAssignmentReferences(tenantIdentifier, identifier, tenant.NASAssignments[identifier], globalObjects)...)
 	}
+	for _, identifier := range sortedKeys(tenant.TrustedRADIUSClientAssignments) {
+		validationErrors = append(validationErrors, validateTrustedRADIUSClientAssignmentReferences(tenantIdentifier, identifier, tenant.TrustedRADIUSClientAssignments[identifier], globalObjects)...)
+	}
 
 	return validationErrors
 }
@@ -49,6 +52,22 @@ func validateNASAssignmentReferences(tenantIdentifier, identifier string, assign
 	if assignment.MonitoringProfile != "" {
 		if _, exists := globalObjects.MonitoringProfiles[assignment.MonitoringProfile]; !exists {
 			validationErrors = append(validationErrors, fmt.Errorf("tenant %q: nas assignment %q: monitoring profile %q does not exist", tenantIdentifier, identifier, assignment.MonitoringProfile))
+		}
+	}
+
+	return validationErrors
+}
+
+func validateTrustedRADIUSClientAssignmentReferences(tenantIdentifier, identifier string, assignment model.TrustedRADIUSClientAssignment, globalObjects model.GlobalObjects) []error {
+	var validationErrors []error
+	if assignment.TrustedRADIUSClient != "" {
+		if _, exists := globalObjects.TrustedRADIUSClients[assignment.TrustedRADIUSClient]; !exists {
+			validationErrors = append(validationErrors, fmt.Errorf("tenant %q: trusted radius client assignment %q: trusted radius client %q does not exist", tenantIdentifier, identifier, assignment.TrustedRADIUSClient))
+		}
+	}
+	if assignment.CredentialProfile != "" {
+		if _, exists := globalObjects.CredentialProfiles[assignment.CredentialProfile]; !exists {
+			validationErrors = append(validationErrors, fmt.Errorf("tenant %q: trusted radius client assignment %q: credential profile %q does not exist", tenantIdentifier, identifier, assignment.CredentialProfile))
 		}
 	}
 

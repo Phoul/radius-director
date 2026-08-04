@@ -14,6 +14,7 @@ type GlobalObjects struct {
 	AccountingProfiles     map[string]AccountingProfile     `yaml:"accounting_profiles"`
 	MonitoringProfiles     map[string]MonitoringProfile     `yaml:"monitoring_profiles"`
 	NASDevices             map[string]NASDevice             `yaml:"nas_devices"`
+	TrustedRADIUSClients   map[string]TrustedRADIUSClient   `yaml:"trusted_radius_clients"`
 }
 
 // CredentialProfile defines the shared RADIUS credentials used to communicate
@@ -43,11 +44,18 @@ type NASDevice struct {
 	Vendor    string `yaml:"vendor"`
 }
 
+// TrustedRADIUSClient represents a trusted RADIUS client that is not a NAS
+// device.
+type TrustedRADIUSClient struct {
+	IPAddress string `yaml:"ip_address"`
+}
+
 // Tenant represents an independent RADIUS deployment.
 type Tenant struct {
-	Database       Database                 `yaml:"database"`
-	RADIUSServer   RADIUSServer             `yaml:"radius_server"`
-	NASAssignments map[string]NASAssignment `yaml:"nas_assignments"`
+	Database                       Database                                 `yaml:"database"`
+	RADIUSServer                   RADIUSServer                             `yaml:"radius_server"`
+	NASAssignments                 map[string]NASAssignment                 `yaml:"nas_assignments"`
+	TrustedRADIUSClientAssignments map[string]TrustedRADIUSClientAssignment `yaml:"trusted_radius_client_assignments"`
 }
 
 // Database defines the primary database used by a tenant.
@@ -75,4 +83,11 @@ type NASAssignment struct {
 	AuthenticationProfile string `yaml:"authentication_profile"`
 	AccountingProfile     string `yaml:"accounting_profile"`
 	MonitoringProfile     string `yaml:"monitoring_profile"`
+}
+
+// TrustedRADIUSClientAssignment defines how a tenant uses a trusted RADIUS
+// client.
+type TrustedRADIUSClientAssignment struct {
+	TrustedRADIUSClient string `yaml:"trusted_radius_client"`
+	CredentialProfile   string `yaml:"credential_profile"`
 }

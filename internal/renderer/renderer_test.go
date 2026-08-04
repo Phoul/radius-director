@@ -34,7 +34,7 @@ func TestRenderClientsOneTenantOneClient(t *testing.T) {
 		"    nas_type = other\n" +
 		"    coa_server = concentrators\n" +
 		"}\n"
-	if !strings.HasSuffix(got, want) {
+	if !strings.HasSuffix(normalizeLineEndings(got), want) {
 		t.Fatalf("RenderClients() managed section does not end with %q", want)
 	}
 }
@@ -66,7 +66,7 @@ func TestRenderClientsOneTenantMultipleClients(t *testing.T) {
 		"    nas_type = other\n" +
 		"    coa_server = concentrators\n" +
 		"}\n"
-	if !strings.HasSuffix(got, want) {
+	if !strings.HasSuffix(normalizeLineEndings(got), want) {
 		t.Fatalf("RenderClients() managed section does not end with %q", want)
 	}
 }
@@ -205,6 +205,10 @@ func useSQLTemplateLoader(t *testing.T, loader templates.Loader) {
 	original := sqlTemplateLoader
 	sqlTemplateLoader = loader
 	t.Cleanup(func() { sqlTemplateLoader = original })
+}
+
+func normalizeLineEndings(value string) string {
+	return strings.ReplaceAll(value, "\r\n", "\n")
 }
 
 func useClientsTemplateLoader(t *testing.T, loader templates.Loader) {

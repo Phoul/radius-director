@@ -16,6 +16,9 @@ func TestLoad(t *testing.T) {
     core:
       ip_address: 10.10.10.1
       vendor: mikrotik
+  trusted_radius_clients:
+    monitoring:
+      ip_address: 10.10.10.2
 tenants:
   customer-a:
     database:
@@ -37,6 +40,10 @@ tenants:
         authentication_profile: default
         accounting_profile: default
         monitoring_profile: default
+    trusted_radius_client_assignments:
+      monitoring:
+        trusted_radius_client: monitoring
+        credential_profile: default
 `)
 	if err := os.WriteFile(path, contents, 0o600); err != nil {
 		t.Fatal(err)
@@ -52,6 +59,12 @@ tenants:
 	}
 	if got := configuration.Tenants["customer-a"].NASAssignments["core"].NASDevice; got != "core" {
 		t.Fatalf("NAS assignment device = %q, want %q", got, "core")
+	}
+	if got := configuration.GlobalObjects.TrustedRADIUSClients["monitoring"].IPAddress; got != "10.10.10.2" {
+		t.Fatalf("trusted RADIUS client IP address = %q, want %q", got, "10.10.10.2")
+	}
+	if got := configuration.Tenants["customer-a"].TrustedRADIUSClientAssignments["monitoring"].TrustedRADIUSClient; got != "monitoring" {
+		t.Fatalf("trusted RADIUS client assignment client = %q, want %q", got, "monitoring")
 	}
 	if got := configuration.Tenants["customer-a"].RADIUSServer.AuthenticationPort; got != 1812 {
 		t.Fatalf("RADIUS Server authentication port = %d, want 1812", got)

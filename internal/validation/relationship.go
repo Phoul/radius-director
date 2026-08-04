@@ -35,6 +35,23 @@ func validateTenantRelationships(tenantIdentifier string, tenant model.Tenant, g
 
 		assignmentsByNASDevice[assignment.NASDevice] = identifier
 	}
+	assignmentsByTrustedRADIUSClient := make(map[string]string)
+	for _, identifier := range sortedKeys(tenant.TrustedRADIUSClientAssignments) {
+		assignment := tenant.TrustedRADIUSClientAssignments[identifier]
+		if assignment.TrustedRADIUSClient == "" {
+			continue
+		}
+		if _, exists := globalObjects.TrustedRADIUSClients[assignment.TrustedRADIUSClient]; !exists {
+			continue
+		}
+
+		if firstAssignment, exists := assignmentsByTrustedRADIUSClient[assignment.TrustedRADIUSClient]; exists {
+			validationErrors = append(validationErrors, fmt.Errorf("tenant %q: trusted radius client %q is assigned by both trusted radius client assignments %q and %q", tenantIdentifier, assignment.TrustedRADIUSClient, firstAssignment, identifier))
+			continue
+		}
+
+		assignmentsByTrustedRADIUSClient[assignment.TrustedRADIUSClient] = identifier
+	}
 
 	return validationErrors
 }

@@ -141,8 +141,9 @@ func TestGenerateMultipleTenantsCreatesSQLInDeterministicOrder(t *testing.T) {
 	generated := Generate(configuration)
 	want := []Tenant{
 		{
-			Identifier: "tenant-a",
-			Clients:    []Client{},
+			Identifier:                     "tenant-a",
+			Clients:                        []Client{},
+			TrustedRADIUSClientAssignments: []TrustedRADIUSClientAssignment{},
 			SQL: SQL{
 				Engine:   "mysql",
 				Host:     "database.tenant_a.internal",
@@ -153,8 +154,9 @@ func TestGenerateMultipleTenantsCreatesSQLInDeterministicOrder(t *testing.T) {
 			},
 		},
 		{
-			Identifier: "tenant-b",
-			Clients:    []Client{},
+			Identifier:                     "tenant-b",
+			Clients:                        []Client{},
+			TrustedRADIUSClientAssignments: []TrustedRADIUSClientAssignment{},
 			SQL: SQL{
 				Engine:   "mysql",
 				Host:     "database.tenant_b.internal",
@@ -167,6 +169,44 @@ func TestGenerateMultipleTenantsCreatesSQLInDeterministicOrder(t *testing.T) {
 	}
 	if got := generated.Tenants; !reflect.DeepEqual(got, want) {
 		t.Fatalf("generated tenants = %#v, want %#v", got, want)
+	}
+}
+
+func TestGenerateTrustedRADIUSClientAssignments(t *testing.T) {
+	configuration := model.Configuration{
+		GlobalObjects: model.GlobalObjects{
+			CredentialProfiles: map[string]model.CredentialProfile{
+				"monitoring-credentials":   {SharedSecret: "monitoring-secret"},
+				"provisioning-credentials": {SharedSecret: "provisioning-secret"},
+			},
+			TrustedRADIUSClients: map[string]model.TrustedRADIUSClient{
+				"monitoring":   {IPAddress: "10.10.10.10"},
+				"provisioning": {IPAddress: "10.10.10.11"},
+			},
+		},
+		Tenants: map[string]model.Tenant{
+			"customer-a": {
+				TrustedRADIUSClientAssignments: map[string]model.TrustedRADIUSClientAssignment{
+					"provisioning": {
+						TrustedRADIUSClient: "provisioning",
+						CredentialProfile:   "provisioning-credentials",
+					},
+					"monitoring": {
+						TrustedRADIUSClient: "monitoring",
+						CredentialProfile:   "monitoring-credentials",
+					},
+				},
+			},
+		},
+	}
+
+	generated := Generate(configuration)
+	want := []TrustedRADIUSClientAssignment{
+		{Identifier: "monitoring", IPAddress: "10.10.10.10", SharedSecret: "monitoring-secret"},
+		{Identifier: "provisioning", IPAddress: "10.10.10.11", SharedSecret: "provisioning-secret"},
+	}
+	if got := generated.Tenants[0].TrustedRADIUSClientAssignments; !reflect.DeepEqual(got, want) {
+		t.Fatalf("generated trusted RADIUS client assignments = %#v, want %#v", got, want)
 	}
 }
 

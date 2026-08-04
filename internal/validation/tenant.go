@@ -33,6 +33,7 @@ func validateTenant(identifier string, tenant model.Tenant) []error {
 	} else {
 		validationErrors = append(validationErrors, validateNASAssignments(identifier, tenant.NASAssignments)...)
 	}
+	validationErrors = append(validationErrors, validateTrustedRADIUSClientAssignments(identifier, tenant.TrustedRADIUSClientAssignments)...)
 
 	return validationErrors
 }
@@ -107,6 +108,27 @@ func validateNASAssignment(tenantIdentifier, identifier string, assignment model
 	}
 	if assignment.MonitoringProfile == "" {
 		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: nas assignment %q: monitoring_profile must be specified", tenantIdentifier, identifier))
+	}
+
+	return validationErrors
+}
+
+func validateTrustedRADIUSClientAssignments(tenantIdentifier string, assignments map[string]model.TrustedRADIUSClientAssignment) []error {
+	var validationErrors []error
+	for _, identifier := range sortedKeys(assignments) {
+		validationErrors = append(validationErrors, validateTrustedRADIUSClientAssignment(tenantIdentifier, identifier, assignments[identifier])...)
+	}
+
+	return validationErrors
+}
+
+func validateTrustedRADIUSClientAssignment(tenantIdentifier, identifier string, assignment model.TrustedRADIUSClientAssignment) []error {
+	var validationErrors []error
+	if assignment.TrustedRADIUSClient == "" {
+		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: trusted radius client assignment %q: trusted_radius_client must be specified", tenantIdentifier, identifier))
+	}
+	if assignment.CredentialProfile == "" {
+		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: trusted radius client assignment %q: credential_profile must be specified", tenantIdentifier, identifier))
 	}
 
 	return validationErrors

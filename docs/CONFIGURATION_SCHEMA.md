@@ -108,7 +108,7 @@ tenants:
 
     nas_assignments:
 
-    trusted_client_assignments:
+    trusted_radius_client_assignments:
 ```
 
 Each Tenant owns:
@@ -195,7 +195,7 @@ nas_assignments:
 
     monitoring_profile: default
 
-trusted_client_assignments:
+trusted_radius_client_assignments:
 
   sonar:
 

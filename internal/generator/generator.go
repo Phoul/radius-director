@@ -15,8 +15,9 @@ func Generate(configuration model.Configuration) Configuration {
 	for _, tenantIdentifier := range sortedKeys(configuration.Tenants) {
 		tenant := configuration.Tenants[tenantIdentifier]
 		generatedTenant := Tenant{
-			Identifier: tenantIdentifier,
-			Clients:    make([]Client, 0, len(tenant.NASAssignments)),
+			Identifier:                     tenantIdentifier,
+			Clients:                        make([]Client, 0, len(tenant.NASAssignments)),
+			TrustedRADIUSClientAssignments: make([]TrustedRADIUSClientAssignment, 0, len(tenant.TrustedRADIUSClientAssignments)),
 			SQL: SQL{
 				Engine:   tenant.Database.Engine,
 				Host:     tenant.Database.Host,
@@ -43,6 +44,18 @@ func Generate(configuration model.Configuration) Configuration {
 				IPAddress:    nasDevice.IPAddress,
 				SharedSecret: credentialProfile.SharedSecret,
 				Vendor:       nasDevice.Vendor,
+			})
+		}
+
+		for _, assignmentIdentifier := range sortedKeys(tenant.TrustedRADIUSClientAssignments) {
+			assignment := tenant.TrustedRADIUSClientAssignments[assignmentIdentifier]
+			trustedRADIUSClient := configuration.GlobalObjects.TrustedRADIUSClients[assignment.TrustedRADIUSClient]
+			credentialProfile := configuration.GlobalObjects.CredentialProfiles[assignment.CredentialProfile]
+
+			generatedTenant.TrustedRADIUSClientAssignments = append(generatedTenant.TrustedRADIUSClientAssignments, TrustedRADIUSClientAssignment{
+				Identifier:   assignmentIdentifier,
+				IPAddress:    trustedRADIUSClient.IPAddress,
+				SharedSecret: credentialProfile.SharedSecret,
 			})
 		}
 

@@ -25,6 +25,9 @@ func TestValidate(t *testing.T) {
 			NASDevices: map[string]model.NASDevice{
 				"core": {IPAddress: "10.10.10.1", Vendor: "mikrotik"},
 			},
+			TrustedRADIUSClients: map[string]model.TrustedRADIUSClient{
+				"monitoring": {IPAddress: "10.10.10.2"},
+			},
 		},
 		Tenants: map[string]model.Tenant{
 			"customer-a": {
@@ -926,6 +929,202 @@ func TestValidateNASDevice(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestValidateTrustedRADIUSClient(t *testing.T) {
+	tests := []struct {
+		name     string
+		client   model.TrustedRADIUSClient
+		wantErrs []string
+	}{
+		{
+			name:   "IPv4 address specified",
+			client: model.TrustedRADIUSClient{IPAddress: "10.10.10.1"},
+		},
+		{
+			name:   "IPv6 address specified",
+			client: model.TrustedRADIUSClient{IPAddress: "2001:db8::1"},
+		},
+		{
+			name:   "IP address missing",
+			client: model.TrustedRADIUSClient{},
+			wantErrs: []string{
+				`trusted radius client "monitoring": ip_address must be a valid IPv4 or IPv6 address`,
+			},
+		},
+		{
+			name:   "IP address invalid",
+			client: model.TrustedRADIUSClient{IPAddress: "not-an-ip"},
+			wantErrs: []string{
+				`trusted radius client "monitoring": ip_address must be a valid IPv4 or IPv6 address`,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			validationErrors := validateTrustedRADIUSClient("monitoring", test.client)
+			if len(validationErrors) != len(test.wantErrs) {
+				t.Fatalf("validateTrustedRADIUSClient() returned %d errors, want %d", len(validationErrors), len(test.wantErrs))
+			}
+
+			for index, wantErr := range test.wantErrs {
+				if got := validationErrors[index].Error(); got != wantErr {
+					t.Errorf("validateTrustedRADIUSClient() error = %q, want %q", got, wantErr)
+				}
+			}
+		})
+	}
+}
+
+func TestValidateTrustedRADIUSClientAssignment(t *testing.T) {
+	tests := []struct {
+		name       string
+		assignment model.TrustedRADIUSClientAssignment
+		wantErrs   []string
+	}{
+		{
+			name: "valid assignment",
+			assignment: model.TrustedRADIUSClientAssignment{
+				TrustedRADIUSClient: "monitoring",
+				CredentialProfile:   "default",
+			},
+		},
+		{
+			name: "trusted RADIUS client missing",
+			assignment: model.TrustedRADIUSClientAssignment{
+				CredentialProfile: "default",
+			},
+			wantErrs: []string{
+				`tenant "customer-a": trusted radius client assignment "monitoring": trusted_radius_client must be specified`,
+			},
+		},
+		{
+			name: "credential profile missing",
+			assignment: model.TrustedRADIUSClientAssignment{
+				TrustedRADIUSClient: "monitoring",
+			},
+			wantErrs: []string{
+				`tenant "customer-a": trusted radius client assignment "monitoring": credential_profile must be specified`,
+			},
+		},
+		{
+			name: "all properties missing",
+			wantErrs: []string{
+				`tenant "customer-a": trusted radius client assignment "monitoring": trusted_radius_client must be specified`,
+				`tenant "customer-a": trusted radius client assignment "monitoring": credential_profile must be specified`,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			validationErrors := validateTrustedRADIUSClientAssignment("customer-a", "monitoring", test.assignment)
+			if len(validationErrors) != len(test.wantErrs) {
+				t.Fatalf("validateTrustedRADIUSClientAssignment() returned %d errors, want %d", len(validationErrors), len(test.wantErrs))
+			}
+
+			for index, wantErr := range test.wantErrs {
+				if got := validationErrors[index].Error(); got != wantErr {
+					t.Errorf("validateTrustedRADIUSClientAssignment() error = %q, want %q", got, wantErr)
+				}
+			}
+		})
+	}
+}
+
+func TestValidateTrustedRADIUSClientAssignmentReferences(t *testing.T) {
+	globalObjects := model.GlobalObjects{
+		CredentialProfiles: map[string]model.CredentialProfile{"default": {}},
+		TrustedRADIUSClients: map[string]model.TrustedRADIUSClient{
+			"monitoring": {},
+		},
+	}
+
+	tests := []struct {
+		name       string
+		assignment model.TrustedRADIUSClientAssignment
+		wantErrs   []string
+	}{
+		{
+			name: "valid references",
+			assignment: model.TrustedRADIUSClientAssignment{
+				TrustedRADIUSClient: "monitoring",
+				CredentialProfile:   "default",
+			},
+		},
+		{
+			name: "trusted RADIUS client missing",
+			assignment: model.TrustedRADIUSClientAssignment{
+				TrustedRADIUSClient: "missing-client",
+				CredentialProfile:   "default",
+			},
+			wantErrs: []string{
+				`tenant "customer-a": trusted radius client assignment "monitoring": trusted radius client "missing-client" does not exist`,
+			},
+		},
+		{
+			name: "credential profile missing",
+			assignment: model.TrustedRADIUSClientAssignment{
+				TrustedRADIUSClient: "monitoring",
+				CredentialProfile:   "missing-credentials",
+			},
+			wantErrs: []string{
+				`tenant "customer-a": trusted radius client assignment "monitoring": credential profile "missing-credentials" does not exist`,
+			},
+		},
+		{
+			name: "all references missing",
+			assignment: model.TrustedRADIUSClientAssignment{
+				TrustedRADIUSClient: "missing-client",
+				CredentialProfile:   "missing-credentials",
+			},
+			wantErrs: []string{
+				`tenant "customer-a": trusted radius client assignment "monitoring": trusted radius client "missing-client" does not exist`,
+				`tenant "customer-a": trusted radius client assignment "monitoring": credential profile "missing-credentials" does not exist`,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			validationErrors := validateTrustedRADIUSClientAssignmentReferences("customer-a", "monitoring", test.assignment, globalObjects)
+			if len(validationErrors) != len(test.wantErrs) {
+				t.Fatalf("validateTrustedRADIUSClientAssignmentReferences() returned %d errors, want %d", len(validationErrors), len(test.wantErrs))
+			}
+
+			for index, wantErr := range test.wantErrs {
+				if got := validationErrors[index].Error(); got != wantErr {
+					t.Errorf("validateTrustedRADIUSClientAssignmentReferences() error = %q, want %q", got, wantErr)
+				}
+			}
+		})
+	}
+}
+
+func TestValidateTrustedRADIUSClientAssignmentRelationships(t *testing.T) {
+	globalObjects := model.GlobalObjects{
+		TrustedRADIUSClients: map[string]model.TrustedRADIUSClient{
+			"monitoring":   {},
+			"provisioning": {},
+		},
+	}
+	tenant := model.Tenant{
+		TrustedRADIUSClientAssignments: map[string]model.TrustedRADIUSClientAssignment{
+			"assignment-a": {TrustedRADIUSClient: "monitoring"},
+			"assignment-b": {TrustedRADIUSClient: "monitoring"},
+			"assignment-c": {TrustedRADIUSClient: "provisioning"},
+			"assignment-d": {TrustedRADIUSClient: "missing-client"},
+		},
+	}
+
+	validationErrors := validateTenantRelationships("customer-a", tenant, globalObjects)
+	if len(validationErrors) != 1 {
+		t.Fatalf("validateTenantRelationships() returned %d errors, want 1", len(validationErrors))
+	}
+	if got, want := validationErrors[0].Error(), `tenant "customer-a": trusted radius client "monitoring" is assigned by both trusted radius client assignments "assignment-a" and "assignment-b"`; got != want {
+		t.Errorf("validateTenantRelationships() error = %q, want %q", got, want)
 	}
 }
 

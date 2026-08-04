@@ -13,6 +13,7 @@ func validateGlobalObjects(globalObjects model.GlobalObjects) []error {
 	validationErrors = append(validationErrors, validateAccountingProfiles(globalObjects.AccountingProfiles)...)
 	validationErrors = append(validationErrors, validateMonitoringProfiles(globalObjects.MonitoringProfiles)...)
 	validationErrors = append(validationErrors, validateNASDevices(globalObjects.NASDevices)...)
+	validationErrors = append(validationErrors, validateTrustedRADIUSClients(globalObjects.TrustedRADIUSClients)...)
 
 	return validationErrors
 }
@@ -92,4 +93,21 @@ func validateNASDevice(identifier string, device model.NASDevice) []error {
 	}
 
 	return validationErrors
+}
+
+func validateTrustedRADIUSClients(clients map[string]model.TrustedRADIUSClient) []error {
+	var validationErrors []error
+	for _, identifier := range sortedKeys(clients) {
+		validationErrors = append(validationErrors, validateTrustedRADIUSClient(identifier, clients[identifier])...)
+	}
+
+	return validationErrors
+}
+
+func validateTrustedRADIUSClient(identifier string, client model.TrustedRADIUSClient) []error {
+	if net.ParseIP(client.IPAddress) == nil {
+		return []error{fmt.Errorf("trusted radius client %q: ip_address must be a valid IPv4 or IPv6 address", identifier)}
+	}
+
+	return nil
 }
