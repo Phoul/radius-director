@@ -9,6 +9,7 @@ import (
 )
 
 var clientsTemplateLoader = templates.EmbeddedLoader()
+var coaTemplateLoader = templates.EmbeddedLoader()
 var proxyTemplateLoader = templates.EmbeddedLoader()
 var sqlTemplateLoader = templates.EmbeddedLoader()
 
@@ -21,6 +22,21 @@ func RenderClients(tenant generator.Tenant) (string, error) {
 
 	var rendered bytes.Buffer
 	if err := template.Execute(&rendered, tenant); err != nil {
+		return "", err
+	}
+
+	return rendered.String(), nil
+}
+
+// RenderCOA renders the sites-available/coa content for a generated tenant.
+func RenderCOA(tenant generator.Tenant) (string, error) {
+	template, err := coaTemplateLoader.Load(tenant.RADIUSServer.Version, "sites-available/coa")
+	if err != nil {
+		return "", err
+	}
+
+	var rendered bytes.Buffer
+	if err := template.Execute(&rendered, nil); err != nil {
 		return "", err
 	}
 

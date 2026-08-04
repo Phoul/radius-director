@@ -29,8 +29,6 @@ Each tenant contains tenant-specific infrastructure.
 
 Tenant Objects include:
 
-Tenant Objects include:
-
 - Database
 - RADIUS Server
 
@@ -108,10 +106,20 @@ Examples include:
 
 - Accounting storage
 - Interim update handling
-- Session cleanup
+- Stale session cleanup
 - Retention policies
 
 Accounting Profiles are referenced by NAS Assignments.
+
+An Accounting Profile may define when an active accounting session should be considered stale.
+
+Stale session detection is based on the absence of sufficiently recent accounting activity. This allows sessions for which an Accounting-Stop packet was never received to be closed automatically after a configurable timeout.
+
+When a stale session is closed, the recorded stop time should represent the last known accounting activity for the session rather than the time at which the cleanup process happened.
+
+Stale session cleanup is independent of session verification performed during authentication. Session verification may determine that a session is no longer active and allow a subscriber to reconnect, while stale session cleanup is responsible for maintaining accurate accounting records.
+
+The Accounting Profile defines accounting policy, including the stale session timeout. The mechanism and schedule used to execute periodic accounting maintenance are operational concerns and are not part of the Accounting Profile.
 
 ---
 

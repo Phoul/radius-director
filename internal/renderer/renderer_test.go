@@ -121,6 +121,48 @@ func TestRenderClientsPropagatesTemplateExecutionError(t *testing.T) {
 	}
 }
 
+func TestRenderCOA(t *testing.T) {
+	got, err := RenderCOA(generator.Tenant{
+		RADIUSServer: generator.RADIUSServer{Version: "3.2.10"},
+	})
+	if err != nil {
+		t.Fatalf("RenderCOA() error = %v", err)
+	}
+
+	for _, expected := range []string{
+		"type = coa",
+		"virtual_server = coa",
+		"Home-Server-Pool := \"%{NAS-IP-Address}\"",
+	} {
+		if !strings.Contains(normalizeLineEndings(got), expected) {
+			t.Errorf("RenderCOA() output does not contain %q", expected)
+		}
+	}
+}
+
+func TestRenderCOAUnsupportedVersion(t *testing.T) {
+	_, err := RenderCOA(generator.Tenant{
+		RADIUSServer: generator.RADIUSServer{Version: "9.9.9"},
+	})
+	if err == nil || !strings.Contains(err.Error(), `FreeRADIUS version "9.9.9" is not supported`) {
+		t.Fatalf("RenderCOA() error = %v, want unsupported version error", err)
+	}
+}
+
+func TestRenderCOAPropagatesTemplateExecutionError(t *testing.T) {
+	executionError := errors.New("template execution failed")
+	useCOATemplateLoader(t, testTemplateLoader{
+		executor: testTemplateExecutor{err: executionError},
+	})
+
+	_, err := RenderCOA(generator.Tenant{
+		RADIUSServer: generator.RADIUSServer{Version: "3.2.10"},
+	})
+	if !errors.Is(err, executionError) {
+		t.Fatalf("RenderCOA() error = %v, want %v", err, executionError)
+	}
+}
+
 func TestRenderProxy(t *testing.T) {
 	tenant := generator.Tenant{
 		Identifier:   "customer-a",
@@ -277,6 +319,13 @@ func useClientsTemplateLoader(t *testing.T, loader templates.Loader) {
 	original := clientsTemplateLoader
 	clientsTemplateLoader = loader
 	t.Cleanup(func() { clientsTemplateLoader = original })
+}
+
+func useCOATemplateLoader(t *testing.T, loader templates.Loader) {
+	t.Helper()
+	original := coaTemplateLoader
+	coaTemplateLoader = loader
+	t.Cleanup(func() { coaTemplateLoader = original })
 }
 
 func useProxyTemplateLoader(t *testing.T, loader templates.Loader) {
