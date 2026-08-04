@@ -9,11 +9,27 @@ import (
 )
 
 var clientsTemplateLoader = templates.EmbeddedLoader()
+var proxyTemplateLoader = templates.EmbeddedLoader()
 var sqlTemplateLoader = templates.EmbeddedLoader()
 
 // RenderClients renders the clients.conf content for a generated tenant.
 func RenderClients(tenant generator.Tenant) (string, error) {
 	template, err := clientsTemplateLoader.Load(tenant.RADIUSServer.Version, "clients.conf")
+	if err != nil {
+		return "", err
+	}
+
+	var rendered bytes.Buffer
+	if err := template.Execute(&rendered, tenant); err != nil {
+		return "", err
+	}
+
+	return rendered.String(), nil
+}
+
+// RenderProxy renders the proxy.conf content for a generated tenant.
+func RenderProxy(tenant generator.Tenant) (string, error) {
+	template, err := proxyTemplateLoader.Load(tenant.RADIUSServer.Version, "proxy.conf")
 	if err != nil {
 		return "", err
 	}

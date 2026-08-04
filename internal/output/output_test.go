@@ -20,6 +20,14 @@ func TestBuildCreatesClientsFileForEachTenant(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RenderClients() error = %v", err)
 	}
+	wantCustomerAProxy, err := renderer.RenderProxy(configuration.Tenants[0])
+	if err != nil {
+		t.Fatalf("RenderProxy() error = %v", err)
+	}
+	wantCustomerBProxy, err := renderer.RenderProxy(configuration.Tenants[1])
+	if err != nil {
+		t.Fatalf("RenderProxy() error = %v", err)
+	}
 
 	generated, err := Build(configuration)
 	if err != nil {
@@ -28,7 +36,9 @@ func TestBuildCreatesClientsFileForEachTenant(t *testing.T) {
 	want := Output{
 		Files: []File{
 			{Path: filepath.Join("customer-a", ClientsFile), Content: wantCustomerA},
+			{Path: filepath.Join("customer-a", ProxyFile), Content: wantCustomerAProxy},
 			{Path: filepath.Join("customer-b", ClientsFile), Content: wantCustomerB},
+			{Path: filepath.Join("customer-b", ProxyFile), Content: wantCustomerBProxy},
 		},
 	}
 	if !reflect.DeepEqual(generated, want) {
@@ -71,6 +81,25 @@ func TestBuildPropagatesRendererError(t *testing.T) {
 	}
 }
 
+func TestBuildPropagatesProxyRendererError(t *testing.T) {
+	want := errors.New("render proxy failed")
+	originalRenderProxy := renderProxy
+	renderProxy = func(generator.Tenant) (string, error) {
+		return "", want
+	}
+	t.Cleanup(func() {
+		renderProxy = originalRenderProxy
+	})
+
+	generated, err := Build(testConfiguration())
+	if !errors.Is(err, want) {
+		t.Fatalf("Build() error = %v, want %v", err, want)
+	}
+	if !reflect.DeepEqual(generated, Output{}) {
+		t.Fatalf("Build() output = %#v, want empty output", generated)
+	}
+}
+
 func testConfiguration() generator.Configuration {
 	return generator.Configuration{
 		Tenants: []generator.Tenant{
@@ -84,6 +113,9 @@ func testConfiguration() generator.Configuration {
 						SharedSecret: "shared-secret",
 					},
 				},
+				HomeServers: []generator.HomeServer{
+					{Identifier: "core-router", IPAddress: "10.10.10.1", SharedSecret: "shared-secret"},
+				},
 			},
 			{
 				Identifier:   "customer-b",
@@ -94,6 +126,9 @@ func testConfiguration() generator.Configuration {
 						IPAddress:    "10.20.20.1",
 						SharedSecret: "other-secret",
 					},
+				},
+				HomeServers: []generator.HomeServer{
+					{Identifier: "edge-router", IPAddress: "10.20.20.1", SharedSecret: "other-secret"},
 				},
 			},
 		},

@@ -17,6 +17,7 @@ func Generate(configuration model.Configuration) Configuration {
 		generatedTenant := Tenant{
 			Identifier:        tenantIdentifier,
 			FreeRADIUSClients: make([]FreeRADIUSClient, 0, len(tenant.NASAssignments)+len(tenant.TrustedRADIUSClientAssignments)),
+			HomeServers:       make([]HomeServer, 0, len(tenant.NASAssignments)),
 			SQL: SQL{
 				Engine:   tenant.Database.Engine,
 				Host:     tenant.Database.Host,
@@ -43,6 +44,11 @@ func Generate(configuration model.Configuration) Configuration {
 				IPAddress:    nasDevice.IPAddress,
 				SharedSecret: credentialProfile.SharedSecret,
 				Vendor:       nasDevice.Vendor,
+			})
+			generatedTenant.HomeServers = append(generatedTenant.HomeServers, HomeServer{
+				Identifier:   assignmentIdentifier,
+				IPAddress:    nasDevice.IPAddress,
+				SharedSecret: credentialProfile.SharedSecret,
 			})
 		}
 

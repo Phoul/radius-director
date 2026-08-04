@@ -121,6 +121,60 @@ func TestRenderClientsPropagatesTemplateExecutionError(t *testing.T) {
 	}
 }
 
+func TestRenderProxy(t *testing.T) {
+	tenant := generator.Tenant{
+		Identifier:   "customer-a",
+		RADIUSServer: generator.RADIUSServer{Version: "3.2.10"},
+		HomeServers: []generator.HomeServer{
+			{Identifier: "core-router", IPAddress: "10.10.10.1", SharedSecret: "core-secret"},
+			{Identifier: "edge-router", IPAddress: "10.10.10.2", SharedSecret: "edge-secret"},
+		},
+	}
+
+	got, err := RenderProxy(tenant)
+	if err != nil {
+		t.Fatalf("RenderProxy() error = %v", err)
+	}
+	normalized := normalizeLineEndings(got)
+	for _, expected := range []string{
+		"# Tenant: customer-a",
+		"home_server core-router {",
+		"ipaddr = 10.10.10.1",
+		"secret = core-secret",
+		"home_server edge-router {",
+		"ipaddr = 10.10.10.2",
+		"secret = edge-secret",
+		"home_server_pool concentrators {",
+	} {
+		if !strings.Contains(normalized, expected) {
+			t.Errorf("RenderProxy() output does not contain %q", expected)
+		}
+	}
+}
+
+func TestRenderProxyUnsupportedVersion(t *testing.T) {
+	_, err := RenderProxy(generator.Tenant{
+		RADIUSServer: generator.RADIUSServer{Version: "9.9.9"},
+	})
+	if err == nil || !strings.Contains(err.Error(), `FreeRADIUS version "9.9.9" is not supported`) {
+		t.Fatalf("RenderProxy() error = %v, want unsupported version error", err)
+	}
+}
+
+func TestRenderProxyPropagatesTemplateExecutionError(t *testing.T) {
+	executionError := errors.New("template execution failed")
+	useProxyTemplateLoader(t, testTemplateLoader{
+		executor: testTemplateExecutor{err: executionError},
+	})
+
+	_, err := RenderProxy(generator.Tenant{
+		RADIUSServer: generator.RADIUSServer{Version: "3.2.10"},
+	})
+	if !errors.Is(err, executionError) {
+		t.Fatalf("RenderProxy() error = %v, want %v", err, executionError)
+	}
+}
+
 func TestRenderSQL(t *testing.T) {
 	tenant := generator.Tenant{
 		SQL: generator.SQL{
@@ -223,6 +277,13 @@ func useClientsTemplateLoader(t *testing.T, loader templates.Loader) {
 	original := clientsTemplateLoader
 	clientsTemplateLoader = loader
 	t.Cleanup(func() { clientsTemplateLoader = original })
+}
+
+func useProxyTemplateLoader(t *testing.T, loader templates.Loader) {
+	t.Helper()
+	original := proxyTemplateLoader
+	proxyTemplateLoader = loader
+	t.Cleanup(func() { proxyTemplateLoader = original })
 }
 
 type testTemplateLoader struct {

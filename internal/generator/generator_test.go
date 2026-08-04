@@ -45,6 +45,13 @@ func TestGenerateOneNASAssignmentCreatesOneClient(t *testing.T) {
 	}}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("generated FreeRADIUS clients = %#v, want %#v", got, want)
 	}
+	if got, want := generated.Tenants[0].HomeServers, []HomeServer{{
+		Identifier:   "core-router",
+		IPAddress:    "10.10.10.1",
+		SharedSecret: "shared-secret",
+	}}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("generated home servers = %#v, want %#v", got, want)
+	}
 }
 
 func TestGenerateMultipleNASAssignmentsCreatesMultipleClients(t *testing.T) {
@@ -96,6 +103,12 @@ func TestGenerateMultipleNASAssignmentsCreatesMultipleClients(t *testing.T) {
 	}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("generated FreeRADIUS clients = %#v, want %#v", got, want)
 	}
+	if got, want := generated.Tenants[0].HomeServers, []HomeServer{
+		{Identifier: "core-router", IPAddress: "10.10.10.1", SharedSecret: "core-secret"},
+		{Identifier: "edge-router", IPAddress: "10.10.10.2", SharedSecret: "edge-secret"},
+	}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("generated home servers = %#v, want %#v", got, want)
+	}
 }
 
 func TestGenerateOneTenantCreatesOneSQL(t *testing.T) {
@@ -143,6 +156,7 @@ func TestGenerateMultipleTenantsCreatesSQLInDeterministicOrder(t *testing.T) {
 		{
 			Identifier:        "tenant-a",
 			FreeRADIUSClients: []FreeRADIUSClient{},
+			HomeServers:       []HomeServer{},
 			SQL: SQL{
 				Engine:   "mysql",
 				Host:     "database.tenant_a.internal",
@@ -155,6 +169,7 @@ func TestGenerateMultipleTenantsCreatesSQLInDeterministicOrder(t *testing.T) {
 		{
 			Identifier:        "tenant-b",
 			FreeRADIUSClients: []FreeRADIUSClient{},
+			HomeServers:       []HomeServer{},
 			SQL: SQL{
 				Engine:   "mysql",
 				Host:     "database.tenant_b.internal",
@@ -213,6 +228,13 @@ func TestGenerateTrustedRADIUSClientAssignments(t *testing.T) {
 	}
 	if got := generated.Tenants[0].FreeRADIUSClients; !reflect.DeepEqual(got, want) {
 		t.Fatalf("generated FreeRADIUS clients = %#v, want %#v", got, want)
+	}
+	if got, want := generated.Tenants[0].HomeServers, []HomeServer{{
+		Identifier:   "core",
+		IPAddress:    "10.10.10.1",
+		SharedSecret: "core-secret",
+	}}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("generated home servers = %#v, want %#v", got, want)
 	}
 }
 
