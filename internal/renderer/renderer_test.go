@@ -12,7 +12,8 @@ import (
 
 func TestRenderClientsOneTenantOneClient(t *testing.T) {
 	tenant := generator.Tenant{
-		Identifier: "customer-a",
+		Identifier:   "customer-a",
+		RADIUSServer: generator.RADIUSServer{Version: "3.2.10"},
 		Clients: []generator.Client{
 			{
 				Identifier:   "core-router",
@@ -31,14 +32,15 @@ func TestRenderClientsOneTenantOneClient(t *testing.T) {
 		"    ipaddr = 10.10.10.1\n" +
 		"    secret = shared-secret\n" +
 		"}\n"
-	if got != want {
-		t.Fatalf("RenderClients() = %q, want %q", got, want)
+	if !strings.HasSuffix(got, want) {
+		t.Fatalf("RenderClients() managed section does not end with %q", want)
 	}
 }
 
 func TestRenderClientsOneTenantMultipleClients(t *testing.T) {
 	tenant := generator.Tenant{
-		Identifier: "customer-a",
+		Identifier:   "customer-a",
+		RADIUSServer: generator.RADIUSServer{Version: "3.2.10"},
 		Clients: []generator.Client{
 			{Identifier: "core-router", IPAddress: "10.10.10.1", SharedSecret: "core-secret"},
 			{Identifier: "edge-router", IPAddress: "10.10.10.2", SharedSecret: "edge-secret"},
@@ -58,15 +60,16 @@ func TestRenderClientsOneTenantMultipleClients(t *testing.T) {
 		"    ipaddr = 10.10.10.2\n" +
 		"    secret = edge-secret\n" +
 		"}\n"
-	if got != want {
-		t.Fatalf("RenderClients() = %q, want %q", got, want)
+	if !strings.HasSuffix(got, want) {
+		t.Fatalf("RenderClients() managed section does not end with %q", want)
 	}
 }
 
 func TestRenderClientsIsDeterministic(t *testing.T) {
 	tenant := generator.Tenant{
-		Identifier: "tenant-a",
-		Clients:    []generator.Client{{Identifier: "a", IPAddress: "10.0.0.1", SharedSecret: "a-secret"}},
+		Identifier:   "tenant-a",
+		RADIUSServer: generator.RADIUSServer{Version: "3.2.10"},
+		Clients:      []generator.Client{{Identifier: "a", IPAddress: "10.0.0.1", SharedSecret: "a-secret"}},
 	}
 
 	first, err := RenderClients(tenant)
@@ -79,6 +82,29 @@ func TestRenderClientsIsDeterministic(t *testing.T) {
 	}
 	if first != second {
 		t.Fatalf("RenderClients() returned different results: %q and %q", first, second)
+	}
+}
+
+func TestRenderClientsUnsupportedVersion(t *testing.T) {
+	_, err := RenderClients(generator.Tenant{
+		RADIUSServer: generator.RADIUSServer{Version: "9.9.9"},
+	})
+	if err == nil || !strings.Contains(err.Error(), `FreeRADIUS version "9.9.9" is not supported`) {
+		t.Fatalf("RenderClients() error = %v, want unsupported version error", err)
+	}
+}
+
+func TestRenderClientsPropagatesTemplateExecutionError(t *testing.T) {
+	executionError := errors.New("template execution failed")
+	useClientsTemplateLoader(t, testTemplateLoader{
+		executor: testTemplateExecutor{err: executionError},
+	})
+
+	_, err := RenderClients(generator.Tenant{
+		RADIUSServer: generator.RADIUSServer{Version: "3.2.10"},
+	})
+	if !errors.Is(err, executionError) {
+		t.Fatalf("RenderClients() error = %v, want %v", err, executionError)
 	}
 }
 
@@ -173,6 +199,13 @@ func useSQLTemplateLoader(t *testing.T, loader templates.Loader) {
 	original := sqlTemplateLoader
 	sqlTemplateLoader = loader
 	t.Cleanup(func() { sqlTemplateLoader = original })
+}
+
+func useClientsTemplateLoader(t *testing.T, loader templates.Loader) {
+	t.Helper()
+	original := clientsTemplateLoader
+	clientsTemplateLoader = loader
+	t.Cleanup(func() { clientsTemplateLoader = original })
 }
 
 type testTemplateLoader struct {

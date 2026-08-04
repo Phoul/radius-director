@@ -3,32 +3,24 @@ package renderer
 
 import (
 	"bytes"
-	"strings"
 
 	"github.com/gobcn/radius-director/internal/generator"
 	"github.com/gobcn/radius-director/internal/templates"
 )
 
+var clientsTemplateLoader = templates.EmbeddedLoader()
 var sqlTemplateLoader = templates.EmbeddedLoader()
 
 // RenderClients renders the clients.conf content for a generated tenant.
 func RenderClients(tenant generator.Tenant) (string, error) {
-	var rendered strings.Builder
+	template, err := clientsTemplateLoader.Load(tenant.RADIUSServer.Version, "clients.conf")
+	if err != nil {
+		return "", err
+	}
 
-	rendered.WriteString("# Tenant: ")
-	rendered.WriteString(tenant.Identifier)
-	rendered.WriteByte('\n')
-
-	for _, client := range tenant.Clients {
-		rendered.WriteString("client ")
-		rendered.WriteString(client.Identifier)
-		rendered.WriteString(" {\n")
-		rendered.WriteString("    ipaddr = ")
-		rendered.WriteString(client.IPAddress)
-		rendered.WriteString("\n")
-		rendered.WriteString("    secret = ")
-		rendered.WriteString(client.SharedSecret)
-		rendered.WriteString("\n}\n")
+	var rendered bytes.Buffer
+	if err := template.Execute(&rendered, tenant); err != nil {
+		return "", err
 	}
 
 	return rendered.String(), nil

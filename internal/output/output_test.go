@@ -75,7 +75,8 @@ func testConfiguration() generator.Configuration {
 	return generator.Configuration{
 		Tenants: []generator.Tenant{
 			{
-				Identifier: "customer-a",
+				Identifier:   "customer-a",
+				RADIUSServer: generator.RADIUSServer{Version: "3.2.10"},
 				Clients: []generator.Client{
 					{
 						Identifier:   "core-router",
@@ -85,7 +86,8 @@ func testConfiguration() generator.Configuration {
 				},
 			},
 			{
-				Identifier: "customer-b",
+				Identifier:   "customer-b",
+				RADIUSServer: generator.RADIUSServer{Version: "3.2.10"},
 				Clients: []generator.Client{
 					{
 						Identifier:   "edge-router",
