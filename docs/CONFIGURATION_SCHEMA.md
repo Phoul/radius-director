@@ -76,6 +76,11 @@ global_objects:
     default:
       shared_secret: mysecret
 
+  accounting_profiles:
+
+    default:
+      stale_session_timeout: 20m
+
   nas_devices:
 
     mt-core-01.gobcn.ca:
@@ -83,9 +88,47 @@ global_objects:
       vendor: mikrotik
 
   trusted_radius_clients:
+
     sonar:
       ip_address: 20.104.33.4
 ```
+
+---
+
+# Accounting Profiles
+
+Accounting Profiles define reusable accounting behaviour.
+
+An Accounting Profile may define a `stale_session_timeout`.
+
+Example:
+
+```yaml
+accounting_profiles:
+
+  default:
+    stale_session_timeout: 20m
+```
+
+The `stale_session_timeout` property defines how long a session may remain without accounting activity before it is considered stale.
+
+The value is expressed as a duration.
+
+Examples include:
+
+```yaml
+stale_session_timeout: 10m
+stale_session_timeout: 20m
+stale_session_timeout: 1h
+```
+
+If `stale_session_timeout` is omitted, automatic stale-session cleanup is not enabled for that Accounting Profile.
+
+The timeout defines when a session is considered stale. It does not define how frequently stale-session maintenance is executed.
+
+When a stale session is closed, its recorded stop time represents the last known accounting activity for the session rather than the time at which the cleanup process executes.
+
+Accounting Profiles are applied to NAS Devices through NAS Assignments.
 
 ---
 
@@ -208,6 +251,8 @@ Relationship objects never duplicate configuration owned by other objects.
 
 Referenced objects must exist within the configuration.
 
+An Accounting Profile's accounting policy applies to each NAS Assignment that references it.
+
 ---
 
 # Trusted RADIUS Clients
@@ -226,7 +271,9 @@ Trusted RADIUS Clients are reusable Global Objects.
 
 They participate in client authentication but are not used when generating CoA proxy configuration.
 
-Trusted Client Assignments associate Trusted RADIUS Clients with Credential Profiles for a particular tenant.
+Trusted RADIUS Client Assignments associate Trusted RADIUS Clients with Credential Profiles for a particular tenant.
+
+Trusted RADIUS Clients do not reference Accounting Profiles and do not participate in stale-session accounting policy.
 
 ---
 
@@ -249,6 +296,8 @@ Configuration validation should detect:
 - missing references
 - duplicate identifiers
 - invalid IP addresses
+- invalid durations
+- non-positive duration values
 - invalid object relationships
 - unsupported object combinations
 - schema version mismatches
