@@ -42,6 +42,7 @@ func Generate(configuration model.Configuration) Configuration {
 				Identifier:   assignmentIdentifier,
 				IPAddress:    nasDevice.IPAddress,
 				SharedSecret: credentialProfile.SharedSecret,
+				Vendor:       nasDevice.Vendor,
 			})
 		}
 

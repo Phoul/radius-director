@@ -31,6 +31,8 @@ func TestRenderClientsOneTenantOneClient(t *testing.T) {
 		"client core-router {\n" +
 		"    ipaddr = 10.10.10.1\n" +
 		"    secret = shared-secret\n" +
+		"    nas_type = other\n" +
+		"    coa_server = concentrators\n" +
 		"}\n"
 	if !strings.HasSuffix(got, want) {
 		t.Fatalf("RenderClients() managed section does not end with %q", want)
@@ -42,8 +44,8 @@ func TestRenderClientsOneTenantMultipleClients(t *testing.T) {
 		Identifier:   "customer-a",
 		RADIUSServer: generator.RADIUSServer{Version: "3.2.10"},
 		Clients: []generator.Client{
-			{Identifier: "core-router", IPAddress: "10.10.10.1", SharedSecret: "core-secret"},
-			{Identifier: "edge-router", IPAddress: "10.10.10.2", SharedSecret: "edge-secret"},
+			{Identifier: "core-router", IPAddress: "10.10.10.1", SharedSecret: "core-secret", Vendor: "mikrotik"},
+			{Identifier: "edge-router", IPAddress: "10.10.10.2", SharedSecret: "edge-secret", Vendor: "generic"},
 		},
 	}
 
@@ -55,10 +57,14 @@ func TestRenderClientsOneTenantMultipleClients(t *testing.T) {
 		"client core-router {\n" +
 		"    ipaddr = 10.10.10.1\n" +
 		"    secret = core-secret\n" +
+		"    nas_type = mikrotik_snmp\n" +
+		"    coa_server = concentrators\n" +
 		"}\n" +
 		"client edge-router {\n" +
 		"    ipaddr = 10.10.10.2\n" +
 		"    secret = edge-secret\n" +
+		"    nas_type = other\n" +
+		"    coa_server = concentrators\n" +
 		"}\n"
 	if !strings.HasSuffix(got, want) {
 		t.Fatalf("RenderClients() managed section does not end with %q", want)

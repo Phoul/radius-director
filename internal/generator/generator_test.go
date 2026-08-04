@@ -14,7 +14,7 @@ func TestGenerateOneNASAssignmentCreatesOneClient(t *testing.T) {
 				"default": {SharedSecret: "shared-secret"},
 			},
 			NASDevices: map[string]model.NASDevice{
-				"core": {IPAddress: "10.10.10.1"},
+				"core": {IPAddress: "10.10.10.1", Vendor: "mikrotik"},
 			},
 		},
 		Tenants: map[string]model.Tenant{
@@ -41,6 +41,7 @@ func TestGenerateOneNASAssignmentCreatesOneClient(t *testing.T) {
 		Identifier:   "core-router",
 		IPAddress:    "10.10.10.1",
 		SharedSecret: "shared-secret",
+		Vendor:       "mikrotik",
 	}}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("generated clients = %#v, want %#v", got, want)
 	}
@@ -54,8 +55,8 @@ func TestGenerateMultipleNASAssignmentsCreatesMultipleClients(t *testing.T) {
 				"edge-credentials": {SharedSecret: "edge-secret"},
 			},
 			NASDevices: map[string]model.NASDevice{
-				"core": {IPAddress: "10.10.10.1"},
-				"edge": {IPAddress: "10.10.10.2"},
+				"core": {IPAddress: "10.10.10.1", Vendor: "mikrotik"},
+				"edge": {IPAddress: "10.10.10.2", Vendor: "generic"},
 			},
 		},
 		Tenants: map[string]model.Tenant{
@@ -84,11 +85,13 @@ func TestGenerateMultipleNASAssignmentsCreatesMultipleClients(t *testing.T) {
 			Identifier:   "core-router",
 			IPAddress:    "10.10.10.1",
 			SharedSecret: "core-secret",
+			Vendor:       "mikrotik",
 		},
 		{
 			Identifier:   "edge-router",
 			IPAddress:    "10.10.10.2",
 			SharedSecret: "edge-secret",
+			Vendor:       "generic",
 		},
 	}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("generated clients = %#v, want %#v", got, want)

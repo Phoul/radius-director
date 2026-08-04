@@ -20,6 +20,7 @@ type Client struct {
 	Identifier   string
 	IPAddress    string
 	SharedSecret string
+	Vendor       string
 }
 
 // SQL contains the information needed to render a FreeRADIUS sql module.
