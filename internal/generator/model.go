@@ -9,27 +9,19 @@ type Configuration struct {
 
 // Tenant contains generated configuration for one RADIUS Director tenant.
 type Tenant struct {
-	Identifier                     string
-	Clients                        []Client
-	TrustedRADIUSClientAssignments []TrustedRADIUSClientAssignment
-	SQL                            SQL
-	RADIUSServer                   RADIUSServer
+	Identifier        string
+	FreeRADIUSClients []FreeRADIUSClient
+	SQL               SQL
+	RADIUSServer      RADIUSServer
 }
 
-// Client contains the information needed to render a FreeRADIUS client definition.
-type Client struct {
+// FreeRADIUSClient contains the information needed to render a FreeRADIUS
+// client definition.
+type FreeRADIUSClient struct {
 	Identifier   string
 	IPAddress    string
 	SharedSecret string
 	Vendor       string
-}
-
-// TrustedRADIUSClientAssignment contains the information required to render a
-// trusted RADIUS client definition for a tenant.
-type TrustedRADIUSClientAssignment struct {
-	Identifier   string
-	IPAddress    string
-	SharedSecret string
 }
 
 // SQL contains the information needed to render a FreeRADIUS sql module.

@@ -37,13 +37,13 @@ func TestGenerateOneNASAssignmentCreatesOneClient(t *testing.T) {
 	if got, want := generated.Tenants[0].Identifier, "customer-a"; got != want {
 		t.Fatalf("tenant identifier = %q, want %q", got, want)
 	}
-	if got, want := generated.Tenants[0].Clients, []Client{{
+	if got, want := generated.Tenants[0].FreeRADIUSClients, []FreeRADIUSClient{{
 		Identifier:   "core-router",
 		IPAddress:    "10.10.10.1",
 		SharedSecret: "shared-secret",
 		Vendor:       "mikrotik",
 	}}; !reflect.DeepEqual(got, want) {
-		t.Fatalf("generated clients = %#v, want %#v", got, want)
+		t.Fatalf("generated FreeRADIUS clients = %#v, want %#v", got, want)
 	}
 }
 
@@ -80,7 +80,7 @@ func TestGenerateMultipleNASAssignmentsCreatesMultipleClients(t *testing.T) {
 	if len(generated.Tenants) != 1 {
 		t.Fatalf("generated tenants = %d, want 1", len(generated.Tenants))
 	}
-	if got, want := generated.Tenants[0].Clients, []Client{
+	if got, want := generated.Tenants[0].FreeRADIUSClients, []FreeRADIUSClient{
 		{
 			Identifier:   "core-router",
 			IPAddress:    "10.10.10.1",
@@ -94,7 +94,7 @@ func TestGenerateMultipleNASAssignmentsCreatesMultipleClients(t *testing.T) {
 			Vendor:       "generic",
 		},
 	}; !reflect.DeepEqual(got, want) {
-		t.Fatalf("generated clients = %#v, want %#v", got, want)
+		t.Fatalf("generated FreeRADIUS clients = %#v, want %#v", got, want)
 	}
 }
 
@@ -141,9 +141,8 @@ func TestGenerateMultipleTenantsCreatesSQLInDeterministicOrder(t *testing.T) {
 	generated := Generate(configuration)
 	want := []Tenant{
 		{
-			Identifier:                     "tenant-a",
-			Clients:                        []Client{},
-			TrustedRADIUSClientAssignments: []TrustedRADIUSClientAssignment{},
+			Identifier:        "tenant-a",
+			FreeRADIUSClients: []FreeRADIUSClient{},
 			SQL: SQL{
 				Engine:   "mysql",
 				Host:     "database.tenant_a.internal",
@@ -154,9 +153,8 @@ func TestGenerateMultipleTenantsCreatesSQLInDeterministicOrder(t *testing.T) {
 			},
 		},
 		{
-			Identifier:                     "tenant-b",
-			Clients:                        []Client{},
-			TrustedRADIUSClientAssignments: []TrustedRADIUSClientAssignment{},
+			Identifier:        "tenant-b",
+			FreeRADIUSClients: []FreeRADIUSClient{},
 			SQL: SQL{
 				Engine:   "mysql",
 				Host:     "database.tenant_b.internal",
@@ -176,8 +174,12 @@ func TestGenerateTrustedRADIUSClientAssignments(t *testing.T) {
 	configuration := model.Configuration{
 		GlobalObjects: model.GlobalObjects{
 			CredentialProfiles: map[string]model.CredentialProfile{
+				"core-credentials":         {SharedSecret: "core-secret"},
 				"monitoring-credentials":   {SharedSecret: "monitoring-secret"},
 				"provisioning-credentials": {SharedSecret: "provisioning-secret"},
+			},
+			NASDevices: map[string]model.NASDevice{
+				"core": {IPAddress: "10.10.10.1", Vendor: "mikrotik"},
 			},
 			TrustedRADIUSClients: map[string]model.TrustedRADIUSClient{
 				"monitoring":   {IPAddress: "10.10.10.10"},
@@ -186,6 +188,9 @@ func TestGenerateTrustedRADIUSClientAssignments(t *testing.T) {
 		},
 		Tenants: map[string]model.Tenant{
 			"customer-a": {
+				NASAssignments: map[string]model.NASAssignment{
+					"core": {NASDevice: "core", CredentialProfile: "core-credentials"},
+				},
 				TrustedRADIUSClientAssignments: map[string]model.TrustedRADIUSClientAssignment{
 					"provisioning": {
 						TrustedRADIUSClient: "provisioning",
@@ -201,12 +206,13 @@ func TestGenerateTrustedRADIUSClientAssignments(t *testing.T) {
 	}
 
 	generated := Generate(configuration)
-	want := []TrustedRADIUSClientAssignment{
+	want := []FreeRADIUSClient{
+		{Identifier: "core", IPAddress: "10.10.10.1", SharedSecret: "core-secret", Vendor: "mikrotik"},
 		{Identifier: "monitoring", IPAddress: "10.10.10.10", SharedSecret: "monitoring-secret"},
 		{Identifier: "provisioning", IPAddress: "10.10.10.11", SharedSecret: "provisioning-secret"},
 	}
-	if got := generated.Tenants[0].TrustedRADIUSClientAssignments; !reflect.DeepEqual(got, want) {
-		t.Fatalf("generated trusted RADIUS client assignments = %#v, want %#v", got, want)
+	if got := generated.Tenants[0].FreeRADIUSClients; !reflect.DeepEqual(got, want) {
+		t.Fatalf("generated FreeRADIUS clients = %#v, want %#v", got, want)
 	}
 }
 

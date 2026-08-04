@@ -15,9 +15,8 @@ func Generate(configuration model.Configuration) Configuration {
 	for _, tenantIdentifier := range sortedKeys(configuration.Tenants) {
 		tenant := configuration.Tenants[tenantIdentifier]
 		generatedTenant := Tenant{
-			Identifier:                     tenantIdentifier,
-			Clients:                        make([]Client, 0, len(tenant.NASAssignments)),
-			TrustedRADIUSClientAssignments: make([]TrustedRADIUSClientAssignment, 0, len(tenant.TrustedRADIUSClientAssignments)),
+			Identifier:        tenantIdentifier,
+			FreeRADIUSClients: make([]FreeRADIUSClient, 0, len(tenant.NASAssignments)+len(tenant.TrustedRADIUSClientAssignments)),
 			SQL: SQL{
 				Engine:   tenant.Database.Engine,
 				Host:     tenant.Database.Host,
@@ -39,7 +38,7 @@ func Generate(configuration model.Configuration) Configuration {
 			nasDevice := configuration.GlobalObjects.NASDevices[assignment.NASDevice]
 			credentialProfile := configuration.GlobalObjects.CredentialProfiles[assignment.CredentialProfile]
 
-			generatedTenant.Clients = append(generatedTenant.Clients, Client{
+			generatedTenant.FreeRADIUSClients = append(generatedTenant.FreeRADIUSClients, FreeRADIUSClient{
 				Identifier:   assignmentIdentifier,
 				IPAddress:    nasDevice.IPAddress,
 				SharedSecret: credentialProfile.SharedSecret,
@@ -52,12 +51,15 @@ func Generate(configuration model.Configuration) Configuration {
 			trustedRADIUSClient := configuration.GlobalObjects.TrustedRADIUSClients[assignment.TrustedRADIUSClient]
 			credentialProfile := configuration.GlobalObjects.CredentialProfiles[assignment.CredentialProfile]
 
-			generatedTenant.TrustedRADIUSClientAssignments = append(generatedTenant.TrustedRADIUSClientAssignments, TrustedRADIUSClientAssignment{
+			generatedTenant.FreeRADIUSClients = append(generatedTenant.FreeRADIUSClients, FreeRADIUSClient{
 				Identifier:   assignmentIdentifier,
 				IPAddress:    trustedRADIUSClient.IPAddress,
 				SharedSecret: credentialProfile.SharedSecret,
 			})
 		}
+		sort.SliceStable(generatedTenant.FreeRADIUSClients, func(left, right int) bool {
+			return generatedTenant.FreeRADIUSClients[left].Identifier < generatedTenant.FreeRADIUSClients[right].Identifier
+		})
 
 		generated.Tenants = append(generated.Tenants, generatedTenant)
 	}

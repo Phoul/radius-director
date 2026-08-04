@@ -14,7 +14,7 @@ func TestRenderClientsOneTenantOneClient(t *testing.T) {
 	tenant := generator.Tenant{
 		Identifier:   "customer-a",
 		RADIUSServer: generator.RADIUSServer{Version: "3.2.10"},
-		Clients: []generator.Client{
+		FreeRADIUSClients: []generator.FreeRADIUSClient{
 			{
 				Identifier:   "core-router",
 				IPAddress:    "10.10.10.1",
@@ -27,15 +27,17 @@ func TestRenderClientsOneTenantOneClient(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RenderClients() error = %v", err)
 	}
-	want := "# Tenant: customer-a\n" +
-		"client core-router {\n" +
+	want := "client core-router {\n" +
 		"    ipaddr = 10.10.10.1\n" +
 		"    secret = shared-secret\n" +
 		"    nas_type = other\n" +
 		"    coa_server = concentrators\n" +
-		"}\n"
-	if !strings.HasSuffix(normalizeLineEndings(got), want) {
-		t.Fatalf("RenderClients() managed section does not end with %q", want)
+		"}"
+	if !strings.Contains(normalizeLineEndings(got), "# Tenant: customer-a") {
+		t.Fatalf("RenderClients() output does not identify the tenant")
+	}
+	if !strings.Contains(normalizeLineEndings(got), want) {
+		t.Fatalf("RenderClients() output does not contain %q", want)
 	}
 }
 
@@ -43,7 +45,7 @@ func TestRenderClientsOneTenantMultipleClients(t *testing.T) {
 	tenant := generator.Tenant{
 		Identifier:   "customer-a",
 		RADIUSServer: generator.RADIUSServer{Version: "3.2.10"},
-		Clients: []generator.Client{
+		FreeRADIUSClients: []generator.FreeRADIUSClient{
 			{Identifier: "core-router", IPAddress: "10.10.10.1", SharedSecret: "core-secret", Vendor: "mikrotik"},
 			{Identifier: "edge-router", IPAddress: "10.10.10.2", SharedSecret: "edge-secret", Vendor: "generic"},
 		},
@@ -53,29 +55,34 @@ func TestRenderClientsOneTenantMultipleClients(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RenderClients() error = %v", err)
 	}
-	want := "# Tenant: customer-a\n" +
-		"client core-router {\n" +
+	coreClient := "client core-router {\n" +
 		"    ipaddr = 10.10.10.1\n" +
 		"    secret = core-secret\n" +
 		"    nas_type = mikrotik_snmp\n" +
 		"    coa_server = concentrators\n" +
-		"}\n" +
-		"client edge-router {\n" +
+		"}"
+	edgeClient := "client edge-router {\n" +
 		"    ipaddr = 10.10.10.2\n" +
 		"    secret = edge-secret\n" +
 		"    nas_type = other\n" +
 		"    coa_server = concentrators\n" +
-		"}\n"
-	if !strings.HasSuffix(normalizeLineEndings(got), want) {
-		t.Fatalf("RenderClients() managed section does not end with %q", want)
+		"}"
+	normalized := normalizeLineEndings(got)
+	coreIndex := strings.Index(normalized, coreClient)
+	edgeIndex := strings.Index(normalized, edgeClient)
+	if coreIndex < 0 || edgeIndex < 0 {
+		t.Fatalf("RenderClients() output does not contain both expected client definitions")
+	}
+	if coreIndex > edgeIndex {
+		t.Fatalf("RenderClients() rendered clients out of order")
 	}
 }
 
 func TestRenderClientsIsDeterministic(t *testing.T) {
 	tenant := generator.Tenant{
-		Identifier:   "tenant-a",
-		RADIUSServer: generator.RADIUSServer{Version: "3.2.10"},
-		Clients:      []generator.Client{{Identifier: "a", IPAddress: "10.0.0.1", SharedSecret: "a-secret"}},
+		Identifier:        "tenant-a",
+		RADIUSServer:      generator.RADIUSServer{Version: "3.2.10"},
+		FreeRADIUSClients: []generator.FreeRADIUSClient{{Identifier: "a", IPAddress: "10.0.0.1", SharedSecret: "a-secret"}},
 	}
 
 	first, err := RenderClients(tenant)

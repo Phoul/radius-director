@@ -77,7 +77,7 @@ func testConfiguration() generator.Configuration {
 			{
 				Identifier:   "customer-a",
 				RADIUSServer: generator.RADIUSServer{Version: "3.2.10"},
-				Clients: []generator.Client{
+				FreeRADIUSClients: []generator.FreeRADIUSClient{
 					{
 						Identifier:   "core-router",
 						IPAddress:    "10.10.10.1",
@@ -88,7 +88,7 @@ func testConfiguration() generator.Configuration {
 			{
 				Identifier:   "customer-b",
 				RADIUSServer: generator.RADIUSServer{Version: "3.2.10"},
-				Clients: []generator.Client{
+				FreeRADIUSClients: []generator.FreeRADIUSClient{
 					{
 						Identifier:   "edge-router",
 						IPAddress:    "10.20.20.1",
