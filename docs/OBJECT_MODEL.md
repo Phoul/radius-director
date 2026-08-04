@@ -201,6 +201,48 @@ Used when rendering managed FreeRADIUS client definitions.
 
 ---
 
+# Trusted RADIUS Client
+
+## Purpose
+
+Represents a trusted RADIUS client that communicates with FreeRADIUS but is not itself a NAS Device.
+
+Examples include:
+
+- billing systems
+- provisioning systems
+- management platforms
+- monitoring systems
+- other RADIUS servers
+
+Trusted RADIUS Clients participate only in client authentication and authorization.
+
+They are not used when generating CoA proxy configuration.
+
+## Ownership
+
+Global Object
+
+## Properties
+
+- ip_address
+
+## Relationships
+
+Referenced by one or more Trusted RADIUS Client Assignments.
+
+## Validation
+
+- ip_address must be a valid IP address
+
+## Generation
+
+Used when rendering managed FreeRADIUS client definitions.
+
+Trusted RADIUS Clients do not participate in managed CoA configuration generation.
+
+---
+
 # Tenant
 
 ## Purpose
@@ -224,6 +266,7 @@ Contains:
 - Database
 - RADIUS Server
 - NAS Assignments
+- Trusted RADIUS Client Assignments
 
 Each tenant represents a complete, independent FreeRADIUS deployment.
 
@@ -365,3 +408,44 @@ Owned by a Tenant.
 ## Generation
 
 Combines Global Objects into tenant-specific managed configuration used to render the tenant's managed FreeRADIUS configuration tree.
+
+---
+
+# Trusted RADIUS Client Assignment
+
+## Purpose
+
+Defines how a tenant uses a Trusted RADIUS Client.
+
+Unlike NAS Assignments, Trusted RADIUS Client Assignments describe only the credentials required for a trusted client to communicate with the tenant's FreeRADIUS deployment.
+
+## Ownership
+
+Relationship Object
+
+## Properties
+
+- trusted_radius_client
+- credential_profile
+
+## Relationships
+
+References:
+
+- Trusted RADIUS Client
+- Credential Profile
+
+Owned by a Tenant.
+
+## Validation
+
+- trusted_radius_client must be specified
+- credential_profile must be specified
+- every referenced object must exist
+- duplicate assignments are not permitted
+
+## Generation
+
+Combines Trusted RADIUS Clients with Credential Profiles to render managed client definitions.
+
+Trusted RADIUS Client Assignments do not participate in CoA proxy configuration generation.

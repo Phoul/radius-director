@@ -42,6 +42,8 @@ global_objects:
 
   nas_devices:
 
+  trusted_radius_clients:
+
 tenants:
 ```
 
@@ -60,6 +62,7 @@ The following Global Object collections are supported:
 | accounting_profiles | Accounting Profile |
 | monitoring_profiles | Monitoring Profile |
 | nas_devices | NAS Device |
+| trusted_radius_clients | Trusted RADIUS Client |
 
 Each object is identified by its YAML key.
 
@@ -78,6 +81,10 @@ global_objects:
     mt-core-01.gobcn.ca:
       ip_address: 10.10.10.1
       vendor: mikrotik
+
+  trusted_radius_clients:
+    sonar:
+      ip_address: 20.104.33.4
 ```
 
 ---
@@ -100,13 +107,16 @@ tenants:
     radius_server:
 
     nas_assignments:
+
+    trusted_client_assignments:
 ```
 
 Each Tenant owns:
 
 - exactly one Database
 - exactly one RADIUS Server
-- one or more NAS Assignments
+- zero or more NAS Assignments
+- zero or more Trusted RADIUS Client Assignments
 
 Each tenant represents an independent FreeRADIUS deployment.
 
@@ -184,11 +194,39 @@ nas_assignments:
     accounting_profile: default
 
     monitoring_profile: default
+
+trusted_client_assignments:
+
+  sonar:
+
+    trusted_radius_client: sonar
+
+    credential_profile: default
 ```
 
 Relationship objects never duplicate configuration owned by other objects.
 
 Referenced objects must exist within the configuration.
+
+---
+
+# Trusted RADIUS Clients
+
+Trusted RADIUS Clients represent systems that communicate with FreeRADIUS but are not NAS Devices.
+
+Examples include:
+
+- billing systems
+- provisioning systems
+- monitoring systems
+- management platforms
+- other RADIUS servers
+
+Trusted RADIUS Clients are reusable Global Objects.
+
+They participate in client authentication but are not used when generating CoA proxy configuration.
+
+Trusted Client Assignments associate Trusted RADIUS Clients with Credential Profiles for a particular tenant.
 
 ---
 

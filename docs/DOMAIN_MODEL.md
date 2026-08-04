@@ -19,6 +19,7 @@ Global Objects include:
 - Accounting Profiles
 - Monitoring Profiles
 - NAS Devices
+- Trusted RADIUS Clients
 
 ---
 
@@ -28,9 +29,12 @@ Each tenant contains tenant-specific infrastructure.
 
 Tenant Objects include:
 
+Tenant Objects include:
+
 - Database
 - RADIUS Server
-- NAS Assignments
+
+Relationship Objects owned by a tenant define how Global Objects are composed into the tenant's deployment.
 
 Each tenant represents an independent FreeRADIUS deployment.
 
@@ -46,9 +50,10 @@ Some objects exist primarily to describe relationships between other objects.
 
 Relationship Objects allow reusable Global Objects to be composed into tenant-specific deployments.
 
-The primary Relationship Object is:
+Relationship Objects include:
 
 - NAS Assignment
+- Trusted RADIUS Client Assignment
 
 A NAS Assignment references:
 
@@ -58,7 +63,12 @@ A NAS Assignment references:
 - Accounting Profile
 - Monitoring Profile
 
-while remaining owned by a single tenant.
+A Trusted RADIUS Client Assignment references:
+
+- Trusted RADIUS Client
+- Credential Profile
+
+Relationship Objects remain owned by a single tenant.
 
 ---
 
@@ -71,7 +81,7 @@ Typical properties include:
 - RADIUS shared secret
 - CoA shared secret
 
-Multiple NAS Assignments may reference the same Credential Profile.
+Multiple NAS Assignments and Trusted RADIUS Client Assignments may reference the same Credential Profile.
 
 ---
 
@@ -139,6 +149,34 @@ Operational behaviour such as credentials, authentication, accounting, and monit
 
 ---
 
+# Trusted RADIUS Client
+
+Represents a trusted system that communicates with FreeRADIUS but is not itself a NAS Device.
+
+Examples include:
+
+- billing systems
+- provisioning systems
+- monitoring systems
+- management platforms
+- other RADIUS servers
+
+Trusted RADIUS Clients are reusable Global Objects.
+
+Unlike NAS Devices, Trusted RADIUS Clients participate only in client authentication and authorization.
+
+They are not used when generating CoA proxy configuration.
+
+Typical properties include:
+
+- Name
+- Address
+- Description
+
+Operational behaviour is defined through Trusted RADIUS Client Assignments.
+
+---
+
 # NAS Assignment
 
 Represents how a tenant uses a NAS Device.
@@ -154,6 +192,23 @@ Each NAS Assignment references:
 - Monitoring Profile
 
 Multiple tenants may reference the same NAS Device while applying different operational policies through separate NAS Assignments.
+
+---
+
+# Trusted RADIUS Client Assignment
+
+Represents how a tenant uses a Trusted RADIUS Client.
+
+A Trusted RADIUS Client Assignment is a Relationship Object that combines a Trusted RADIUS Client with the credentials required for it to communicate with the tenant's FreeRADIUS deployment.
+
+Each Trusted RADIUS Client Assignment references:
+
+- Trusted RADIUS Client
+- Credential Profile
+
+Multiple tenants may reference the same Trusted RADIUS Client while using different Credential Profiles if required.
+
+Trusted RADIUS Client Assignments do not participate in CoA proxy configuration.
 
 ---
 
