@@ -109,19 +109,35 @@ Used when generating authentication policies.
 
 Defines accounting behaviour.
 
+An Accounting Profile may also define when an active accounting session should be considered stale when no Accounting-Stop packet has been received.
+
+Stale-session cleanup maintains accurate accounting state independently of session verification performed during authentication.
+
 ## Ownership
 
 Global Object
 
 ## Properties
 
-Initially implementation-specific.
+- stale_session_timeout
+
+Additional accounting properties may be introduced in the future.
 
 Examples may include:
 
 - accounting storage
 - interim update handling
-- session cleanup
+- retention policies
+
+### stale_session_timeout
+
+Defines how long a session may remain without accounting activity before it is considered stale.
+
+If `stale_session_timeout` is not specified, automatic stale-session cleanup is not enabled for the Accounting Profile.
+
+The timeout represents accounting policy. It does not define how frequently the maintenance process executes.
+
+When a session is determined to be stale, its recorded stop time should represent the last known accounting activity for the session rather than the time at which the cleanup process executes.
 
 ## Relationships
 
@@ -129,11 +145,17 @@ Referenced by one or more NAS Assignments.
 
 ## Validation
 
-Profile-specific validation rules.
+- stale_session_timeout, when specified, must be a valid positive duration
+
+Additional profile-specific validation rules may apply as accounting functionality is introduced.
 
 ## Generation
 
-Used when generating accounting configuration.
+Provides tenant-specific accounting policy for NAS Assignments referencing the profile.
+
+Stale-session cleanup policy is made available to the operational maintenance layer responsible for identifying and closing stale accounting sessions.
+
+The scheduling and execution mechanism for periodic accounting maintenance is not defined by the Accounting Profile.
 
 ---
 
@@ -407,7 +429,7 @@ Owned by a Tenant.
 
 ## Generation
 
-Combines Global Objects into tenant-specific managed configuration used to render the tenant's managed FreeRADIUS configuration tree.
+Combines Global Objects into tenant-specific managed configuration used to render the tenant's managed FreeRADIUS configuration tree and provide operational policy.
 
 ---
 
