@@ -128,7 +128,13 @@ The timeout defines when a session is considered stale. It does not define how f
 
 When a stale session is closed, its recorded stop time represents the last known accounting activity for the session rather than the time at which the cleanup process executes.
 
-Accounting Profiles are applied to NAS Devices through NAS Assignments.
+The `stale_session_timeout` applies independently to each NAS Assignment that references the Accounting Profile.
+
+Different NAS Assignments within the same tenant may reference Accounting Profiles with different `stale_session_timeout` values.
+
+This allows stale-session policy to reflect differences in accounting behaviour between NAS Devices, including differences in their configured interim accounting update intervals.
+
+A NAS Assignment referencing an Accounting Profile without `stale_session_timeout` does not participate in automatic stale-session cleanup.
 
 ---
 

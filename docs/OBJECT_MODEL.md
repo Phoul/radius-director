@@ -133,6 +133,10 @@ Examples may include:
 
 Defines how long a session may remain without accounting activity before it is considered stale.
 
+The timeout applies independently to each NAS Assignment that references the Accounting Profile.
+
+Different NAS Assignments within the same tenant may therefore use different stale-session timeout values.
+
 If `stale_session_timeout` is not specified, automatic stale-session cleanup is not enabled for the Accounting Profile.
 
 The timeout represents accounting policy. It does not define how frequently the maintenance process executes.

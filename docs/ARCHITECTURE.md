@@ -65,6 +65,7 @@ Examples include:
 - Accounting Profiles
 - Monitoring Profiles
 - NAS Devices
+- Trusted RADIUS Clients
 
 Global Objects describe reusable behaviour or reusable infrastructure.
 
@@ -82,7 +83,11 @@ Examples include:
 
 - Database
 - RADIUS Server
+
+Relationship Objects owned by the tenant include:
+
 - NAS Assignments
+- Trusted RADIUS Client Assignments
 
 The RADIUS Server object includes the target FreeRADIUS version.
 
@@ -107,9 +112,10 @@ Some objects exist primarily to describe relationships between other objects.
 
 These objects allow reusable definitions to be combined into tenant-specific configurations.
 
-The primary Relationship Object is:
+Relationship Objects include:
 
 - NAS Assignment
+- Trusted RADIUS Client Assignment
 
 A NAS Assignment connects:
 
@@ -121,7 +127,14 @@ A NAS Assignment connects:
 
 within the context of a specific tenant.
 
-This allows multiple tenants to reference the same physical NAS while applying different operational policies.
+A Trusted RADIUS Client Assignment connects:
+
+- a Trusted RADIUS Client
+- a Credential Profile
+
+within the context of a specific tenant.
+
+This allows multiple tenants to reference the same Global Objects while applying tenant-specific operational configuration.
 
 ---
 
@@ -133,12 +146,14 @@ Global Objects
 ├── Authentication Profiles
 ├── Accounting Profiles
 ├── Monitoring Profiles
-└── NAS Devices
+├── NAS Devices
+└── Trusted RADIUS Clients
 
 Tenants
 ├── Database
 ├── RADIUS Server
-└── NAS Assignments
+├── NAS Assignments
+└── Trusted RADIUS Client Assignments
 ```
 
 Global Objects are shared.
@@ -321,6 +336,7 @@ Deployment responsibilities include:
 
 - installing the managed configuration tree
 - provisioning supporting infrastructure
+- provisioning operational maintenance mechanisms
 - starting or updating FreeRADIUS instances
 
 The deployment layer is intentionally separated from configuration generation.
@@ -328,6 +344,51 @@ The deployment layer is intentionally separated from configuration generation.
 Generation produces deterministic configuration.
 
 Deployment determines how that configuration is executed.
+
+---
+
+# Operational Maintenance
+
+Some domain policies require periodic operational activity rather than FreeRADIUS configuration generation.
+
+RADIUS Director distinguishes between:
+
+- the policy that defines the desired operational behaviour
+- the mechanism used to execute that behaviour
+
+Operational policy is defined by the declarative domain model.
+
+The deployment layer is responsible for provisioning the mechanism required to execute that policy.
+
+For example, an Accounting Profile may define a `stale_session_timeout`.
+
+The timeout determines when an accounting session associated with a NAS Assignment is considered stale.
+
+Different NAS Assignments within the same tenant may reference Accounting Profiles with different stale-session timeout values.
+
+RADIUS Director uses the NAS identity associated with accounting records to apply the stale-session policy belonging to the corresponding NAS Assignment.
+
+The mechanism used to periodically evaluate and close stale sessions is an operational maintenance responsibility rather than FreeRADIUS request-processing configuration.
+
+The deployment layer is responsible for arranging periodic execution of accounting maintenance appropriate to the deployment environment.
+
+Examples may include:
+
+- a system service and timer
+- a scheduled container
+- a platform-native scheduled job
+
+The scheduling mechanism is not part of the domain model.
+
+Operational maintenance should be deterministic and safe to execute repeatedly.
+
+Stale-session maintenance operates independently of authentication-time session verification.
+
+Authentication-time session verification may determine whether a subscriber is currently active and permit reconnection when an existing accounting record is stale.
+
+Accounting maintenance is responsible for ensuring that stale accounting records are eventually closed and that accounting history remains internally consistent.
+
+When stale-session maintenance closes an accounting session, the recorded stop time represents the last known accounting activity rather than the time at which the maintenance process executes.
 
 ---
 
