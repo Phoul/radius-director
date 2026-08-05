@@ -23,15 +23,16 @@ func TestRender(t *testing.T) {
 		t.Fatalf("Render() error = %v", err)
 	}
 
-	if len(files) != 4 {
-		t.Fatalf("Render() returned %d files, want 4", len(files))
+	if len(files) != 5 {
+		t.Fatalf("Render() returned %d files, want 5", len(files))
 	}
 
 	expected := []string{
 		"clients.conf",
+		"mods-available/sql",
+		"mods-config/files/authorize",
 		"proxy.conf",
 		"sites-available/coa",
-		"mods-config/files/authorize",
 	}
 
 	for i, want := range expected {

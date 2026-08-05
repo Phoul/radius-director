@@ -44,6 +44,8 @@ Adding a new managed configuration file SHOULD normally require only adding the 
 
 All managed templates SHALL be executed with generator.Tenant as the root template context. Templates may reference any information reachable from the tenant object.
 
+Every file within a managed template set SHALL be treated as a Go template. Files that contain no template actions are rendered unchanged.
+
 ---
 
 ## Responsibilities

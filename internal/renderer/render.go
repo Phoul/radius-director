@@ -1,53 +1,44 @@
+// Package renderer renders intermediate FreeRADIUS configuration models.
 package renderer
 
-import "github.com/gobcn/radius-director/internal/generator"
+import (
+	"bytes"
+	"fmt"
+
+	"github.com/gobcn/radius-director/internal/generator"
+	"github.com/gobcn/radius-director/internal/templates"
+)
 
 // Render renders every managed configuration file for a tenant.
-//
-// The initial implementation delegates to the existing per-file renderers.
-// Future implementations will discover and render templates automatically.
 func Render(tenant generator.Tenant) ([]RenderedFile, error) {
-	files := make([]RenderedFile, 0, 4)
+	version := tenant.RADIUSServer.Version
 
-	clients, err := RenderClients(tenant)
+	paths, err := templates.ManagedTemplates(version)
 	if err != nil {
 		return nil, err
 	}
 
-	files = append(files, RenderedFile{
-		RelativePath: "clients.conf",
-		Content:      clients,
-	})
+	loader := templates.EmbeddedLoader()
 
-	proxy, err := RenderProxy(tenant)
-	if err != nil {
-		return nil, err
+	files := make([]RenderedFile, 0, len(paths))
+
+	for _, path := range paths {
+		tmpl, err := loader.Load(version, path)
+		if err != nil {
+			return nil, err
+		}
+
+		var rendered bytes.Buffer
+
+		if err := tmpl.Execute(&rendered, tenant); err != nil {
+			return nil, fmt.Errorf("render %q: %w", path, err)
+		}
+
+		files = append(files, RenderedFile{
+			RelativePath: path,
+			Content:      rendered.String(),
+		})
 	}
-
-	files = append(files, RenderedFile{
-		RelativePath: "proxy.conf",
-		Content:      proxy,
-	})
-
-	coa, err := RenderCOA(tenant)
-	if err != nil {
-		return nil, err
-	}
-
-	files = append(files, RenderedFile{
-		RelativePath: "sites-available/coa",
-		Content:      coa,
-	})
-
-	authorize, err := RenderAuthorize(tenant)
-	if err != nil {
-		return nil, err
-	}
-
-	files = append(files, RenderedFile{
-		RelativePath: "mods-config/files/authorize",
-		Content:      authorize,
-	})
 
 	return files, nil
 }
