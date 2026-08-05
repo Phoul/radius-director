@@ -3,6 +3,7 @@ package generator
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/gobcn/radius-director/internal/model"
 )
@@ -154,9 +155,10 @@ func TestGenerateMultipleTenantsCreatesSQLInDeterministicOrder(t *testing.T) {
 	generated := Generate(configuration)
 	want := []Tenant{
 		{
-			Identifier:        "tenant-a",
-			FreeRADIUSClients: []FreeRADIUSClient{},
-			HomeServers:       []HomeServer{},
+			Identifier:         "tenant-a",
+			FreeRADIUSClients:  []FreeRADIUSClient{},
+			HomeServers:        []HomeServer{},
+			AccountingPolicies: []NASAccountingPolicy{},
 			SQL: SQL{
 				Engine:   "mysql",
 				Host:     "database.tenant_a.internal",
@@ -167,9 +169,10 @@ func TestGenerateMultipleTenantsCreatesSQLInDeterministicOrder(t *testing.T) {
 			},
 		},
 		{
-			Identifier:        "tenant-b",
-			FreeRADIUSClients: []FreeRADIUSClient{},
-			HomeServers:       []HomeServer{},
+			Identifier:         "tenant-b",
+			FreeRADIUSClients:  []FreeRADIUSClient{},
+			HomeServers:        []HomeServer{},
+			AccountingPolicies: []NASAccountingPolicy{},
 			SQL: SQL{
 				Engine:   "mysql",
 				Host:     "database.tenant_b.internal",
@@ -324,5 +327,65 @@ func testDatabase(name string) model.Database {
 		Database: name,
 		Username: "radius-" + name,
 		Password: "password-" + name,
+	}
+}
+
+func TestGenerateNASAccountingPolicies(t *testing.T) {
+	configuration := model.Configuration{
+		GlobalObjects: model.GlobalObjects{
+			AccountingProfiles: map[string]model.AccountingProfile{
+				"disabled": {},
+				"long":     {StaleSessionTimeout: "1h"},
+				"standard": {StaleSessionTimeout: "20m"},
+			},
+			NASDevices: map[string]model.NASDevice{
+				"alpha": {IPAddress: "10.10.10.1"},
+				"beta":  {IPAddress: "10.10.10.2"},
+				"gamma": {IPAddress: "10.10.10.3"},
+			},
+		},
+		Tenants: map[string]model.Tenant{
+			"customer-a": {
+				NASAssignments: map[string]model.NASAssignment{
+					"gamma-router": {NASDevice: "gamma", AccountingProfile: "disabled"},
+					"alpha-router": {NASDevice: "alpha", AccountingProfile: "standard"},
+					"beta-router":  {NASDevice: "beta", AccountingProfile: "long"},
+				},
+			},
+		},
+	}
+
+	generated := Generate(configuration)
+	standard := 20 * time.Minute
+	long := time.Hour
+	want := []NASAccountingPolicy{
+		{NASAssignmentIdentifier: "alpha-router", NASDeviceIdentifier: "alpha", IPAddress: "10.10.10.1", StaleSessionTimeout: &standard},
+		{NASAssignmentIdentifier: "beta-router", NASDeviceIdentifier: "beta", IPAddress: "10.10.10.2", StaleSessionTimeout: &long},
+		{NASAssignmentIdentifier: "gamma-router", NASDeviceIdentifier: "gamma", IPAddress: "10.10.10.3", StaleSessionTimeout: nil},
+	}
+	if got := generated.Tenants[0].AccountingPolicies; !reflect.DeepEqual(got, want) {
+		t.Fatalf("generated accounting policies = %#v, want %#v", got, want)
+	}
+}
+
+func TestGenerateTrustedRADIUSClientsDoNotCreateAccountingPolicies(t *testing.T) {
+	configuration := model.Configuration{
+		GlobalObjects: model.GlobalObjects{
+			TrustedRADIUSClients: map[string]model.TrustedRADIUSClient{
+				"sonar": {IPAddress: "20.104.33.4"},
+			},
+		},
+		Tenants: map[string]model.Tenant{
+			"customer-a": {
+				TrustedRADIUSClientAssignments: map[string]model.TrustedRADIUSClientAssignment{
+					"sonar": {TrustedRADIUSClient: "sonar"},
+				},
+			},
+		},
+	}
+
+	generated := Generate(configuration)
+	if got := generated.Tenants[0].AccountingPolicies; len(got) != 0 {
+		t.Fatalf("generated accounting policies = %#v, want none", got)
 	}
 }

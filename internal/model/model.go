@@ -29,9 +29,9 @@ type CredentialProfile struct {
 type AuthenticationProfile struct{}
 
 // AccountingProfile defines accounting behaviour.
-//
-// Its properties are implementation-specific and are not defined yet.
-type AccountingProfile struct{}
+type AccountingProfile struct {
+	StaleSessionTimeout string `yaml:"stale_session_timeout"`
+}
 
 // MonitoringProfile defines operational monitoring.
 //

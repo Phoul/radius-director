@@ -3,6 +3,7 @@ package validation
 import (
 	"fmt"
 	"net"
+	"time"
 
 	"github.com/gobcn/radius-director/internal/model"
 )
@@ -58,6 +59,18 @@ func validateAccountingProfiles(profiles map[string]model.AccountingProfile) []e
 }
 
 func validateAccountingProfile(identifier string, profile model.AccountingProfile) []error {
+	if profile.StaleSessionTimeout == "" {
+		return nil
+	}
+
+	duration, err := time.ParseDuration(profile.StaleSessionTimeout)
+	if err != nil {
+		return []error{fmt.Errorf("accounting profile %q: stale_session_timeout must be a valid duration", identifier)}
+	}
+	if duration <= 0 {
+		return []error{fmt.Errorf("accounting profile %q: stale_session_timeout must be greater than zero", identifier)}
+	}
+
 	return nil
 }
 

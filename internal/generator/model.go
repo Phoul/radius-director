@@ -1,6 +1,8 @@
 // Package generator builds intermediate FreeRADIUS configuration models.
 package generator
 
+import "time"
+
 // Configuration is an intermediate representation of generated FreeRADIUS
 // configuration, grouped by tenant.
 type Configuration struct {
@@ -9,11 +11,12 @@ type Configuration struct {
 
 // Tenant contains generated configuration for one RADIUS Director tenant.
 type Tenant struct {
-	Identifier        string
-	FreeRADIUSClients []FreeRADIUSClient
-	HomeServers       []HomeServer
-	SQL               SQL
-	RADIUSServer      RADIUSServer
+	Identifier         string
+	FreeRADIUSClients  []FreeRADIUSClient
+	HomeServers        []HomeServer
+	AccountingPolicies []NASAccountingPolicy
+	SQL                SQL
+	RADIUSServer       RADIUSServer
 }
 
 // FreeRADIUSClient contains the information needed to render a FreeRADIUS
@@ -31,6 +34,16 @@ type HomeServer struct {
 	Identifier   string
 	IPAddress    string
 	SharedSecret string
+}
+
+// NASAccountingPolicy contains resolved accounting maintenance policy for one
+// NAS assignment. A nil StaleSessionTimeout means stale-session cleanup is
+// disabled for that assignment.
+type NASAccountingPolicy struct {
+	NASAssignmentIdentifier string
+	NASDeviceIdentifier     string
+	IPAddress               string
+	StaleSessionTimeout     *time.Duration
 }
 
 // SQL contains the information needed to render a FreeRADIUS sql module.

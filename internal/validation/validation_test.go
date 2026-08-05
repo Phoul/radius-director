@@ -1176,3 +1176,36 @@ func TestSortedKeys(t *testing.T) {
 		t.Fatalf("sortedKeys() = %v, want %v", got, want)
 	}
 }
+
+func TestValidateAccountingProfileStaleSessionTimeout(t *testing.T) {
+	tests := []struct {
+		name    string
+		timeout string
+		wantErr string
+	}{
+		{name: "omitted"},
+		{name: "valid minutes", timeout: "20m"},
+		{name: "valid hour", timeout: "1h"},
+		{name: "invalid duration", timeout: "twenty minutes", wantErr: `accounting profile "default": stale_session_timeout must be a valid duration`},
+		{name: "zero duration", timeout: "0s", wantErr: `accounting profile "default": stale_session_timeout must be greater than zero`},
+		{name: "negative duration", timeout: "-5m", wantErr: `accounting profile "default": stale_session_timeout must be greater than zero`},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			errs := validateAccountingProfile("default", model.AccountingProfile{StaleSessionTimeout: test.timeout})
+			if test.wantErr == "" {
+				if len(errs) != 0 {
+					t.Fatalf("validateAccountingProfile() errors = %v, want none", errs)
+				}
+				return
+			}
+			if len(errs) != 1 {
+				t.Fatalf("validateAccountingProfile() returned %d errors, want 1", len(errs))
+			}
+			if got := errs[0].Error(); got != test.wantErr {
+				t.Fatalf("validateAccountingProfile() error = %q, want %q", got, test.wantErr)
+			}
+		})
+	}
+}

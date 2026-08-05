@@ -2,6 +2,7 @@ package generator
 
 import (
 	"sort"
+	"time"
 
 	"github.com/gobcn/radius-director/internal/model"
 )
@@ -15,9 +16,10 @@ func Generate(configuration model.Configuration) Configuration {
 	for _, tenantIdentifier := range sortedKeys(configuration.Tenants) {
 		tenant := configuration.Tenants[tenantIdentifier]
 		generatedTenant := Tenant{
-			Identifier:        tenantIdentifier,
-			FreeRADIUSClients: make([]FreeRADIUSClient, 0, len(tenant.NASAssignments)+len(tenant.TrustedRADIUSClientAssignments)),
-			HomeServers:       make([]HomeServer, 0, len(tenant.NASAssignments)),
+			Identifier:         tenantIdentifier,
+			FreeRADIUSClients:  make([]FreeRADIUSClient, 0, len(tenant.NASAssignments)+len(tenant.TrustedRADIUSClientAssignments)),
+			HomeServers:        make([]HomeServer, 0, len(tenant.NASAssignments)),
+			AccountingPolicies: make([]NASAccountingPolicy, 0, len(tenant.NASAssignments)),
 			SQL: SQL{
 				Engine:   tenant.Database.Engine,
 				Host:     tenant.Database.Host,
@@ -38,6 +40,13 @@ func Generate(configuration model.Configuration) Configuration {
 			assignment := tenant.NASAssignments[assignmentIdentifier]
 			nasDevice := configuration.GlobalObjects.NASDevices[assignment.NASDevice]
 			credentialProfile := configuration.GlobalObjects.CredentialProfiles[assignment.CredentialProfile]
+			accountingProfile := configuration.GlobalObjects.AccountingProfiles[assignment.AccountingProfile]
+
+			var staleSessionTimeout *time.Duration
+			if accountingProfile.StaleSessionTimeout != "" {
+				parsedTimeout, _ := time.ParseDuration(accountingProfile.StaleSessionTimeout)
+				staleSessionTimeout = &parsedTimeout
+			}
 
 			generatedTenant.FreeRADIUSClients = append(generatedTenant.FreeRADIUSClients, FreeRADIUSClient{
 				Identifier:   assignmentIdentifier,
@@ -50,13 +59,18 @@ func Generate(configuration model.Configuration) Configuration {
 				IPAddress:    nasDevice.IPAddress,
 				SharedSecret: credentialProfile.SharedSecret,
 			})
+			generatedTenant.AccountingPolicies = append(generatedTenant.AccountingPolicies, NASAccountingPolicy{
+				NASAssignmentIdentifier: assignmentIdentifier,
+				NASDeviceIdentifier:     assignment.NASDevice,
+				IPAddress:               nasDevice.IPAddress,
+				StaleSessionTimeout:     staleSessionTimeout,
+			})
 		}
 
 		for _, assignmentIdentifier := range sortedKeys(tenant.TrustedRADIUSClientAssignments) {
 			assignment := tenant.TrustedRADIUSClientAssignments[assignmentIdentifier]
 			trustedRADIUSClient := configuration.GlobalObjects.TrustedRADIUSClients[assignment.TrustedRADIUSClient]
 			credentialProfile := configuration.GlobalObjects.CredentialProfiles[assignment.CredentialProfile]
-
 			generatedTenant.FreeRADIUSClients = append(generatedTenant.FreeRADIUSClients, FreeRADIUSClient{
 				Identifier:   assignmentIdentifier,
 				IPAddress:    trustedRADIUSClient.IPAddress,

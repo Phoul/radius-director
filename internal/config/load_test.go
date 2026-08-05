@@ -12,6 +12,9 @@ func TestLoad(t *testing.T) {
   credential_profiles:
     default:
       shared_secret: secret
+  accounting_profiles:
+    default:
+      stale_session_timeout: 20m
   nas_devices:
     core:
       ip_address: 10.10.10.1
@@ -56,6 +59,9 @@ tenants:
 
 	if got := configuration.GlobalObjects.CredentialProfiles["default"].SharedSecret; got != "secret" {
 		t.Fatalf("credential profile shared secret = %q, want %q", got, "secret")
+	}
+	if got := configuration.GlobalObjects.AccountingProfiles["default"].StaleSessionTimeout; got != "20m" {
+		t.Fatalf("accounting profile stale session timeout = %q, want %q", got, "20m")
 	}
 	if got := configuration.Tenants["customer-a"].NASAssignments["core"].NASDevice; got != "core" {
 		t.Fatalf("NAS assignment device = %q, want %q", got, "core")
