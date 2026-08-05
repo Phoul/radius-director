@@ -10,59 +10,30 @@ import (
 	"github.com/gobcn/radius-director/internal/renderer"
 )
 
-func TestBuildCreatesClientsFileForEachTenant(t *testing.T) {
+func TestBuildCreatesFilesForEachTenant(t *testing.T) {
 	configuration := testConfiguration()
-	wantCustomerA, err := renderer.RenderClients(configuration.Tenants[0])
-	if err != nil {
-		t.Fatalf("RenderClients() error = %v", err)
-	}
-	wantCustomerB, err := renderer.RenderClients(configuration.Tenants[1])
-	if err != nil {
-		t.Fatalf("RenderClients() error = %v", err)
-	}
-	wantCustomerAProxy, err := renderer.RenderProxy(configuration.Tenants[0])
-	if err != nil {
-		t.Fatalf("RenderProxy() error = %v", err)
-	}
-	wantCustomerBProxy, err := renderer.RenderProxy(configuration.Tenants[1])
-	if err != nil {
-		t.Fatalf("RenderProxy() error = %v", err)
-	}
-	wantCustomerACOA, err := renderer.RenderCOA(configuration.Tenants[0])
-	if err != nil {
-		t.Fatalf("RenderCOA() error = %v", err)
-	}
-	wantCustomerBCOA, err := renderer.RenderCOA(configuration.Tenants[1])
-	if err != nil {
-		t.Fatalf("RenderCOA() error = %v", err)
-	}
-	wantCustomerAAuthorize, err := renderer.RenderAuthorize(configuration.Tenants[0])
-	if err != nil {
-		t.Fatalf("RenderAuthorize() error = %v", err)
-	}
-
-	wantCustomerBAuthorize, err := renderer.RenderAuthorize(configuration.Tenants[1])
-	if err != nil {
-		t.Fatalf("RenderAuthorize() error = %v", err)
-	}
 
 	generated, err := Build(configuration)
 	if err != nil {
 		t.Fatalf("Build() error = %v", err)
 	}
-	want := Output{
-		Files: []File{
-			{Path: filepath.Join("customer-a", ClientsFile), Content: wantCustomerA},
-			{Path: filepath.Join("customer-a", COASiteFile), Content: wantCustomerACOA},
-			{Path: filepath.Join("customer-a", ProxyFile), Content: wantCustomerAProxy},
-			{Path: filepath.Join("customer-a", AuthorizeFile), Content: wantCustomerAAuthorize},
 
-			{Path: filepath.Join("customer-b", ClientsFile), Content: wantCustomerB},
-			{Path: filepath.Join("customer-b", COASiteFile), Content: wantCustomerBCOA},
-			{Path: filepath.Join("customer-b", ProxyFile), Content: wantCustomerBProxy},
-			{Path: filepath.Join("customer-b", AuthorizeFile), Content: wantCustomerBAuthorize},
-		},
+	want := Output{}
+
+	for _, tenant := range configuration.Tenants {
+		rendered, err := renderer.Render(tenant)
+		if err != nil {
+			t.Fatalf("Render() error = %v", err)
+		}
+
+		for _, file := range rendered {
+			want.Files = append(want.Files, File{
+				Path:    filepath.Join(tenant.Identifier, file.RelativePath),
+				Content: file.Content,
+			})
+		}
 	}
+
 	if !reflect.DeepEqual(generated, want) {
 		t.Fatalf("Build() = %#v, want %#v", generated, want)
 	}
@@ -75,83 +46,28 @@ func TestBuildIsDeterministic(t *testing.T) {
 	if err != nil {
 		t.Fatalf("first Build() error = %v", err)
 	}
+
 	second, err := Build(configuration)
 	if err != nil {
 		t.Fatalf("second Build() error = %v", err)
 	}
+
 	if !reflect.DeepEqual(first, second) {
 		t.Fatalf("Build() returned different results: %#v and %#v", first, second)
 	}
 }
 
 func TestBuildPropagatesRendererError(t *testing.T) {
-	want := errors.New("render clients failed")
-	originalRenderClients := renderClients
-	renderClients = func(generator.Tenant) (string, error) {
-		return "", want
-	}
-	t.Cleanup(func() {
-		renderClients = originalRenderClients
-	})
+	want := errors.New("render failed")
 
-	generated, err := Build(testConfiguration())
-	if !errors.Is(err, want) {
-		t.Fatalf("Build() error = %v, want %v", err, want)
-	}
-	if !reflect.DeepEqual(generated, Output{}) {
-		t.Fatalf("Build() output = %#v, want empty output", generated)
-	}
-}
+	originalRender := render
 
-func TestBuildPropagatesCOARendererError(t *testing.T) {
-	want := errors.New("render coa failed")
-	originalRenderCOA := renderCOA
-	renderCOA = func(generator.Tenant) (string, error) {
-		return "", want
-	}
-	t.Cleanup(func() {
-		renderCOA = originalRenderCOA
-	})
-
-	generated, err := Build(testConfiguration())
-	if !errors.Is(err, want) {
-		t.Fatalf("Build() error = %v, want %v", err, want)
-	}
-	if !reflect.DeepEqual(generated, Output{}) {
-		t.Fatalf("Build() output = %#v, want empty output", generated)
-	}
-}
-
-func TestBuildPropagatesProxyRendererError(t *testing.T) {
-	want := errors.New("render proxy failed")
-	originalRenderProxy := renderProxy
-	renderProxy = func(generator.Tenant) (string, error) {
-		return "", want
-	}
-	t.Cleanup(func() {
-		renderProxy = originalRenderProxy
-	})
-
-	generated, err := Build(testConfiguration())
-	if !errors.Is(err, want) {
-		t.Fatalf("Build() error = %v, want %v", err, want)
-	}
-	if !reflect.DeepEqual(generated, Output{}) {
-		t.Fatalf("Build() output = %#v, want empty output", generated)
-	}
-}
-
-func TestBuildPropagatesAuthorizeRendererError(t *testing.T) {
-	want := errors.New("render authorize failed")
-
-	originalRenderAuthorize := renderAuthorize
-
-	renderAuthorize = func(generator.Tenant) (string, error) {
-		return "", want
+	render = func(generator.Tenant) ([]renderer.RenderedFile, error) {
+		return nil, want
 	}
 
 	t.Cleanup(func() {
-		renderAuthorize = originalRenderAuthorize
+		render = originalRender
 	})
 
 	generated, err := Build(testConfiguration())
