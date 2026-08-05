@@ -128,6 +128,7 @@ func TestManagedTemplates(t *testing.T) {
 		"proxy.conf",
 		"proxy.d/radius-director.conf",
 		"sites-available/coa",
+		"sites-available/default",
 	}
 
 	if !reflect.DeepEqual(got, want) {

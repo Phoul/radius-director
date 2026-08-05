@@ -23,8 +23,8 @@ func TestRender(t *testing.T) {
 		t.Fatalf("Render() error = %v", err)
 	}
 
-	if len(files) != 8 {
-		t.Fatalf("Render() returned %d files, want 8", len(files))
+	if len(files) != 9 {
+		t.Fatalf("Render() returned %d files, want 9", len(files))
 	}
 
 	expected := []string{
@@ -36,6 +36,7 @@ func TestRender(t *testing.T) {
 		"proxy.conf",
 		"proxy.d/radius-director.conf",
 		"sites-available/coa",
+		"sites-available/default",
 	}
 
 	for i, want := range expected {
