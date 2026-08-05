@@ -12,6 +12,7 @@ var clientsTemplateLoader = templates.EmbeddedLoader()
 var coaTemplateLoader = templates.EmbeddedLoader()
 var proxyTemplateLoader = templates.EmbeddedLoader()
 var sqlTemplateLoader = templates.EmbeddedLoader()
+var authorizeTemplateLoader = templates.EmbeddedLoader()
 
 // RenderClients renders the clients.conf content for a generated tenant.
 func RenderClients(tenant generator.Tenant) (string, error) {
@@ -67,6 +68,24 @@ func RenderSQL(tenant generator.Tenant) (string, error) {
 
 	var rendered bytes.Buffer
 	if err := template.Execute(&rendered, tenant.SQL); err != nil {
+		return "", err
+	}
+
+	return rendered.String(), nil
+}
+
+// RenderAuthorize renders the mods-config/files/authorize content for a generated tenant.
+func RenderAuthorize(tenant generator.Tenant) (string, error) {
+	template, err := authorizeTemplateLoader.Load(
+		tenant.RADIUSServer.Version,
+		"mods-config/files/authorize",
+	)
+	if err != nil {
+		return "", err
+	}
+
+	var rendered bytes.Buffer
+	if err := template.Execute(&rendered, tenant); err != nil {
 		return "", err
 	}
 

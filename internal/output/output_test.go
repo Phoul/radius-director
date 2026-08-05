@@ -36,6 +36,15 @@ func TestBuildCreatesClientsFileForEachTenant(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RenderCOA() error = %v", err)
 	}
+	wantCustomerAAuthorize, err := renderer.RenderAuthorize(configuration.Tenants[0])
+	if err != nil {
+		t.Fatalf("RenderAuthorize() error = %v", err)
+	}
+
+	wantCustomerBAuthorize, err := renderer.RenderAuthorize(configuration.Tenants[1])
+	if err != nil {
+		t.Fatalf("RenderAuthorize() error = %v", err)
+	}
 
 	generated, err := Build(configuration)
 	if err != nil {
@@ -46,9 +55,12 @@ func TestBuildCreatesClientsFileForEachTenant(t *testing.T) {
 			{Path: filepath.Join("customer-a", ClientsFile), Content: wantCustomerA},
 			{Path: filepath.Join("customer-a", COASiteFile), Content: wantCustomerACOA},
 			{Path: filepath.Join("customer-a", ProxyFile), Content: wantCustomerAProxy},
+			{Path: filepath.Join("customer-a", AuthorizeFile), Content: wantCustomerAAuthorize},
+
 			{Path: filepath.Join("customer-b", ClientsFile), Content: wantCustomerB},
 			{Path: filepath.Join("customer-b", COASiteFile), Content: wantCustomerBCOA},
 			{Path: filepath.Join("customer-b", ProxyFile), Content: wantCustomerBProxy},
+			{Path: filepath.Join("customer-b", AuthorizeFile), Content: wantCustomerBAuthorize},
 		},
 	}
 	if !reflect.DeepEqual(generated, want) {
@@ -124,6 +136,30 @@ func TestBuildPropagatesProxyRendererError(t *testing.T) {
 	if !errors.Is(err, want) {
 		t.Fatalf("Build() error = %v, want %v", err, want)
 	}
+	if !reflect.DeepEqual(generated, Output{}) {
+		t.Fatalf("Build() output = %#v, want empty output", generated)
+	}
+}
+
+func TestBuildPropagatesAuthorizeRendererError(t *testing.T) {
+	want := errors.New("render authorize failed")
+
+	originalRenderAuthorize := renderAuthorize
+
+	renderAuthorize = func(generator.Tenant) (string, error) {
+		return "", want
+	}
+
+	t.Cleanup(func() {
+		renderAuthorize = originalRenderAuthorize
+	})
+
+	generated, err := Build(testConfiguration())
+
+	if !errors.Is(err, want) {
+		t.Fatalf("Build() error = %v, want %v", err, want)
+	}
+
 	if !reflect.DeepEqual(generated, Output{}) {
 		t.Fatalf("Build() output = %#v, want empty output", generated)
 	}

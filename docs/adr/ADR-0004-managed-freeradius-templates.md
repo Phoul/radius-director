@@ -85,8 +85,10 @@ The domain model is responsible for describing deployment intent using stable op
 The renderer is responsible for:
 
 - selecting the template set associated with the configured FreeRADIUS version
-- supplying the appropriate domain-model data to the template
-- executing the template
+- discovering the managed templates contained within the selected template set
+- supplying the appropriate domain-model data to each template
+- executing each template
+- preserving the template directory structure within the generated managed configuration tree
 - returning the rendered managed configuration
 
 The template is responsible for:
@@ -113,6 +115,7 @@ Advantages:
 - Smaller renderer implementations
 - Reduced maintenance burden
 - Only managed or derived values differ from upstream configuration
+- Adding managed configuration files typically requires only adding a new template to the appropriate version-specific template set.
 
 Trade-offs:
 
@@ -144,5 +147,9 @@ internal/
 ```
 
 The rendering pipeline selects the appropriate template set using the tenant's configured `RADIUSServer.Version`.
+
+Every managed template contained within the selected version-specific template set participates in generation.
+
+The directory structure of the template set defines the directory structure of the generated managed configuration tree.
 
 The presence of an embedded template set for a FreeRADIUS version determines whether that version is supported by RADIUS Director.

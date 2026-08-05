@@ -303,6 +303,57 @@ func TestRenderSQLPropagatesTemplateExecutionError(t *testing.T) {
 	}
 }
 
+func TestRenderAuthorize(t *testing.T) {
+	one := 1
+
+	tenant := generator.Tenant{
+		RADIUSServer: generator.RADIUSServer{Version: "3.2.10"},
+		AuthenticationPolicy: generator.AuthenticationPolicy{
+			SimultaneousUse: &one,
+		},
+	}
+
+	got, err := RenderAuthorize(tenant)
+	if err != nil {
+		t.Fatalf("RenderAuthorize() error = %v", err)
+	}
+
+	for _, expected := range []string{
+		"DEFAULT Simultaneous-Use := 1",
+		"Fall-Through = 1",
+	} {
+		if !strings.Contains(normalizeLineEndings(got), expected) {
+			t.Errorf("RenderAuthorize() output does not contain %q", expected)
+		}
+	}
+}
+
+func TestRenderAuthorizeUnsupportedVersion(t *testing.T) {
+	_, err := RenderAuthorize(generator.Tenant{
+		RADIUSServer: generator.RADIUSServer{Version: "9.9.9"},
+	})
+
+	if err == nil || !strings.Contains(err.Error(), `FreeRADIUS version "9.9.9" is not supported`) {
+		t.Fatalf("RenderAuthorize() error = %v, want unsupported version error", err)
+	}
+}
+
+func TestRenderAuthorizePropagatesTemplateExecutionError(t *testing.T) {
+	executionError := errors.New("template execution failed")
+
+	useAuthorizeTemplateLoader(t, testTemplateLoader{
+		executor: testTemplateExecutor{err: executionError},
+	})
+
+	_, err := RenderAuthorize(generator.Tenant{
+		RADIUSServer: generator.RADIUSServer{Version: "3.2.10"},
+	})
+
+	if !errors.Is(err, executionError) {
+		t.Fatalf("RenderAuthorize() error = %v, want %v", err, executionError)
+	}
+}
+
 func useSQLTemplateLoader(t *testing.T, loader templates.Loader) {
 	t.Helper()
 	original := sqlTemplateLoader
@@ -333,6 +384,15 @@ func useProxyTemplateLoader(t *testing.T, loader templates.Loader) {
 	original := proxyTemplateLoader
 	proxyTemplateLoader = loader
 	t.Cleanup(func() { proxyTemplateLoader = original })
+}
+
+func useAuthorizeTemplateLoader(t *testing.T, loader templates.Loader) {
+	original := authorizeTemplateLoader
+	authorizeTemplateLoader = loader
+
+	t.Cleanup(func() {
+		authorizeTemplateLoader = original
+	})
 }
 
 type testTemplateLoader struct {

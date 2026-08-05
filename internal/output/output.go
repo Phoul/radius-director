@@ -15,11 +15,14 @@ const (
 	ProxyFile = "proxy.conf"
 	// COASiteFile is the relative path of a tenant's FreeRADIUS CoA site.
 	COASiteFile = "sites-available/coa"
+	// AuthorizeFile is the relative path of the managed authorize file.
+	AuthorizeFile = "mods-config/files/authorize"
 )
 
 var renderClients = renderer.RenderClients
 var renderCOA = renderer.RenderCOA
 var renderProxy = renderer.RenderProxy
+var renderAuthorize = renderer.RenderAuthorize
 
 // Output contains the generated files that are ready to be written.
 type Output struct {
@@ -35,7 +38,7 @@ type File struct {
 // Build renders each tenant's files and assembles them into an Output object.
 func Build(configuration generator.Configuration) (Output, error) {
 	generated := Output{
-		Files: make([]File, 0, len(configuration.Tenants)*3),
+		Files: make([]File, 0, len(configuration.Tenants)*4),
 	}
 
 	for _, tenant := range configuration.Tenants {
@@ -67,6 +70,16 @@ func Build(configuration generator.Configuration) (Output, error) {
 		generated.Files = append(generated.Files, File{
 			Path:    filepath.Join(tenant.Identifier, ProxyFile),
 			Content: proxy,
+		})
+
+		authorize, err := renderAuthorize(tenant)
+		if err != nil {
+			return Output{}, err
+		}
+
+		generated.Files = append(generated.Files, File{
+			Path:    filepath.Join(tenant.Identifier, AuthorizeFile),
+			Content: authorize,
 		})
 	}
 
