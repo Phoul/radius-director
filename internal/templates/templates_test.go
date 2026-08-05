@@ -124,6 +124,7 @@ func TestManagedTemplates(t *testing.T) {
 		"clients.d/radius-director.conf",
 		"mods-available/sql",
 		"mods-config/files/authorize",
+		"mods-config/files/authorize.d/radius-director",
 		"proxy.conf",
 		"proxy.d/radius-director.conf",
 		"sites-available/coa",
