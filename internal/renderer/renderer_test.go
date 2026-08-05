@@ -23,15 +23,17 @@ func TestRender(t *testing.T) {
 		t.Fatalf("Render() error = %v", err)
 	}
 
-	if len(files) != 5 {
-		t.Fatalf("Render() returned %d files, want 5", len(files))
+	if len(files) != 7 {
+		t.Fatalf("Render() returned %d files, want 7", len(files))
 	}
 
 	expected := []string{
 		"clients.conf",
+		"clients.d/radius-director.conf",
 		"mods-available/sql",
 		"mods-config/files/authorize",
 		"proxy.conf",
+		"proxy.d/radius-director.conf",
 		"sites-available/coa",
 	}
 

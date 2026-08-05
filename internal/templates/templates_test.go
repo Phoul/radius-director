@@ -121,9 +121,11 @@ func TestManagedTemplates(t *testing.T) {
 
 	want := []string{
 		"clients.conf",
+		"clients.d/radius-director.conf",
 		"mods-available/sql",
 		"mods-config/files/authorize",
 		"proxy.conf",
+		"proxy.d/radius-director.conf",
 		"sites-available/coa",
 	}
 
