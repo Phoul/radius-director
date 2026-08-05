@@ -42,6 +42,8 @@ The renderer SHALL NOT contain knowledge of individual managed FreeRADIUS config
 
 Adding a new managed configuration file SHOULD normally require only adding the corresponding template to the appropriate version-specific template set.
 
+All managed templates SHALL be executed with generator.Tenant as the root template context. Templates may reference any information reachable from the tenant object.
+
 ---
 
 ## Responsibilities

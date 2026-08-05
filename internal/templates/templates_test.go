@@ -2,6 +2,7 @@ package templates
 
 import (
 	"bytes"
+	"reflect"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -109,5 +110,24 @@ func TestLoaderReturnsErrors(t *testing.T) {
 func TestEmbeddedLoaderLoadsCurrentTemplateSet(t *testing.T) {
 	if _, err := EmbeddedLoader().Load("3.2.10", "mods-available/sql"); err != nil {
 		t.Fatalf("EmbeddedLoader().Load() error = %v", err)
+	}
+}
+
+func TestManagedTemplates(t *testing.T) {
+	got, err := ManagedTemplates("3.2.10")
+	if err != nil {
+		t.Fatalf("ManagedTemplates() error = %v", err)
+	}
+
+	want := []string{
+		"clients.conf",
+		"mods-available/sql",
+		"mods-config/files/authorize",
+		"proxy.conf",
+		"sites-available/coa",
+	}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("ManagedTemplates() = %#v, want %#v", got, want)
 	}
 }

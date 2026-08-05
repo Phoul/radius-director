@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/fs"
 	"path"
+	"sort"
 	"text/template"
 )
 
@@ -38,6 +39,12 @@ func SupportsVersion(version string) bool {
 	return loader{files: embeddedFiles}.supportsVersion(version)
 }
 
+// ManagedTemplates returns every managed template for a supported
+// FreeRADIUS version.
+func ManagedTemplates(version string) ([]string, error) {
+	return loader{files: embeddedFiles}.managedTemplates(version)
+}
+
 func (l loader) Load(version, name string) (Executor, error) {
 	if !l.supportsVersion(version) {
 		return nil, fmt.Errorf("FreeRADIUS version %q is not supported", version)
@@ -62,4 +69,38 @@ func (l loader) supportsVersion(version string) bool {
 
 	info, err := fs.Stat(l.files, version)
 	return err == nil && info.IsDir()
+}
+
+func (l loader) managedTemplates(version string) ([]string, error) {
+	if !l.supportsVersion(version) {
+		return nil, fmt.Errorf("FreeRADIUS version %q is not supported", version)
+	}
+
+	root, err := fs.Sub(l.files, version)
+	if err != nil {
+		return nil, err
+	}
+
+	var templates []string
+
+	err = fs.WalkDir(root, ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if d.IsDir() {
+			return nil
+		}
+
+		templates = append(templates, path)
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	sort.Strings(templates)
+
+	return templates, nil
 }

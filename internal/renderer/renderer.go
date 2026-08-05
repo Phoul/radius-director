@@ -67,7 +67,7 @@ func RenderSQL(tenant generator.Tenant) (string, error) {
 	}
 
 	var rendered bytes.Buffer
-	if err := template.Execute(&rendered, tenant.SQL); err != nil {
+	if err := template.Execute(&rendered, tenant); err != nil {
 		return "", err
 	}
 
