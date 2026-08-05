@@ -2,18 +2,26 @@
 package cli
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
 
 	"github.com/gobcn/radius-director/internal/config"
+	"github.com/gobcn/radius-director/internal/generator"
+	"github.com/gobcn/radius-director/internal/maintenance/accounting"
 	"github.com/gobcn/radius-director/internal/validation"
 )
 
 // Run executes the command-line interface and returns its exit code.
 func Run(args []string, stdout, stderr io.Writer) int {
-	if len(args) > 0 && args[0] == "validate" {
-		return runValidate(args[1:], stdout, stderr)
+	if len(args) > 0 {
+		switch args[0] {
+		case "validate":
+			return runValidate(args[1:], stdout, stderr)
+		case "maintenance":
+			return runMaintenance(args[1:], stdout, stderr)
+		}
 	}
 
 	flags := flag.NewFlagSet("radius-director", flag.ContinueOnError)
@@ -25,6 +33,7 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stdout)
 		fmt.Fprintln(stdout, "Usage:")
 		fmt.Fprintln(stdout, "  radius-director validate <config.yaml>")
+		fmt.Fprintln(stdout, "  radius-director maintenance accounting <config.yaml> <tenant>")
 		fmt.Fprintln(stdout)
 		fmt.Fprintln(stdout, "Options:")
 		fmt.Fprintln(stdout, "  -h, --help")
@@ -75,4 +84,92 @@ func runValidate(args []string, stdout, stderr io.Writer) int {
 
 	fmt.Fprintln(stdout, "Configuration parsed and validated successfully.")
 	return 0
+}
+
+func runMaintenance(args []string, stdout, stderr io.Writer) int {
+	if len(args) == 1 && (args[0] == "-h" || args[0] == "--help") {
+		printMaintenanceUsage(stdout)
+		return 0
+	}
+	if len(args) == 0 || args[0] != "accounting" {
+		fmt.Fprintln(stderr, "maintenance requires the accounting subcommand")
+		printMaintenanceUsage(stderr)
+		return 2
+	}
+	return runAccountingMaintenance(args[1:], stdout, stderr)
+}
+
+func printMaintenanceUsage(output io.Writer) {
+	fmt.Fprintln(output, "Usage:")
+	fmt.Fprintln(output, "  radius-director maintenance accounting <config.yaml> <tenant>")
+}
+
+func runAccountingMaintenance(args []string, stdout, stderr io.Writer) int {
+	if len(args) == 1 && (args[0] == "-h" || args[0] == "--help") {
+		printMaintenanceUsage(stdout)
+		return 0
+	}
+	if len(args) != 2 {
+		fmt.Fprintln(stderr, "maintenance accounting requires a configuration file and tenant")
+		return 2
+	}
+
+	configuration, err := config.Load(args[0])
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 1
+	}
+	if err := validation.Validate(configuration); err != nil {
+		fmt.Fprintln(stderr, err)
+		return 1
+	}
+
+	generated := generator.Generate(configuration)
+	tenant, found := generatedTenant(generated, args[1])
+	if !found {
+		fmt.Fprintf(stderr, "tenant %q does not exist\n", args[1])
+		return 1
+	}
+
+	enabledPolicies := 0
+	for _, policy := range tenant.AccountingPolicies {
+		if policy.StaleSessionTimeout != nil {
+			enabledPolicies++
+		}
+	}
+	if enabledPolicies == 0 {
+		fmt.Fprintf(stdout, "Tenant %q: no stale-session maintenance policies are enabled.\n", tenant.Identifier)
+		return 0
+	}
+
+	if tenant.SQL.Engine != "mysql" {
+		fmt.Fprintf(stderr, "tenant %q: accounting maintenance does not support database engine %q\n", tenant.Identifier, tenant.SQL.Engine)
+		return 1
+	}
+
+	ctx := context.Background()
+	database, err := accounting.OpenMySQL(ctx, tenant.SQL)
+	if err != nil {
+		fmt.Fprintf(stderr, "tenant %q: %v\n", tenant.Identifier, err)
+		return 1
+	}
+	defer database.Close()
+
+	result, err := (accounting.Runner{DB: database}).Run(ctx, tenant.AccountingPolicies)
+	if err != nil {
+		fmt.Fprintf(stderr, "tenant %q: accounting maintenance completed with errors: %v\n", tenant.Identifier, err)
+		return 1
+	}
+
+	fmt.Fprintf(stdout, "Tenant %q: accounting maintenance complete: %d stale session(s) closed across %d enabled NAS policy/policies.\n", tenant.Identifier, result.SessionsClosed, result.PoliciesProcessed)
+	return 0
+}
+
+func generatedTenant(configuration generator.Configuration, identifier string) (generator.Tenant, bool) {
+	for _, tenant := range configuration.Tenants {
+		if tenant.Identifier == identifier {
+			return tenant, true
+		}
+	}
+	return generator.Tenant{}, false
 }
