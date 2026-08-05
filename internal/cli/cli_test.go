@@ -98,6 +98,7 @@ func TestRunMaintenanceAccountingNoEnabledPolicies(t *testing.T) {
   trusted_radius_clients: {}
 tenants:
   customer-a:
+    authentication_profile: default
     database:
       engine: mysql
       host: db
@@ -114,7 +115,6 @@ tenants:
       router:
         nas_device: router
         credential_profile: default
-        authentication_profile: default
         accounting_profile: default
         monitoring_profile: default
     trusted_radius_client_assignments: {}

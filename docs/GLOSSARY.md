@@ -37,7 +37,7 @@ The process of verifying a user's identity and determining whether access should
 
 A reusable object that defines authentication behaviour.
 
-Authentication Profiles are referenced by NAS Assignments.
+Authentication Profiles are referenced by tenants and define tenant-wide subscriber authentication policy.
 
 Examples include:
 

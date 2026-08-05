@@ -85,7 +85,7 @@ Examples include:
 
 - NAS Assignment references an existing NAS Device
 - NAS Assignment references an existing Credential Profile
-- NAS Assignment references an existing Authentication Profile
+- Tenant references an existing Authentication Profile
 - NAS Assignment references an existing Accounting Profile
 - NAS Assignment references an existing Monitoring Profile
 
@@ -174,6 +174,8 @@ Validation rules:
 
 Validation rules:
 
+- authentication_profile must be specified
+- referenced Authentication Profile must exist
 - identifier must be unique
 - exactly one Database must be defined
 - exactly one RADIUS Server must be defined
@@ -222,12 +224,10 @@ Validation rules:
 - identifier must be unique
 - nas_device must be specified
 - credential_profile must be specified
-- authentication_profile must be specified
 - accounting_profile must be specified
 - monitoring_profile must be specified
 - referenced NAS Device must exist
 - referenced Credential Profile must exist
-- referenced Authentication Profile must exist
 - referenced Accounting Profile must exist
 - referenced Monitoring Profile must exist
 

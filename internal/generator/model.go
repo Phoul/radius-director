@@ -11,12 +11,18 @@ type Configuration struct {
 
 // Tenant contains generated configuration for one RADIUS Director tenant.
 type Tenant struct {
-	Identifier         string
-	FreeRADIUSClients  []FreeRADIUSClient
-	HomeServers        []HomeServer
-	AccountingPolicies []NASAccountingPolicy
-	SQL                SQL
-	RADIUSServer       RADIUSServer
+	Identifier           string
+	FreeRADIUSClients    []FreeRADIUSClient
+	HomeServers          []HomeServer
+	AuthenticationPolicy AuthenticationPolicy
+	AccountingPolicies   []NASAccountingPolicy
+	SQL                  SQL
+	RADIUSServer         RADIUSServer
+}
+
+// AuthenticationPolicy contains resolved tenant-wide subscriber authentication policy.
+type AuthenticationPolicy struct {
+	SimultaneousUse *int
 }
 
 // FreeRADIUSClient contains the information needed to render a FreeRADIUS

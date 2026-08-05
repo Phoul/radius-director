@@ -95,6 +95,25 @@ global_objects:
 
 ---
 
+# Authentication Profiles
+
+Authentication Profiles define reusable tenant-wide subscriber authentication policy.
+
+Example:
+
+```yaml
+authentication_profiles:
+
+  default:
+    simultaneous_use: 1
+```
+
+Each tenant references one Authentication Profile using `authentication_profile`.
+
+The `simultaneous_use` property defines the default maximum number of simultaneous subscriber sessions.
+
+---
+
 # Accounting Profiles
 
 Accounting Profiles define reusable accounting behaviour.
@@ -151,6 +170,8 @@ tenants:
 
   customer-a:
 
+    authentication_profile: default
+
     database:
 
     radius_server:
@@ -159,6 +180,10 @@ tenants:
 
     trusted_radius_client_assignments:
 ```
+
+Each Tenant references:
+
+- exactly one Authentication Profile
 
 Each Tenant owns:
 
@@ -237,8 +262,6 @@ nas_assignments:
     nas_device: mt-core-01.gobcn.ca
 
     credential_profile: default
-
-    authentication_profile: default
 
     accounting_profile: default
 

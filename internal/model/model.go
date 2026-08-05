@@ -23,10 +23,10 @@ type CredentialProfile struct {
 	SharedSecret string `yaml:"shared_secret"`
 }
 
-// AuthenticationProfile defines authentication behaviour.
-//
-// Its properties are implementation-specific and are not defined yet.
-type AuthenticationProfile struct{}
+// AuthenticationProfile defines tenant-wide subscriber authentication policy.
+type AuthenticationProfile struct {
+	SimultaneousUse *int `yaml:"simultaneous_use"`
+}
 
 // AccountingProfile defines accounting behaviour.
 type AccountingProfile struct {
@@ -52,6 +52,7 @@ type TrustedRADIUSClient struct {
 
 // Tenant represents an independent RADIUS deployment.
 type Tenant struct {
+	AuthenticationProfile          string                                   `yaml:"authentication_profile"`
 	Database                       Database                                 `yaml:"database"`
 	RADIUSServer                   RADIUSServer                             `yaml:"radius_server"`
 	NASAssignments                 map[string]NASAssignment                 `yaml:"nas_assignments"`
@@ -78,11 +79,10 @@ type RADIUSServer struct {
 
 // NASAssignment defines how a tenant uses a NAS device.
 type NASAssignment struct {
-	NASDevice             string `yaml:"nas_device"`
-	CredentialProfile     string `yaml:"credential_profile"`
-	AuthenticationProfile string `yaml:"authentication_profile"`
-	AccountingProfile     string `yaml:"accounting_profile"`
-	MonitoringProfile     string `yaml:"monitoring_profile"`
+	NASDevice         string `yaml:"nas_device"`
+	CredentialProfile string `yaml:"credential_profile"`
+	AccountingProfile string `yaml:"accounting_profile"`
+	MonitoringProfile string `yaml:"monitoring_profile"`
 }
 
 // TrustedRADIUSClientAssignment defines how a tenant uses a trusted RADIUS

@@ -73,7 +73,7 @@ Used when rendering managed client definitions and CoA configuration.
 
 ## Purpose
 
-Defines authentication behaviour.
+Defines tenant-wide subscriber authentication policy.
 
 ## Ownership
 
@@ -81,25 +81,19 @@ Global Object
 
 ## Properties
 
-Initially implementation-specific.
-
-Examples may include:
-
-- simultaneous use
-- SQL policies
-- session verification
+- simultaneous_use
 
 ## Relationships
 
-Referenced by one or more NAS Assignments.
+Referenced by one or more Tenants.
 
 ## Validation
 
-Profile-specific validation rules.
+- simultaneous_use must be greater than zero
 
 ## Generation
 
-Used when generating authentication policies.
+Used when generating tenant-wide authentication policy.
 
 ---
 
@@ -287,8 +281,9 @@ A tenant is composed of other Tenant Objects.
 
 ## Relationships
 
-Contains:
+Contains/references:
 
+- Authentication Profile
 - Database
 - RADIUS Server
 - NAS Assignments
@@ -300,6 +295,7 @@ The tenant's RADIUS Server object defines the target FreeRADIUS version for the 
 
 ## Validation
 
+- must reference exactly one Authentication Profile
 - must contain exactly one Database
 - must contain exactly one RADIUS Server
 
@@ -405,7 +401,6 @@ Relationship Object
 
 - nas_device
 - credential_profile
-- authentication_profile
 - accounting_profile
 - monitoring_profile
 
@@ -415,7 +410,6 @@ References:
 
 - NAS Device
 - Credential Profile
-- Authentication Profile
 - Accounting Profile
 - Monitoring Profile
 
@@ -425,7 +419,6 @@ Owned by a Tenant.
 
 - nas_device must be specified
 - credential_profile must be specified
-- authentication_profile must be specified
 - accounting_profile must be specified
 - monitoring_profile must be specified
 - every referenced object must exist

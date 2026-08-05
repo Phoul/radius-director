@@ -18,6 +18,9 @@ func validateTenants(tenants map[string]model.Tenant) []error {
 
 func validateTenant(identifier string, tenant model.Tenant) []error {
 	var validationErrors []error
+	if tenant.AuthenticationProfile == "" {
+		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: authentication_profile must be specified", identifier))
+	}
 	if tenant.Database == (model.Database{}) {
 		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: exactly one database must be defined", identifier))
 	} else {
@@ -99,9 +102,6 @@ func validateNASAssignment(tenantIdentifier, identifier string, assignment model
 	}
 	if assignment.CredentialProfile == "" {
 		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: nas assignment %q: credential_profile must be specified", tenantIdentifier, identifier))
-	}
-	if assignment.AuthenticationProfile == "" {
-		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: nas assignment %q: authentication_profile must be specified", tenantIdentifier, identifier))
 	}
 	if assignment.AccountingProfile == "" {
 		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: nas assignment %q: accounting_profile must be specified", tenantIdentifier, identifier))

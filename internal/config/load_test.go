@@ -12,6 +12,9 @@ func TestLoad(t *testing.T) {
   credential_profiles:
     default:
       shared_secret: secret
+  authentication_profiles:
+    default:
+      simultaneous_use: 1
   accounting_profiles:
     default:
       stale_session_timeout: 20m
@@ -24,6 +27,7 @@ func TestLoad(t *testing.T) {
       ip_address: 10.10.10.2
 tenants:
   customer-a:
+    authentication_profile: default
     database:
       engine: mysql
       host: db.example.com
@@ -40,7 +44,6 @@ tenants:
       core:
         nas_device: core
         credential_profile: default
-        authentication_profile: default
         accounting_profile: default
         monitoring_profile: default
     trusted_radius_client_assignments:
@@ -59,6 +62,13 @@ tenants:
 
 	if got := configuration.GlobalObjects.CredentialProfiles["default"].SharedSecret; got != "secret" {
 		t.Fatalf("credential profile shared secret = %q, want %q", got, "secret")
+	}
+	got := configuration.GlobalObjects.AuthenticationProfiles["default"].SimultaneousUse
+	if got == nil || *got != 1 {
+		t.Fatalf("authentication profile simultaneous use = %d, want 1", got)
+	}
+	if got := configuration.Tenants["customer-a"].AuthenticationProfile; got != "default" {
+		t.Fatalf("tenant authentication profile = %q, want %q", got, "default")
 	}
 	if got := configuration.GlobalObjects.AccountingProfiles["default"].StaleSessionTimeout; got != "20m" {
 		t.Fatalf("accounting profile stale session timeout = %q, want %q", got, "20m")

@@ -3,7 +3,8 @@ global_objects:
     default:
       shared_secret: shared-secret
   authentication_profiles:
-    default: {}
+    default:
+      simultaneous_use: 1
   accounting_profiles:
     default: {}
   monitoring_profiles:
@@ -15,6 +16,7 @@ global_objects:
 
 tenants:
   customer-a:
+    authentication_profile: default
     database:
       engine: mysql
       host: db.example.com
@@ -31,6 +33,5 @@ tenants:
       core-router:
         nas_device: mt-core-01.gobcn.ca
         credential_profile: default
-        authentication_profile: default
         accounting_profile: default
         monitoring_profile: default

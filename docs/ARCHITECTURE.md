@@ -121,7 +121,6 @@ A NAS Assignment connects:
 
 - a NAS Device
 - a Credential Profile
-- an Authentication Profile
 - an Accounting Profile
 - a Monitoring Profile
 

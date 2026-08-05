@@ -389,3 +389,21 @@ func TestGenerateTrustedRADIUSClientsDoNotCreateAccountingPolicies(t *testing.T)
 		t.Fatalf("generated accounting policies = %#v, want none", got)
 	}
 }
+
+func TestGenerateResolvesTenantAuthenticationPolicy(t *testing.T) {
+	one := 1
+	configuration := model.Configuration{
+		GlobalObjects: model.GlobalObjects{AuthenticationProfiles: map[string]model.AuthenticationProfile{"standard": {SimultaneousUse: &one}}},
+		Tenants:       map[string]model.Tenant{"customer-a": {AuthenticationProfile: "standard"}},
+	}
+	generated := Generate(configuration)
+	got := generated.Tenants[0].AuthenticationPolicy.SimultaneousUse
+
+	if got == nil {
+		t.Fatal("simultaneous use = nil, want 1")
+	}
+
+	if *got != 1 {
+		t.Fatalf("simultaneous use = %d, want 1", *got)
+	}
+}

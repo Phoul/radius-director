@@ -46,6 +46,15 @@ func validateAuthenticationProfiles(profiles map[string]model.AuthenticationProf
 }
 
 func validateAuthenticationProfile(identifier string, profile model.AuthenticationProfile) []error {
+	if profile.SimultaneousUse != nil && *profile.SimultaneousUse < 1 {
+		return []error{
+			fmt.Errorf(
+				"authentication profile %q: simultaneous_use must be greater than zero",
+				identifier,
+			),
+		}
+	}
+
 	return nil
 }
 

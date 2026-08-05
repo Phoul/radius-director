@@ -25,7 +25,7 @@ Global Objects include:
 
 # Tenant Objects
 
-Each tenant contains tenant-specific infrastructure.
+Each tenant contains tenant-specific infrastructure and references a tenant-wide Authentication Profile.
 
 Tenant Objects include:
 
@@ -57,7 +57,6 @@ A NAS Assignment references:
 
 - NAS Device
 - Credential Profile
-- Authentication Profile
 - Accounting Profile
 - Monitoring Profile
 
@@ -85,16 +84,13 @@ Multiple NAS Assignments and Trusted RADIUS Client Assignments may reference the
 
 # Authentication Profile
 
-Defines authentication behaviour.
+Defines tenant-wide subscriber authentication policy.
 
-Examples include:
+Typical properties include:
 
 - Simultaneous Use
-- Session verification
-- SQL policies
-- Vendor-specific behaviour
 
-Authentication Profiles are referenced by NAS Assignments.
+Each tenant references one Authentication Profile. Authentication Profiles are reusable Global Objects and may be shared by multiple tenants.
 
 ---
 
@@ -195,7 +191,6 @@ Each NAS Assignment references:
 
 - NAS Device
 - Credential Profile
-- Authentication Profile
 - Accounting Profile
 - Monitoring Profile
 

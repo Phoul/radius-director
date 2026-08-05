@@ -17,6 +17,11 @@ func validateReferences(configuration model.Configuration) []error {
 
 func validateTenantReferences(tenantIdentifier string, tenant model.Tenant, globalObjects model.GlobalObjects) []error {
 	var validationErrors []error
+	if tenant.AuthenticationProfile != "" {
+		if _, exists := globalObjects.AuthenticationProfiles[tenant.AuthenticationProfile]; !exists {
+			validationErrors = append(validationErrors, fmt.Errorf("tenant %q: authentication profile %q does not exist", tenantIdentifier, tenant.AuthenticationProfile))
+		}
+	}
 	for _, identifier := range sortedKeys(tenant.NASAssignments) {
 		validationErrors = append(validationErrors, validateNASAssignmentReferences(tenantIdentifier, identifier, tenant.NASAssignments[identifier], globalObjects)...)
 	}
@@ -37,11 +42,6 @@ func validateNASAssignmentReferences(tenantIdentifier, identifier string, assign
 	if assignment.CredentialProfile != "" {
 		if _, exists := globalObjects.CredentialProfiles[assignment.CredentialProfile]; !exists {
 			validationErrors = append(validationErrors, fmt.Errorf("tenant %q: nas assignment %q: credential profile %q does not exist", tenantIdentifier, identifier, assignment.CredentialProfile))
-		}
-	}
-	if assignment.AuthenticationProfile != "" {
-		if _, exists := globalObjects.AuthenticationProfiles[assignment.AuthenticationProfile]; !exists {
-			validationErrors = append(validationErrors, fmt.Errorf("tenant %q: nas assignment %q: authentication profile %q does not exist", tenantIdentifier, identifier, assignment.AuthenticationProfile))
 		}
 	}
 	if assignment.AccountingProfile != "" {

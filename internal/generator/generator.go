@@ -15,8 +15,12 @@ func Generate(configuration model.Configuration) Configuration {
 
 	for _, tenantIdentifier := range sortedKeys(configuration.Tenants) {
 		tenant := configuration.Tenants[tenantIdentifier]
+		authenticationProfile := configuration.GlobalObjects.AuthenticationProfiles[tenant.AuthenticationProfile]
 		generatedTenant := Tenant{
-			Identifier:         tenantIdentifier,
+			Identifier: tenantIdentifier,
+			AuthenticationPolicy: AuthenticationPolicy{
+				SimultaneousUse: authenticationProfile.SimultaneousUse,
+			},
 			FreeRADIUSClients:  make([]FreeRADIUSClient, 0, len(tenant.NASAssignments)+len(tenant.TrustedRADIUSClientAssignments)),
 			HomeServers:        make([]HomeServer, 0, len(tenant.NASAssignments)),
 			AccountingPolicies: make([]NASAccountingPolicy, 0, len(tenant.NASAssignments)),
