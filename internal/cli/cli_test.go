@@ -91,6 +91,8 @@ func TestRunMaintenanceAccountingNoEnabledPolicies(t *testing.T) {
     default: {}
   monitoring_profiles:
     default: {}
+  deployment_profiles:
+    default: {}
   nas_devices:
     router:
       ip_address: 192.0.2.1
@@ -99,6 +101,7 @@ func TestRunMaintenanceAccountingNoEnabledPolicies(t *testing.T) {
 tenants:
   customer-a:
     authentication_profile: default
+    deployment_profile: default
     database:
       engine: mysql
       host: db

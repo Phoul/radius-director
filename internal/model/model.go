@@ -13,6 +13,7 @@ type GlobalObjects struct {
 	AuthenticationProfiles map[string]AuthenticationProfile `yaml:"authentication_profiles"`
 	AccountingProfiles     map[string]AccountingProfile     `yaml:"accounting_profiles"`
 	MonitoringProfiles     map[string]MonitoringProfile     `yaml:"monitoring_profiles"`
+	DeploymentProfiles     map[string]DeploymentProfile     `yaml:"deployment_profiles"`
 	NASDevices             map[string]NASDevice             `yaml:"nas_devices"`
 	TrustedRADIUSClients   map[string]TrustedRADIUSClient   `yaml:"trusted_radius_clients"`
 }
@@ -38,6 +39,10 @@ type AccountingProfile struct {
 // Its properties are implementation-specific and are not defined yet.
 type MonitoringProfile struct{}
 
+// DeploymentProfile defines a specific deployment configuration.
+type DeploymentProfile struct {
+}
+
 // NASDevice represents a physical or virtual RADIUS client.
 type NASDevice struct {
 	IPAddress string `yaml:"ip_address"`
@@ -53,6 +58,7 @@ type TrustedRADIUSClient struct {
 // Tenant represents an independent RADIUS deployment.
 type Tenant struct {
 	AuthenticationProfile          string                                   `yaml:"authentication_profile"`
+	DeploymentProfile              string                                   `yaml:"deployment_profile"`
 	Database                       Database                                 `yaml:"database"`
 	RADIUSServer                   RADIUSServer                             `yaml:"radius_server"`
 	NASAssignments                 map[string]NASAssignment                 `yaml:"nas_assignments"`

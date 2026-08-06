@@ -22,6 +22,11 @@ func validateTenantReferences(tenantIdentifier string, tenant model.Tenant, glob
 			validationErrors = append(validationErrors, fmt.Errorf("tenant %q: authentication profile %q does not exist", tenantIdentifier, tenant.AuthenticationProfile))
 		}
 	}
+	if tenant.DeploymentProfile != "" {
+		if _, exists := globalObjects.DeploymentProfiles[tenant.DeploymentProfile]; !exists {
+			validationErrors = append(validationErrors, fmt.Errorf("tenant %q: deployment profile %q does not exist", tenantIdentifier, tenant.DeploymentProfile))
+		}
+	}
 	for _, identifier := range sortedKeys(tenant.NASAssignments) {
 		validationErrors = append(validationErrors, validateNASAssignmentReferences(tenantIdentifier, identifier, tenant.NASAssignments[identifier], globalObjects)...)
 	}

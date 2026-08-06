@@ -15,6 +15,7 @@ func validateGlobalObjects(globalObjects model.GlobalObjects) []error {
 	validationErrors = append(validationErrors, validateMonitoringProfiles(globalObjects.MonitoringProfiles)...)
 	validationErrors = append(validationErrors, validateNASDevices(globalObjects.NASDevices)...)
 	validationErrors = append(validationErrors, validateTrustedRADIUSClients(globalObjects.TrustedRADIUSClients)...)
+	validationErrors = append(validationErrors, validateDeploymentProfiles(globalObjects.DeploymentProfiles)...)
 
 	return validationErrors
 }
@@ -93,6 +94,19 @@ func validateMonitoringProfiles(profiles map[string]model.MonitoringProfile) []e
 }
 
 func validateMonitoringProfile(identifier string, profile model.MonitoringProfile) []error {
+	return nil
+}
+
+func validateDeploymentProfiles(profiles map[string]model.DeploymentProfile) []error {
+	var validationErrors []error
+	for _, identifier := range sortedKeys(profiles) {
+		validationErrors = append(validationErrors, validateDeploymentProfile(identifier, profiles[identifier])...)
+	}
+
+	return validationErrors
+}
+
+func validateDeploymentProfile(identifier string, profile model.DeploymentProfile) []error {
 	return nil
 }
 

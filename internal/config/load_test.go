@@ -18,6 +18,8 @@ func TestLoad(t *testing.T) {
   accounting_profiles:
     default:
       stale_session_timeout: 20m
+  deployment_profiles:
+    default: {}
   nas_devices:
     core:
       ip_address: 10.10.10.1
@@ -28,6 +30,7 @@ func TestLoad(t *testing.T) {
 tenants:
   customer-a:
     authentication_profile: default
+    deployment_profile: default
     database:
       engine: mysql
       host: db.example.com
@@ -69,6 +72,9 @@ tenants:
 	}
 	if got := configuration.Tenants["customer-a"].AuthenticationProfile; got != "default" {
 		t.Fatalf("tenant authentication profile = %q, want %q", got, "default")
+	}
+	if got := configuration.Tenants["customer-a"].DeploymentProfile; got != "default" {
+		t.Fatalf("tenant deployment profile = %q, want %q", got, "default")
 	}
 	if got := configuration.GlobalObjects.AccountingProfiles["default"].StaleSessionTimeout; got != "20m" {
 		t.Fatalf("accounting profile stale session timeout = %q, want %q", got, "20m")

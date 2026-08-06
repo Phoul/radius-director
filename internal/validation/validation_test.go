@@ -23,6 +23,9 @@ func TestValidate(t *testing.T) {
 			MonitoringProfiles: map[string]model.MonitoringProfile{
 				"default": {},
 			},
+			DeploymentProfiles: map[string]model.DeploymentProfile{
+				"default": {},
+			},
 			NASDevices: map[string]model.NASDevice{
 				"core": {IPAddress: "10.10.10.1", Vendor: "mikrotik"},
 			},
@@ -33,6 +36,7 @@ func TestValidate(t *testing.T) {
 		Tenants: map[string]model.Tenant{
 			"customer-a": {
 				AuthenticationProfile: "default",
+				DeploymentProfile:     "default",
 				Database: model.Database{
 					Engine:   "mysql",
 					Host:     "db.example.com",
@@ -408,6 +412,7 @@ func TestValidateTenantRelationships(t *testing.T) {
 func TestValidateTenant(t *testing.T) {
 	validTenant := model.Tenant{
 		AuthenticationProfile: "default",
+		DeploymentProfile:     "default",
 		Database: model.Database{
 			Engine:   "mysql",
 			Host:     "db.example.com",
@@ -445,6 +450,7 @@ func TestValidateTenant(t *testing.T) {
 			name: "database missing",
 			tenant: model.Tenant{
 				AuthenticationProfile: validTenant.AuthenticationProfile,
+				DeploymentProfile:     validTenant.DeploymentProfile,
 				RADIUSServer:          validTenant.RADIUSServer,
 				NASAssignments:        validTenant.NASAssignments,
 			},
@@ -456,6 +462,7 @@ func TestValidateTenant(t *testing.T) {
 			name: "RADIUS Server missing",
 			tenant: model.Tenant{
 				AuthenticationProfile: validTenant.AuthenticationProfile,
+				DeploymentProfile:     validTenant.DeploymentProfile,
 				Database:              validTenant.Database,
 				NASAssignments:        validTenant.NASAssignments,
 			},
@@ -467,6 +474,7 @@ func TestValidateTenant(t *testing.T) {
 			name: "NAS assignments missing",
 			tenant: model.Tenant{
 				AuthenticationProfile: validTenant.AuthenticationProfile,
+				DeploymentProfile:     validTenant.DeploymentProfile,
 				Database:              validTenant.Database,
 				RADIUSServer:          validTenant.RADIUSServer,
 			},
@@ -475,9 +483,22 @@ func TestValidateTenant(t *testing.T) {
 			},
 		},
 		{
+			name: "deployment profile missing",
+			tenant: model.Tenant{
+				AuthenticationProfile: validTenant.AuthenticationProfile,
+				Database:              validTenant.Database,
+				RADIUSServer:          validTenant.RADIUSServer,
+				NASAssignments:        validTenant.NASAssignments,
+			},
+			wantErrs: []string{
+				`tenant "customer-a": deployment_profile must be specified`,
+			},
+		},
+		{
 			name: "all required tenant objects missing",
 			wantErrs: []string{
 				`tenant "customer-a": authentication_profile must be specified`,
+				`tenant "customer-a": deployment_profile must be specified`,
 				`tenant "customer-a": exactly one database must be defined`,
 				`tenant "customer-a": exactly one radius server must be defined`,
 				`tenant "customer-a": at least one nas assignment must be defined`,
@@ -1223,6 +1244,46 @@ func TestValidateTenantAuthenticationProfileReference(t *testing.T) {
 	tenant.AuthenticationProfile = "missing"
 	errs := validateTenantReferences("customer-a", tenant, globals)
 	if len(errs) != 1 || errs[0].Error() != `tenant "customer-a": authentication profile "missing" does not exist` {
+		t.Fatalf("errors = %v", errs)
+	}
+}
+
+func TestValidateDeploymentProfile(t *testing.T) {
+	tests := []struct {
+		name    string
+		profile model.DeploymentProfile
+		wantErr string
+	}{
+		{
+			name:    "unspecified",
+			profile: model.DeploymentProfile{},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			errs := validateDeploymentProfile("default", test.profile)
+			if test.wantErr == "" {
+				if len(errs) != 0 {
+					t.Fatalf("errors = %v, want none", errs)
+				}
+				return
+			}
+			if len(errs) != 1 || errs[0].Error() != test.wantErr {
+				t.Fatalf("errors = %v, want %q", errs, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestValidateTenantDeploymentProfileReference(t *testing.T) {
+	globals := model.GlobalObjects{DeploymentProfiles: map[string]model.DeploymentProfile{"default": {}}}
+	tenant := model.Tenant{DeploymentProfile: "default"}
+	if errs := validateTenantReferences("customer-a", tenant, globals); len(errs) != 0 {
+		t.Fatalf("errors = %v, want none", errs)
+	}
+	tenant.DeploymentProfile = "missing"
+	errs := validateTenantReferences("customer-a", tenant, globals)
+	if len(errs) != 1 || errs[0].Error() != `tenant "customer-a": deployment profile "missing" does not exist` {
 		t.Fatalf("errors = %v", errs)
 	}
 }

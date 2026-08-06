@@ -9,6 +9,8 @@ global_objects:
     default: {}
   monitoring_profiles:
     default: {}
+  deployment_profiles:
+    default: {}
   nas_devices:
     mt-core-01.gobcn.ca:
       ip_address: 10.10.10.1
@@ -17,6 +19,7 @@ global_objects:
 tenants:
   customer-a:
     authentication_profile: default
+    deployment_profile: default
     database:
       engine: mysql
       host: db.example.com

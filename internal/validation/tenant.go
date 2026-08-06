@@ -21,6 +21,9 @@ func validateTenant(identifier string, tenant model.Tenant) []error {
 	if tenant.AuthenticationProfile == "" {
 		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: authentication_profile must be specified", identifier))
 	}
+	if tenant.DeploymentProfile == "" {
+		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: deployment_profile must be specified", identifier))
+	}
 	if tenant.Database == (model.Database{}) {
 		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: exactly one database must be defined", identifier))
 	} else {
