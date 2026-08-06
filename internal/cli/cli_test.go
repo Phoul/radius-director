@@ -92,7 +92,8 @@ func TestRunMaintenanceAccountingNoEnabledPolicies(t *testing.T) {
   monitoring_profiles:
     default: {}
   deployment_profiles:
-    default: {}
+    default:
+      template: default
   nas_devices:
     router:
       ip_address: 192.0.2.1

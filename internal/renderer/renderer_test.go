@@ -18,7 +18,7 @@ func TestRender(t *testing.T) {
 		},
 	}
 
-	files, err := Render(tenant)
+	files, err := Render(tenant, "default")
 	if err != nil {
 		t.Fatalf("Render() error = %v", err)
 	}

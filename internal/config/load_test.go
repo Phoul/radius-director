@@ -19,7 +19,8 @@ func TestLoad(t *testing.T) {
     default:
       stale_session_timeout: 20m
   deployment_profiles:
-    default: {}
+    default:
+      template: default
   nas_devices:
     core:
       ip_address: 10.10.10.1

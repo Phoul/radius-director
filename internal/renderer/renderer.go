@@ -10,10 +10,10 @@ import (
 )
 
 // Render renders every managed configuration file for a tenant.
-func Render(tenant generator.Tenant) ([]RenderedFile, error) {
+func Render(tenant generator.Tenant, templateSet string) ([]RenderedFile, error) {
 	version := tenant.RADIUSServer.Version
 
-	paths, err := templates.ManagedTemplates(version)
+	paths, err := templates.ManagedTemplates(version, templateSet)
 	if err != nil {
 		return nil, err
 	}
@@ -23,7 +23,7 @@ func Render(tenant generator.Tenant) ([]RenderedFile, error) {
 	files := make([]RenderedFile, 0, len(paths))
 
 	for _, path := range paths {
-		tmpl, err := loader.Load(version, path)
+		tmpl, err := loader.Load(version, templateSet, path)
 		if err != nil {
 			return nil, err
 		}

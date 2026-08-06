@@ -18,6 +18,7 @@ type Tenant struct {
 	AccountingPolicies   []NASAccountingPolicy
 	SQL                  SQL
 	RADIUSServer         RADIUSServer
+	Template             string
 }
 
 // AuthenticationPolicy contains resolved tenant-wide subscriber authentication policy.

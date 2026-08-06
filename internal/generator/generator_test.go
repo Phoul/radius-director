@@ -407,3 +407,26 @@ func TestGenerateResolvesTenantAuthenticationPolicy(t *testing.T) {
 		t.Fatalf("simultaneous use = %d, want 1", *got)
 	}
 }
+
+func TestGenerateResolvesDeploymentProfileTemplate(t *testing.T) {
+	configuration := model.Configuration{
+		GlobalObjects: model.GlobalObjects{
+			DeploymentProfiles: map[string]model.DeploymentProfile{
+				"experimental": {
+					Template: "alternate",
+				},
+			},
+		},
+		Tenants: map[string]model.Tenant{
+			"customer-a": {
+				DeploymentProfile: "experimental",
+			},
+		},
+	}
+
+	generated := Generate(configuration)
+
+	if got, want := generated.Tenants[0].Template, "alternate"; got != want {
+		t.Fatalf("tenant template = %q, want %q", got, want)
+	}
+}

@@ -21,7 +21,7 @@ func TestBuildCreatesFilesForEachTenant(t *testing.T) {
 	want := Output{}
 
 	for _, tenant := range configuration.Tenants {
-		rendered, err := renderer.Render(tenant)
+		rendered, err := renderer.Render(tenant, tenant.Template)
 		if err != nil {
 			t.Fatalf("Render() error = %v", err)
 		}
@@ -62,7 +62,7 @@ func TestBuildPropagatesRendererError(t *testing.T) {
 
 	originalRender := render
 
-	render = func(generator.Tenant) ([]renderer.RenderedFile, error) {
+	render = func(generator.Tenant, string) ([]renderer.RenderedFile, error) {
 		return nil, want
 	}
 
@@ -86,6 +86,7 @@ func testConfiguration() generator.Configuration {
 		Tenants: []generator.Tenant{
 			{
 				Identifier:   "customer-a",
+				Template:     "default",
 				RADIUSServer: generator.RADIUSServer{Version: "3.2.10"},
 				FreeRADIUSClients: []generator.FreeRADIUSClient{
 					{
@@ -100,6 +101,7 @@ func testConfiguration() generator.Configuration {
 			},
 			{
 				Identifier:   "customer-b",
+				Template:     "default",
 				RADIUSServer: generator.RADIUSServer{Version: "3.2.10"},
 				FreeRADIUSClients: []generator.FreeRADIUSClient{
 					{

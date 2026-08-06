@@ -107,6 +107,15 @@ func validateDeploymentProfiles(profiles map[string]model.DeploymentProfile) []e
 }
 
 func validateDeploymentProfile(identifier string, profile model.DeploymentProfile) []error {
+	if profile.Template == "" {
+		return []error{
+			fmt.Errorf(
+				"deployment profile %q: template must be specified",
+				identifier,
+			),
+		}
+	}
+
 	return nil
 }
 

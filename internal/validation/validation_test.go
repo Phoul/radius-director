@@ -24,7 +24,7 @@ func TestValidate(t *testing.T) {
 				"default": {},
 			},
 			DeploymentProfiles: map[string]model.DeploymentProfile{
-				"default": {},
+				"default": {Template: "default"},
 			},
 			NASDevices: map[string]model.NASDevice{
 				"core": {IPAddress: "10.10.10.1", Vendor: "mikrotik"},
@@ -1255,8 +1255,15 @@ func TestValidateDeploymentProfile(t *testing.T) {
 		wantErr string
 	}{
 		{
-			name:    "unspecified",
+			name: "valid",
+			profile: model.DeploymentProfile{
+				Template: "default",
+			},
+		},
+		{
+			name:    "template unspecified",
 			profile: model.DeploymentProfile{},
+			wantErr: `deployment profile "default": template must be specified`,
 		},
 	}
 	for _, test := range tests {
@@ -1276,7 +1283,7 @@ func TestValidateDeploymentProfile(t *testing.T) {
 }
 
 func TestValidateTenantDeploymentProfileReference(t *testing.T) {
-	globals := model.GlobalObjects{DeploymentProfiles: map[string]model.DeploymentProfile{"default": {}}}
+	globals := model.GlobalObjects{DeploymentProfiles: map[string]model.DeploymentProfile{"default": {Template: "default"}}}
 	tenant := model.Tenant{DeploymentProfile: "default"}
 	if errs := validateTenantReferences("customer-a", tenant, globals); len(errs) != 0 {
 		t.Fatalf("errors = %v, want none", errs)

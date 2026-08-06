@@ -10,7 +10,7 @@ import (
 
 func TestLoaderSelectsTemplateForSupportedVersion(t *testing.T) {
 	loader := loader{files: fstest.MapFS{
-		"3.2.10/mods-available/sql": &fstest.MapFile{Data: []byte("version=3.2.10 host={{.Host}}\n")},
+		"3.2.10/default/mods-available/sql": &fstest.MapFile{Data: []byte("version=3.2.10 host={{.Host}}\n")},
 	}}
 
 	tests := []struct {
@@ -22,7 +22,7 @@ func TestLoaderSelectsTemplateForSupportedVersion(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.version, func(t *testing.T) {
-			executor, err := loader.Load(test.version, "mods-available/sql")
+			executor, err := loader.Load(test.version, "default", "mods-available/sql")
 			if err != nil {
 				t.Fatalf("Load() error = %v", err)
 			}
@@ -63,40 +63,52 @@ func TestLoaderReturnsErrors(t *testing.T) {
 	}}
 
 	tests := []struct {
-		name     string
-		version  string
-		template string
-		wantErr  string
+		name        string
+		version     string
+		templateSet string
+		template    string
+		wantErr     string
 	}{
 		{
-			name:     "unsupported version",
-			version:  "3.3.0",
-			template: "mods-available/sql",
-			wantErr:  "FreeRADIUS version \"3.3.0\" is not supported",
+			name:        "unsupported version",
+			version:     "3.3.0",
+			templateSet: "default",
+			template:    "mods-available/sql",
+			wantErr:     "FreeRADIUS version \"3.3.0\" is not supported",
 		},
 		{
-			name:     "invalid template name",
-			version:  "3.2.10",
-			template: "../sql",
-			wantErr:  "template name \"../sql\" is invalid",
+			name:        "invalid template name",
+			version:     "3.2.10",
+			templateSet: "default",
+			template:    "../sql",
+			wantErr:     "template name \"../sql\" is invalid",
 		},
 		{
-			name:     "missing template",
-			version:  "3.2.10",
-			template: "mods-available/sql",
-			wantErr:  "load template \"mods-available/sql\" for FreeRADIUS version \"3.2.10\"",
+			name:        "missing template",
+			version:     "3.2.10",
+			templateSet: "default",
+			template:    "mods-available/sql",
+			wantErr:     "load template \"mods-available/sql\" for FreeRADIUS version \"3.2.10\"",
 		},
 		{
-			name:     "invalid template",
-			version:  "3.2.10",
-			template: "invalid",
-			wantErr:  "load template \"invalid\" for FreeRADIUS version \"3.2.10\"",
+			name:        "invalid template",
+			version:     "3.2.10",
+			templateSet: "default",
+			template:    "invalid",
+			wantErr:     "load template \"invalid\" for FreeRADIUS version \"3.2.10\"",
+		},
+		{
+			name:        "invalid template set",
+			version:     "3.2.10",
+			templateSet: "../default",
+			template:    "mods-available/sql",
+			wantErr:     "template set \"../default\" is invalid",
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := loader.Load(test.version, test.template)
+			_, err := loader.Load(test.version, test.templateSet, test.template)
 			if err == nil {
 				t.Fatal("Load() error = nil, want error")
 			}
@@ -108,13 +120,13 @@ func TestLoaderReturnsErrors(t *testing.T) {
 }
 
 func TestEmbeddedLoaderLoadsCurrentTemplateSet(t *testing.T) {
-	if _, err := EmbeddedLoader().Load("3.2.10", "mods-available/sql"); err != nil {
+	if _, err := EmbeddedLoader().Load("3.2.10", "default", "mods-available/sql"); err != nil {
 		t.Fatalf("EmbeddedLoader().Load() error = %v", err)
 	}
 }
 
 func TestManagedTemplates(t *testing.T) {
-	got, err := ManagedTemplates("3.2.10")
+	got, err := ManagedTemplates("3.2.10", "default")
 	if err != nil {
 		t.Fatalf("ManagedTemplates() error = %v", err)
 	}

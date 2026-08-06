@@ -16,6 +16,7 @@ func Generate(configuration model.Configuration) Configuration {
 	for _, tenantIdentifier := range sortedKeys(configuration.Tenants) {
 		tenant := configuration.Tenants[tenantIdentifier]
 		authenticationProfile := configuration.GlobalObjects.AuthenticationProfiles[tenant.AuthenticationProfile]
+		deploymentProfile := configuration.GlobalObjects.DeploymentProfiles[tenant.DeploymentProfile]
 		generatedTenant := Tenant{
 			Identifier: tenantIdentifier,
 			AuthenticationPolicy: AuthenticationPolicy{
@@ -38,6 +39,7 @@ func Generate(configuration model.Configuration) Configuration {
 				AccountingPort:     tenant.RADIUSServer.AccountingPort,
 				COAPort:            tenant.RADIUSServer.COAPort,
 			},
+			Template: deploymentProfile.Template,
 		}
 
 		for _, assignmentIdentifier := range sortedKeys(tenant.NASAssignments) {

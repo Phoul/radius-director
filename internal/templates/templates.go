@@ -22,7 +22,7 @@ type Executor interface {
 // Loader selects and loads a managed configuration template for a FreeRADIUS
 // version.
 type Loader interface {
-	Load(version, name string) (Executor, error)
+	Load(version, templateSet, name string) (Executor, error)
 }
 
 type loader struct {
@@ -41,19 +41,22 @@ func SupportsVersion(version string) bool {
 
 // ManagedTemplates returns every managed template for a supported
 // FreeRADIUS version.
-func ManagedTemplates(version string) ([]string, error) {
-	return loader{files: embeddedFiles}.managedTemplates(version)
+func ManagedTemplates(version, templateSet string) ([]string, error) {
+	return loader{files: embeddedFiles}.managedTemplates(version, templateSet)
 }
 
-func (l loader) Load(version, name string) (Executor, error) {
+func (l loader) Load(version, templateSet, name string) (Executor, error) {
 	if !l.supportsVersion(version) {
 		return nil, fmt.Errorf("FreeRADIUS version %q is not supported", version)
 	}
 	if !fs.ValidPath(name) {
 		return nil, fmt.Errorf("template name %q is invalid", name)
 	}
+	if !fs.ValidPath(templateSet) {
+		return nil, fmt.Errorf("template set %q is invalid", templateSet)
+	}
 
-	templatePath := path.Join(version, name)
+	templatePath := path.Join(version, templateSet, name)
 	parsed, err := template.ParseFS(l.files, templatePath)
 	if err != nil {
 		return nil, fmt.Errorf("load template %q for FreeRADIUS version %q: %w", name, version, err)
@@ -71,12 +74,12 @@ func (l loader) supportsVersion(version string) bool {
 	return err == nil && info.IsDir()
 }
 
-func (l loader) managedTemplates(version string) ([]string, error) {
+func (l loader) managedTemplates(version, templateSet string) ([]string, error) {
 	if !l.supportsVersion(version) {
 		return nil, fmt.Errorf("FreeRADIUS version %q is not supported", version)
 	}
 
-	root, err := fs.Sub(l.files, version)
+	root, err := fs.Sub(l.files, path.Join(version, templateSet))
 	if err != nil {
 		return nil, err
 	}

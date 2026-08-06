@@ -41,6 +41,7 @@ type MonitoringProfile struct{}
 
 // DeploymentProfile defines a specific deployment configuration.
 type DeploymentProfile struct {
+	Template string `yaml:"template"`
 }
 
 // NASDevice represents a physical or virtual RADIUS client.

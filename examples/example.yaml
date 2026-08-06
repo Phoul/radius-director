@@ -10,7 +10,8 @@ global_objects:
   monitoring_profiles:
     default: {}
   deployment_profiles:
-    default: {}
+    default:
+      template: default
   nas_devices:
     mt-core-01.gobcn.ca:
       ip_address: 10.10.10.1
