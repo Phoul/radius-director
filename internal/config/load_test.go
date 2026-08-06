@@ -21,6 +21,9 @@ func TestLoad(t *testing.T) {
   deployment_profiles:
     default:
       template: default
+      overlays:
+        - coa-relay-test
+        - debug-logging
   nas_devices:
     core:
       ip_address: 10.10.10.1
@@ -76,6 +79,16 @@ tenants:
 	}
 	if got := configuration.Tenants["customer-a"].DeploymentProfile; got != "default" {
 		t.Fatalf("tenant deployment profile = %q, want %q", got, "default")
+	}
+	deploymentProfile := configuration.GlobalObjects.DeploymentProfiles["default"]
+	if got := len(deploymentProfile.Overlays); got != 2 {
+		t.Fatalf("deployment profile overlay count = %d, want %d", got, 2)
+	}
+	if got := deploymentProfile.Overlays[0]; got != "coa-relay-test" {
+		t.Fatalf("first deployment profile overlay = %q, want %q", got, "coa-relay-test")
+	}
+	if got := deploymentProfile.Overlays[1]; got != "debug-logging" {
+		t.Fatalf("second deployment profile overlay = %q, want %q", got, "debug-logging")
 	}
 	if got := configuration.GlobalObjects.AccountingProfiles["default"].StaleSessionTimeout; got != "20m" {
 		t.Fatalf("accounting profile stale session timeout = %q, want %q", got, "20m")

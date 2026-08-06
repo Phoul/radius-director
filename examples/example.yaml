@@ -12,6 +12,7 @@ global_objects:
   deployment_profiles:
     default:
       template: default
+      overlays: []
   nas_devices:
     mt-core-01.gobcn.ca:
       ip_address: 10.10.10.1

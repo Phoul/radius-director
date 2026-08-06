@@ -2,7 +2,9 @@ package validation
 
 import (
 	"fmt"
+	"io/fs"
 	"net"
+	"strings"
 	"time"
 
 	"github.com/gobcn/radius-director/internal/model"
@@ -107,16 +109,32 @@ func validateDeploymentProfiles(profiles map[string]model.DeploymentProfile) []e
 }
 
 func validateDeploymentProfile(identifier string, profile model.DeploymentProfile) []error {
+	var validationErrors []error
+
 	if profile.Template == "" {
-		return []error{
+		validationErrors = append(
+			validationErrors,
 			fmt.Errorf(
 				"deployment profile %q: template must be specified",
 				identifier,
 			),
+		)
+	}
+
+	for _, overlay := range profile.Overlays {
+		if !fs.ValidPath(overlay) || strings.Contains(overlay, "/") {
+			validationErrors = append(
+				validationErrors,
+				fmt.Errorf(
+					"deployment profile %q: overlay %q is invalid",
+					identifier,
+					overlay,
+				),
+			)
 		}
 	}
 
-	return nil
+	return validationErrors
 }
 
 func validateNASDevices(devices map[string]model.NASDevice) []error {

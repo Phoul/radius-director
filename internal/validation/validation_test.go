@@ -1265,6 +1265,36 @@ func TestValidateDeploymentProfile(t *testing.T) {
 			profile: model.DeploymentProfile{},
 			wantErr: `deployment profile "default": template must be specified`,
 		},
+		{
+			name: "valid with overlays",
+			profile: model.DeploymentProfile{
+				Template: "default",
+				Overlays: []string{
+					"coa-relay-test",
+					"debug-logging",
+				},
+			},
+		},
+		{
+			name: "invalid overlay",
+			profile: model.DeploymentProfile{
+				Template: "default",
+				Overlays: []string{
+					"../something",
+				},
+			},
+			wantErr: `deployment profile "default": overlay "../something" is invalid`,
+		},
+		{
+			name: "overlay containing path separator",
+			profile: model.DeploymentProfile{
+				Template: "default",
+				Overlays: []string{
+					"experiments/coa-relay",
+				},
+			},
+			wantErr: `deployment profile "default": overlay "experiments/coa-relay" is invalid`,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
