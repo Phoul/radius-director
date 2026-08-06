@@ -55,6 +55,13 @@ func (l loader) Load(version, templateSet, name string) (Executor, error) {
 	if !fs.ValidPath(templateSet) {
 		return nil, fmt.Errorf("template set %q is invalid", templateSet)
 	}
+	if !l.supportsTemplateSet(version, templateSet) {
+		return nil, fmt.Errorf(
+			"template set %q is not available for FreeRADIUS version %q",
+			templateSet,
+			version,
+		)
+	}
 
 	templatePath := path.Join(version, templateSet, name)
 	parsed, err := template.ParseFS(l.files, templatePath)
@@ -74,9 +81,30 @@ func (l loader) supportsVersion(version string) bool {
 	return err == nil && info.IsDir()
 }
 
+func (l loader) supportsTemplateSet(version, templateSet string) bool {
+	if !fs.ValidPath(templateSet) {
+		return false
+	}
+
+	info, err := fs.Stat(l.files, path.Join(version, templateSet))
+	return err == nil && info.IsDir()
+}
+
 func (l loader) managedTemplates(version, templateSet string) ([]string, error) {
 	if !l.supportsVersion(version) {
 		return nil, fmt.Errorf("FreeRADIUS version %q is not supported", version)
+	}
+
+	if !fs.ValidPath(templateSet) {
+		return nil, fmt.Errorf("template set %q is invalid", templateSet)
+	}
+
+	if !l.supportsTemplateSet(version, templateSet) {
+		return nil, fmt.Errorf(
+			"template set %q is not available for FreeRADIUS version %q",
+			templateSet,
+			version,
+		)
 	}
 
 	root, err := fs.Sub(l.files, path.Join(version, templateSet))

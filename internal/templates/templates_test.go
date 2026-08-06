@@ -59,7 +59,7 @@ func TestSupportsVersion(t *testing.T) {
 
 func TestLoaderReturnsErrors(t *testing.T) {
 	loader := loader{files: fstest.MapFS{
-		"3.2.10/invalid": &fstest.MapFile{Data: []byte("{{if}}")},
+		"3.2.10/default/invalid": &fstest.MapFile{Data: []byte("{{if}}")},
 	}}
 
 	tests := []struct {
@@ -104,6 +104,13 @@ func TestLoaderReturnsErrors(t *testing.T) {
 			template:    "mods-available/sql",
 			wantErr:     "template set \"../default\" is invalid",
 		},
+		{
+			name:        "missing template set",
+			version:     "3.2.10",
+			templateSet: "alternate",
+			template:    "mods-available/sql",
+			wantErr:     `template set "alternate" is not available for FreeRADIUS version "3.2.10"`,
+		},
 	}
 
 	for _, test := range tests {
@@ -145,5 +152,41 @@ func TestManagedTemplates(t *testing.T) {
 
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("ManagedTemplates() = %#v, want %#v", got, want)
+	}
+}
+
+func TestManagedTemplatesReturnsTemplateSetErrors(t *testing.T) {
+	tests := []struct {
+		name        string
+		templateSet string
+		wantErr     string
+	}{
+		{
+			name:        "invalid template set",
+			templateSet: "../default",
+			wantErr:     `template set "../default" is invalid`,
+		},
+		{
+			name:        "missing template set",
+			templateSet: "alternate",
+			wantErr:     `template set "alternate" is not available for FreeRADIUS version "3.2.10"`,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := ManagedTemplates("3.2.10", test.templateSet)
+			if err == nil {
+				t.Fatal("ManagedTemplates() error = nil, want error")
+			}
+
+			if !strings.Contains(err.Error(), test.wantErr) {
+				t.Fatalf(
+					"ManagedTemplates() error = %q, want containing %q",
+					err,
+					test.wantErr,
+				)
+			}
+		})
 	}
 }
