@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"path"
 	"sort"
+	"strings"
 	"text/template"
 )
 
@@ -27,6 +28,14 @@ type Loader interface {
 
 type loader struct {
 	files fs.FS
+}
+
+type resolvedTemplates struct {
+	files map[string]string
+}
+
+func validSetName(name string) bool {
+	return fs.ValidPath(name) && !strings.Contains(name, "/")
 }
 
 // EmbeddedLoader returns a Loader backed by templates embedded in the binary.
@@ -52,7 +61,7 @@ func (l loader) Load(version, templateSet, name string) (Executor, error) {
 	if !fs.ValidPath(name) {
 		return nil, fmt.Errorf("template name %q is invalid", name)
 	}
-	if !fs.ValidPath(templateSet) {
+	if !validSetName(templateSet) {
 		return nil, fmt.Errorf("template set %q is invalid", templateSet)
 	}
 	if !l.supportsTemplateSet(version, templateSet) {
@@ -82,7 +91,7 @@ func (l loader) supportsVersion(version string) bool {
 }
 
 func (l loader) supportsTemplateSet(version, templateSet string) bool {
-	if !fs.ValidPath(templateSet) {
+	if !validSetName(templateSet) {
 		return false
 	}
 
@@ -90,12 +99,92 @@ func (l loader) supportsTemplateSet(version, templateSet string) bool {
 	return err == nil && info.IsDir()
 }
 
+func (l loader) mergeTemplateTree(
+	resolved *resolvedTemplates,
+	rootPath string,
+) error {
+	root, err := fs.Sub(l.files, rootPath)
+	if err != nil {
+		return err
+	}
+
+	return fs.WalkDir(root, ".", func(relativePath string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if d.IsDir() {
+			return nil
+		}
+
+		resolved.files[relativePath] = path.Join(rootPath, relativePath)
+
+		return nil
+	})
+}
+
+func (l loader) resolve(
+	version,
+	templateSet string,
+	overlays []string,
+) (*resolvedTemplates, error) {
+	if !l.supportsVersion(version) {
+		return nil, fmt.Errorf("FreeRADIUS version %q is not supported", version)
+	}
+
+	if !validSetName(templateSet) {
+		return nil, fmt.Errorf("template set %q is invalid", templateSet)
+	}
+
+	if !l.supportsTemplateSet(version, templateSet) {
+		return nil, fmt.Errorf(
+			"template set %q is not available for FreeRADIUS version %q",
+			templateSet,
+			version,
+		)
+	}
+
+	resolved := &resolvedTemplates{
+		files: make(map[string]string),
+	}
+
+	if err := l.mergeTemplateTree(
+		resolved,
+		path.Join(version, templateSet),
+	); err != nil {
+		return nil, err
+	}
+
+	for _, overlay := range overlays {
+		if !validSetName(overlay) {
+			return nil, fmt.Errorf("overlay %q is invalid", overlay)
+		}
+
+		overlayPath := path.Join(version, "overlays", overlay)
+
+		info, err := fs.Stat(l.files, overlayPath)
+		if err != nil || !info.IsDir() {
+			return nil, fmt.Errorf(
+				"overlay %q is not available for FreeRADIUS version %q",
+				overlay,
+				version,
+			)
+		}
+
+		if err := l.mergeTemplateTree(resolved, overlayPath); err != nil {
+			return nil, err
+		}
+	}
+
+	return resolved, nil
+}
+
 func (l loader) managedTemplates(version, templateSet string) ([]string, error) {
 	if !l.supportsVersion(version) {
 		return nil, fmt.Errorf("FreeRADIUS version %q is not supported", version)
 	}
 
-	if !fs.ValidPath(templateSet) {
+	if !validSetName(templateSet) {
 		return nil, fmt.Errorf("template set %q is invalid", templateSet)
 	}
 

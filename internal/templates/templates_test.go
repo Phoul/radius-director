@@ -111,6 +111,13 @@ func TestLoaderReturnsErrors(t *testing.T) {
 			template:    "mods-available/sql",
 			wantErr:     `template set "alternate" is not available for FreeRADIUS version "3.2.10"`,
 		},
+		{
+			name:        "template set containing path separator",
+			version:     "3.2.10",
+			templateSet: "custom/default",
+			template:    "mods-available/sql",
+			wantErr:     `template set "custom/default" is invalid`,
+		},
 	}
 
 	for _, test := range tests {
@@ -171,6 +178,11 @@ func TestManagedTemplatesReturnsTemplateSetErrors(t *testing.T) {
 			templateSet: "alternate",
 			wantErr:     `template set "alternate" is not available for FreeRADIUS version "3.2.10"`,
 		},
+		{
+			name:        "template set containing path separator",
+			templateSet: "custom/default",
+			wantErr:     `template set "custom/default" is invalid`,
+		},
 	}
 
 	for _, test := range tests {
@@ -183,6 +195,96 @@ func TestManagedTemplatesReturnsTemplateSetErrors(t *testing.T) {
 			if !strings.Contains(err.Error(), test.wantErr) {
 				t.Fatalf(
 					"ManagedTemplates() error = %q, want containing %q",
+					err,
+					test.wantErr,
+				)
+			}
+		})
+	}
+}
+
+func TestResolveTemplates(t *testing.T) {
+	loader := loader{files: fstest.MapFS{
+		"3.2.10/default/base-only": &fstest.MapFile{
+			Data: []byte("base only"),
+		},
+		"3.2.10/default/replaced": &fstest.MapFile{
+			Data: []byte("base"),
+		},
+		"3.2.10/overlays/first/replaced": &fstest.MapFile{
+			Data: []byte("first"),
+		},
+		"3.2.10/overlays/first/added": &fstest.MapFile{
+			Data: []byte("added"),
+		},
+		"3.2.10/overlays/second/replaced": &fstest.MapFile{
+			Data: []byte("second"),
+		},
+	}}
+
+	resolved, err := loader.resolve(
+		"3.2.10",
+		"default",
+		[]string{"first", "second"},
+	)
+	if err != nil {
+		t.Fatalf("resolve() error = %v", err)
+	}
+
+	want := map[string]string{
+		"base-only": "3.2.10/default/base-only",
+		"added":     "3.2.10/overlays/first/added",
+		"replaced":  "3.2.10/overlays/second/replaced",
+	}
+
+	if !reflect.DeepEqual(resolved.files, want) {
+		t.Fatalf("resolve() files = %#v, want %#v", resolved.files, want)
+	}
+}
+
+func TestResolveTemplatesReturnsOverlayErrors(t *testing.T) {
+	loader := loader{files: fstest.MapFS{
+		"3.2.10/default/base": &fstest.MapFile{
+			Data: []byte("base"),
+		},
+	}}
+
+	tests := []struct {
+		name     string
+		overlays []string
+		wantErr  string
+	}{
+		{
+			name:     "invalid overlay",
+			overlays: []string{"../test"},
+			wantErr:  `overlay "../test" is invalid`,
+		},
+		{
+			name:     "overlay containing path separator",
+			overlays: []string{"experiments/test"},
+			wantErr:  `overlay "experiments/test" is invalid`,
+		},
+		{
+			name:     "missing overlay",
+			overlays: []string{"missing"},
+			wantErr:  `overlay "missing" is not available for FreeRADIUS version "3.2.10"`,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := loader.resolve(
+				"3.2.10",
+				"default",
+				test.overlays,
+			)
+			if err == nil {
+				t.Fatal("resolve() error = nil, want error")
+			}
+
+			if !strings.Contains(err.Error(), test.wantErr) {
+				t.Fatalf(
+					"resolve() error = %q, want containing %q",
 					err,
 					test.wantErr,
 				)
