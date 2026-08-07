@@ -19,6 +19,7 @@ type Tenant struct {
 	SQL                  SQL
 	RADIUSServer         RADIUSServer
 	Template             string
+	Overlays             []string
 }
 
 // AuthenticationPolicy contains resolved tenant-wide subscriber authentication policy.

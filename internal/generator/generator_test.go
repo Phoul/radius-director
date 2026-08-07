@@ -414,6 +414,10 @@ func TestGenerateResolvesDeploymentProfileTemplate(t *testing.T) {
 			DeploymentProfiles: map[string]model.DeploymentProfile{
 				"experimental": {
 					Template: "alternate",
+					Overlays: []string{
+						"coa-relay-test",
+						"debug-logging",
+					},
 				},
 			},
 		},
@@ -428,5 +432,17 @@ func TestGenerateResolvesDeploymentProfileTemplate(t *testing.T) {
 
 	if got, want := generated.Tenants[0].Template, "alternate"; got != want {
 		t.Fatalf("tenant template = %q, want %q", got, want)
+	}
+
+	if got := len(generated.Tenants[0].Overlays); got != 2 {
+		t.Fatalf("tenant overlay count = %d, want %d", got, 2)
+	}
+
+	if got := generated.Tenants[0].Overlays[0]; got != "coa-relay-test" {
+		t.Fatalf("first tenant overlay = %q, want %q", got, "coa-relay-test")
+	}
+
+	if got := generated.Tenants[0].Overlays[1]; got != "debug-logging" {
+		t.Fatalf("second tenant overlay = %q, want %q", got, "debug-logging")
 	}
 }

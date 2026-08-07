@@ -40,6 +40,7 @@ func Generate(configuration model.Configuration) Configuration {
 				COAPort:            tenant.RADIUSServer.COAPort,
 			},
 			Template: deploymentProfile.Template,
+			Overlays: deploymentProfile.Overlays,
 		}
 
 		for _, assignmentIdentifier := range sortedKeys(tenant.NASAssignments) {
