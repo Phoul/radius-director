@@ -365,3 +365,63 @@ func TestManagedTemplatesIncludesOverlayFiles(t *testing.T) {
 		t.Fatalf("managedTemplates() = %#v, want %#v", got, want)
 	}
 }
+
+func TestEmbeddedLoaderLoadsOverlay(t *testing.T) {
+	executor, err := EmbeddedLoader().Load(
+		"3.2.10",
+		"default",
+		[]string{"test-overlay"},
+		"overlay-test.conf",
+	)
+	if err != nil {
+		t.Fatalf("EmbeddedLoader().Load() error = %v", err)
+	}
+
+	var rendered bytes.Buffer
+
+	if err := executor.Execute(
+		&rendered,
+		struct {
+			Identifier string
+		}{
+			Identifier: "customer-a",
+		},
+	); err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+
+	got := strings.ReplaceAll(rendered.String(), "\r\n", "\n")
+	want := "# This file exists only to verify embedded overlay resolution.\noverlay_test = \"customer-a\""
+
+	if got != want {
+		t.Fatalf("rendered template = %q, want %q", got, want)
+	}
+}
+
+func TestManagedTemplatesIncludesEmbeddedOverlay(t *testing.T) {
+	got, err := ManagedTemplates(
+		"3.2.10",
+		"default",
+		[]string{"test-overlay"},
+	)
+	if err != nil {
+		t.Fatalf("ManagedTemplates() error = %v", err)
+	}
+
+	want := []string{
+		"clients.conf",
+		"clients.d/radius-director.conf",
+		"mods-available/sql",
+		"mods-config/files/authorize",
+		"mods-config/files/authorize.d/radius-director",
+		"overlay-test.conf",
+		"proxy.conf",
+		"proxy.d/radius-director.conf",
+		"sites-available/coa",
+		"sites-available/default",
+	}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("ManagedTemplates() = %#v, want %#v", got, want)
+	}
+}
