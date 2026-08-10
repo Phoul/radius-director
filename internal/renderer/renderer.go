@@ -13,7 +13,7 @@ import (
 func Render(tenant generator.Tenant, templateSet string) ([]RenderedFile, error) {
 	version := tenant.RADIUSServer.Version
 
-	paths, err := templates.ManagedTemplates(version, templateSet)
+	paths, err := templates.ManagedTemplates(version, templateSet, tenant.Overlays)
 	if err != nil {
 		return nil, err
 	}
@@ -23,7 +23,7 @@ func Render(tenant generator.Tenant, templateSet string) ([]RenderedFile, error)
 	files := make([]RenderedFile, 0, len(paths))
 
 	for _, path := range paths {
-		tmpl, err := loader.Load(version, templateSet, path)
+		tmpl, err := loader.Load(version, templateSet, tenant.Overlays, path)
 		if err != nil {
 			return nil, err
 		}

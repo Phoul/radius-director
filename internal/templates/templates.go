@@ -23,7 +23,7 @@ type Executor interface {
 // Loader selects and loads a managed configuration template for a FreeRADIUS
 // version.
 type Loader interface {
-	Load(version, templateSet, name string) (Executor, error)
+	Load(version, templateSet string, overlays []string, name string) (Executor, error)
 }
 
 type loader struct {
@@ -50,32 +50,52 @@ func SupportsVersion(version string) bool {
 
 // ManagedTemplates returns every managed template for a supported
 // FreeRADIUS version.
-func ManagedTemplates(version, templateSet string) ([]string, error) {
-	return loader{files: embeddedFiles}.managedTemplates(version, templateSet)
+func ManagedTemplates(version, templateSet string, overlays []string) ([]string, error) {
+	return loader{files: embeddedFiles}.managedTemplates(version, templateSet, overlays)
 }
 
-func (l loader) Load(version, templateSet, name string) (Executor, error) {
-	if !l.supportsVersion(version) {
-		return nil, fmt.Errorf("FreeRADIUS version %q is not supported", version)
-	}
+func (l loader) Load(
+	version,
+	templateSet string,
+	overlays []string,
+	name string,
+) (Executor, error) {
 	if !fs.ValidPath(name) {
 		return nil, fmt.Errorf("template name %q is invalid", name)
 	}
-	if !validSetName(templateSet) {
-		return nil, fmt.Errorf("template set %q is invalid", templateSet)
+
+	resolved, err := l.resolve(version, templateSet, overlays)
+	if err != nil {
+		return nil, err
 	}
-	if !l.supportsTemplateSet(version, templateSet) {
+
+	templatePath, ok := resolved.files[name]
+	if !ok {
 		return nil, fmt.Errorf(
-			"template set %q is not available for FreeRADIUS version %q",
-			templateSet,
+			"load template %q for FreeRADIUS version %q: template does not exist",
+			name,
 			version,
 		)
 	}
 
-	templatePath := path.Join(version, templateSet, name)
-	parsed, err := template.ParseFS(l.files, templatePath)
+	contents, err := fs.ReadFile(l.files, templatePath)
 	if err != nil {
-		return nil, fmt.Errorf("load template %q for FreeRADIUS version %q: %w", name, version, err)
+		return nil, fmt.Errorf(
+			"load template %q for FreeRADIUS version %q: %w",
+			name,
+			version,
+			err,
+		)
+	}
+
+	parsed, err := template.New(path.Base(name)).Parse(string(contents))
+	if err != nil {
+		return nil, fmt.Errorf(
+			"load template %q for FreeRADIUS version %q: %w",
+			name,
+			version,
+			err,
+		)
 	}
 
 	return parsed, nil
@@ -179,45 +199,20 @@ func (l loader) resolve(
 	return resolved, nil
 }
 
-func (l loader) managedTemplates(version, templateSet string) ([]string, error) {
-	if !l.supportsVersion(version) {
-		return nil, fmt.Errorf("FreeRADIUS version %q is not supported", version)
-	}
-
-	if !validSetName(templateSet) {
-		return nil, fmt.Errorf("template set %q is invalid", templateSet)
-	}
-
-	if !l.supportsTemplateSet(version, templateSet) {
-		return nil, fmt.Errorf(
-			"template set %q is not available for FreeRADIUS version %q",
-			templateSet,
-			version,
-		)
-	}
-
-	root, err := fs.Sub(l.files, path.Join(version, templateSet))
+func (l loader) managedTemplates(
+	version,
+	templateSet string,
+	overlays []string,
+) ([]string, error) {
+	resolved, err := l.resolve(version, templateSet, overlays)
 	if err != nil {
 		return nil, err
 	}
 
-	var templates []string
+	templates := make([]string, 0, len(resolved.files))
 
-	err = fs.WalkDir(root, ".", func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if d.IsDir() {
-			return nil
-		}
-
-		templates = append(templates, path)
-		return nil
-	})
-
-	if err != nil {
-		return nil, err
+	for name := range resolved.files {
+		templates = append(templates, name)
 	}
 
 	sort.Strings(templates)
