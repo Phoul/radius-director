@@ -2,6 +2,7 @@ package validation
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/gobcn/radius-director/internal/model"
@@ -1276,6 +1277,13 @@ func TestValidateDeploymentProfile(t *testing.T) {
 			},
 		},
 		{
+			name: "current directory template",
+			profile: model.DeploymentProfile{
+				Template: ".",
+			},
+			wantErr: `deployment profile "default": template "." is invalid`,
+		},
+		{
 			name: "invalid overlay",
 			profile: model.DeploymentProfile{
 				Template: "default",
@@ -1284,6 +1292,14 @@ func TestValidateDeploymentProfile(t *testing.T) {
 				},
 			},
 			wantErr: `deployment profile "default": overlay "../something" is invalid`,
+		},
+		{
+			name: "current directory overlay",
+			profile: model.DeploymentProfile{
+				Template: "default",
+				Overlays: []string{"."},
+			},
+			wantErr: `deployment profile "default": overlay "." is invalid`,
 		},
 		{
 			name: "overlay containing path separator",
@@ -1322,5 +1338,136 @@ func TestValidateTenantDeploymentProfileReference(t *testing.T) {
 	errs := validateTenantReferences("customer-a", tenant, globals)
 	if len(errs) != 1 || errs[0].Error() != `tenant "customer-a": deployment profile "missing" does not exist` {
 		t.Fatalf("errors = %v", errs)
+	}
+}
+
+func TestValidateTemplateAvailability(t *testing.T) {
+	configuration := model.Configuration{
+		GlobalObjects: model.GlobalObjects{
+			DeploymentProfiles: map[string]model.DeploymentProfile{
+				"default": {Template: "default"},
+			},
+		},
+		Tenants: map[string]model.Tenant{
+			"customer-a": {
+				DeploymentProfile: "default",
+				RADIUSServer:      model.RADIUSServer{Version: "3.2.10"},
+			},
+		},
+	}
+
+	tests := []struct {
+		name     string
+		mutate   func(*model.Configuration)
+		wantErrs []string
+	}{
+		{
+			name: "available template set and overlays",
+			mutate: func(configuration *model.Configuration) {
+				profile := configuration.GlobalObjects.DeploymentProfiles["default"]
+				profile.Overlays = []string{"test-overlay"}
+				configuration.GlobalObjects.DeploymentProfiles["default"] = profile
+			},
+		},
+		{
+			name: "missing template set",
+			mutate: func(configuration *model.Configuration) {
+				profile := configuration.GlobalObjects.DeploymentProfiles["default"]
+				profile.Template = "missing"
+				configuration.GlobalObjects.DeploymentProfiles["default"] = profile
+			},
+			wantErrs: []string{`tenant "customer-a": deployment profile "default": template set "missing" is not available for FreeRADIUS version "3.2.10"`},
+		},
+		{
+			name: "missing overlay",
+			mutate: func(configuration *model.Configuration) {
+				profile := configuration.GlobalObjects.DeploymentProfiles["default"]
+				profile.Overlays = []string{"missing"}
+				configuration.GlobalObjects.DeploymentProfiles["default"] = profile
+			},
+			wantErrs: []string{`tenant "customer-a": deployment profile "default": overlay "missing" is not available for FreeRADIUS version "3.2.10"`},
+		},
+		{
+			name: "multiple missing overlays",
+			mutate: func(configuration *model.Configuration) {
+				profile := configuration.GlobalObjects.DeploymentProfiles["default"]
+				profile.Overlays = []string{"first", "second"}
+				configuration.GlobalObjects.DeploymentProfiles["default"] = profile
+			},
+			wantErrs: []string{
+				`tenant "customer-a": deployment profile "default": overlay "first" is not available for FreeRADIUS version "3.2.10"`,
+				`tenant "customer-a": deployment profile "default": overlay "second" is not available for FreeRADIUS version "3.2.10"`,
+			},
+		},
+		{
+			name: "missing version",
+			mutate: func(configuration *model.Configuration) {
+				tenant := configuration.Tenants["customer-a"]
+				tenant.RADIUSServer.Version = ""
+				configuration.Tenants["customer-a"] = tenant
+			},
+		},
+		{
+			name: "unsupported version",
+			mutate: func(configuration *model.Configuration) {
+				tenant := configuration.Tenants["customer-a"]
+				tenant.RADIUSServer.Version = "unsupported"
+				configuration.Tenants["customer-a"] = tenant
+			},
+		},
+		{
+			name: "missing deployment profile reference",
+			mutate: func(configuration *model.Configuration) {
+				tenant := configuration.Tenants["customer-a"]
+				tenant.DeploymentProfile = "missing"
+				configuration.Tenants["customer-a"] = tenant
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			configurationCopy := configuration
+			configurationCopy.GlobalObjects.DeploymentProfiles = map[string]model.DeploymentProfile{}
+			for identifier, profile := range configuration.GlobalObjects.DeploymentProfiles {
+				configurationCopy.GlobalObjects.DeploymentProfiles[identifier] = profile
+			}
+			configurationCopy.Tenants = map[string]model.Tenant{}
+			for identifier, tenant := range configuration.Tenants {
+				configurationCopy.Tenants[identifier] = tenant
+			}
+			test.mutate(&configurationCopy)
+
+			errs := validateTemplateAvailability(configurationCopy)
+			if len(errs) != len(test.wantErrs) {
+				t.Fatalf("validateTemplateAvailability() returned %d errors, want %d: %v", len(errs), len(test.wantErrs), errs)
+			}
+			for index, wantErr := range test.wantErrs {
+				if got := errs[index].Error(); got != wantErr {
+					t.Errorf("validateTemplateAvailability() error = %q, want %q", got, wantErr)
+				}
+			}
+		})
+	}
+}
+
+func TestValidateIncludesTemplateAvailability(t *testing.T) {
+	configuration := model.Configuration{
+		GlobalObjects: model.GlobalObjects{
+			DeploymentProfiles: map[string]model.DeploymentProfile{
+				"default": {Template: "missing"},
+			},
+		},
+		Tenants: map[string]model.Tenant{
+			"customer-a": {
+				DeploymentProfile: "default",
+				RADIUSServer:      model.RADIUSServer{Version: "3.2.10"},
+			},
+		},
+	}
+
+	err := Validate(configuration)
+	if err == nil || !strings.Contains(err.Error(), `tenant "customer-a": deployment profile "default": template set "missing" is not available for FreeRADIUS version "3.2.10"`) {
+		t.Fatalf("Validate() error = %v, want template availability error", err)
 	}
 }

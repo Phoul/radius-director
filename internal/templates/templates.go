@@ -35,7 +35,7 @@ type resolvedTemplates struct {
 }
 
 func validSetName(name string) bool {
-	return fs.ValidPath(name) && !strings.Contains(name, "/")
+	return name != "." && fs.ValidPath(name) && !strings.Contains(name, "/")
 }
 
 // EmbeddedLoader returns a Loader backed by templates embedded in the binary.
@@ -46,6 +46,18 @@ func EmbeddedLoader() Loader {
 // SupportsVersion reports whether an embedded template set supports version.
 func SupportsVersion(version string) bool {
 	return loader{files: embeddedFiles}.supportsVersion(version)
+}
+
+// SupportsTemplateSet reports whether an embedded template set is available
+// for a FreeRADIUS version.
+func SupportsTemplateSet(version, templateSet string) bool {
+	return loader{files: embeddedFiles}.supportsTemplateSet(version, templateSet)
+}
+
+// SupportsOverlay reports whether an embedded overlay is available for a
+// FreeRADIUS version.
+func SupportsOverlay(version, overlay string) bool {
+	return loader{files: embeddedFiles}.supportsOverlay(version, overlay)
 }
 
 // ManagedTemplates returns every managed template for a supported
@@ -111,11 +123,20 @@ func (l loader) supportsVersion(version string) bool {
 }
 
 func (l loader) supportsTemplateSet(version, templateSet string) bool {
-	if !validSetName(templateSet) {
+	if !l.supportsVersion(version) || !validSetName(templateSet) {
 		return false
 	}
 
 	info, err := fs.Stat(l.files, path.Join(version, templateSet))
+	return err == nil && info.IsDir()
+}
+
+func (l loader) supportsOverlay(version, overlay string) bool {
+	if !l.supportsVersion(version) || !validSetName(overlay) {
+		return false
+	}
+
+	info, err := fs.Stat(l.files, path.Join(version, "overlays", overlay))
 	return err == nil && info.IsDir()
 }
 
@@ -180,16 +201,15 @@ func (l loader) resolve(
 			return nil, fmt.Errorf("overlay %q is invalid", overlay)
 		}
 
-		overlayPath := path.Join(version, "overlays", overlay)
-
-		info, err := fs.Stat(l.files, overlayPath)
-		if err != nil || !info.IsDir() {
+		if !l.supportsOverlay(version, overlay) {
 			return nil, fmt.Errorf(
 				"overlay %q is not available for FreeRADIUS version %q",
 				overlay,
 				version,
 			)
 		}
+
+		overlayPath := path.Join(version, "overlays", overlay)
 
 		if err := l.mergeTemplateTree(resolved, overlayPath); err != nil {
 			return nil, err

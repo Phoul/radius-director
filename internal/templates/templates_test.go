@@ -57,6 +57,45 @@ func TestSupportsVersion(t *testing.T) {
 	}
 }
 
+func TestSupportsTemplateSet(t *testing.T) {
+	tests := []struct {
+		version     string
+		templateSet string
+		want        bool
+	}{
+		{version: "3.2.10", templateSet: "default", want: true},
+		{version: "3.2.10", templateSet: "missing", want: false},
+		{version: "3.2.10", templateSet: ".", want: false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.templateSet, func(t *testing.T) {
+			if got := SupportsTemplateSet(test.version, test.templateSet); got != test.want {
+				t.Fatalf("SupportsTemplateSet(%q, %q) = %t, want %t", test.version, test.templateSet, got, test.want)
+			}
+		})
+	}
+}
+
+func TestSupportsOverlay(t *testing.T) {
+	tests := []struct {
+		overlay string
+		want    bool
+	}{
+		{overlay: "test-overlay", want: true},
+		{overlay: "missing", want: false},
+		{overlay: ".", want: false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.overlay, func(t *testing.T) {
+			if got := SupportsOverlay("3.2.10", test.overlay); got != test.want {
+				t.Fatalf("SupportsOverlay(%q, %q) = %t, want %t", "3.2.10", test.overlay, got, test.want)
+			}
+		})
+	}
+}
+
 func TestLoaderReturnsErrors(t *testing.T) {
 	loader := loader{files: fstest.MapFS{
 		"3.2.10/default/invalid": &fstest.MapFile{Data: []byte("{{if}}")},
@@ -103,6 +142,13 @@ func TestLoaderReturnsErrors(t *testing.T) {
 			templateSet: "../default",
 			template:    "mods-available/sql",
 			wantErr:     "template set \"../default\" is invalid",
+		},
+		{
+			name:        "current directory template set",
+			version:     "3.2.10",
+			templateSet: ".",
+			template:    "mods-available/sql",
+			wantErr:     "template set \".\" is invalid",
 		},
 		{
 			name:        "missing template set",
@@ -172,6 +218,11 @@ func TestManagedTemplatesReturnsTemplateSetErrors(t *testing.T) {
 			name:        "invalid template set",
 			templateSet: "../default",
 			wantErr:     `template set "../default" is invalid`,
+		},
+		{
+			name:        "current directory template set",
+			templateSet: ".",
+			wantErr:     `template set "." is invalid`,
 		},
 		{
 			name:        "missing template set",
@@ -258,6 +309,11 @@ func TestResolveTemplatesReturnsOverlayErrors(t *testing.T) {
 			name:     "invalid overlay",
 			overlays: []string{"../test"},
 			wantErr:  `overlay "../test" is invalid`,
+		},
+		{
+			name:     "current directory overlay",
+			overlays: []string{"."},
+			wantErr:  `overlay "." is invalid`,
 		},
 		{
 			name:     "overlay containing path separator",

@@ -119,10 +119,19 @@ func validateDeploymentProfile(identifier string, profile model.DeploymentProfil
 				identifier,
 			),
 		)
+	} else if !validDeploymentProfileIdentifier(profile.Template) {
+		validationErrors = append(
+			validationErrors,
+			fmt.Errorf(
+				"deployment profile %q: template %q is invalid",
+				identifier,
+				profile.Template,
+			),
+		)
 	}
 
 	for _, overlay := range profile.Overlays {
-		if !fs.ValidPath(overlay) || strings.Contains(overlay, "/") {
+		if !validDeploymentProfileIdentifier(overlay) {
 			validationErrors = append(
 				validationErrors,
 				fmt.Errorf(
@@ -135,6 +144,10 @@ func validateDeploymentProfile(identifier string, profile model.DeploymentProfil
 	}
 
 	return validationErrors
+}
+
+func validDeploymentProfileIdentifier(identifier string) bool {
+	return identifier != "." && fs.ValidPath(identifier) && !strings.Contains(identifier, "/")
 }
 
 func validateNASDevices(devices map[string]model.NASDevice) []error {
