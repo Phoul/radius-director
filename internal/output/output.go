@@ -28,7 +28,7 @@ func Build(configuration generator.Configuration) (Output, error) {
 	}
 
 	for _, tenant := range configuration.Tenants {
-		renderedFiles, err := render(tenant, tenant.Template)
+		renderedFiles, err := render(tenant)
 		if err != nil {
 			return Output{}, err
 		}

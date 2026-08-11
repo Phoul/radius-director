@@ -11,6 +11,7 @@ func TestRender(t *testing.T) {
 	one := 1
 
 	tenant := generator.Tenant{
+		Template: "default",
 		RADIUSServer: generator.RADIUSServer{
 			Version: "3.2.10",
 		},
@@ -19,7 +20,7 @@ func TestRender(t *testing.T) {
 		},
 	}
 
-	files, err := Render(tenant, "default")
+	files, err := Render(tenant)
 	if err != nil {
 		t.Fatalf("Render() error = %v", err)
 	}
@@ -62,7 +63,7 @@ func TestRenderWithOverlay(t *testing.T) {
 		Overlays: []string{"test-overlay"},
 	}
 
-	files, err := Render(tenant, tenant.Template)
+	files, err := Render(tenant)
 	if err != nil {
 		t.Fatalf("Render() error = %v", err)
 	}

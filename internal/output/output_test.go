@@ -21,7 +21,7 @@ func TestBuildCreatesFilesForEachTenant(t *testing.T) {
 	want := Output{}
 
 	for _, tenant := range configuration.Tenants {
-		rendered, err := renderer.Render(tenant, tenant.Template)
+		rendered, err := renderer.Render(tenant)
 		if err != nil {
 			t.Fatalf("Render() error = %v", err)
 		}
@@ -62,7 +62,7 @@ func TestBuildPropagatesRendererError(t *testing.T) {
 
 	originalRender := render
 
-	render = func(generator.Tenant, string) ([]renderer.RenderedFile, error) {
+	render = func(generator.Tenant) ([]renderer.RenderedFile, error) {
 		return nil, want
 	}
 
