@@ -2,15 +2,19 @@ package templates
 
 import (
 	"bytes"
+	"errors"
+	"io/fs"
 	"reflect"
 	"strings"
 	"testing"
 	"testing/fstest"
+
+	"github.com/gobcn/radius-director/templates"
 )
 
 func TestLoaderSelectsTemplateForSupportedVersion(t *testing.T) {
 	loader := loader{files: fstest.MapFS{
-		"3.2.10/default/mods-available/sql": &fstest.MapFile{Data: []byte("version=3.2.10 host={{.Host}}\n")},
+		"sets/3.2.10/default/mods-available/sql": &fstest.MapFile{Data: []byte("version=3.2.10 host={{.Host}}\n")},
 	}}
 
 	tests := []struct {
@@ -35,6 +39,21 @@ func TestLoaderSelectsTemplateForSupportedVersion(t *testing.T) {
 				t.Fatalf("rendered template = %q, want %q", got, test.want)
 			}
 		})
+	}
+}
+
+func TestEmbeddedAssetLayout(t *testing.T) {
+	for _, assetPath := range []string{
+		"sets/3.2.10/default/mods-available/sql",
+		"overlays/3.2.10/test-overlay/overlay-test.conf",
+	} {
+		if _, err := fs.Stat(templateassets.Files, assetPath); err != nil {
+			t.Fatalf("embedded asset %q is unavailable: %v", assetPath, err)
+		}
+	}
+
+	if _, err := fs.Stat(templateassets.Files, "3.2.10/overlays/test-overlay/overlay-test.conf"); !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("old embedded overlay path error = %v, want not exist", err)
 	}
 }
 
@@ -98,7 +117,7 @@ func TestSupportsOverlay(t *testing.T) {
 
 func TestLoaderReturnsErrors(t *testing.T) {
 	loader := loader{files: fstest.MapFS{
-		"3.2.10/default/invalid": &fstest.MapFile{Data: []byte("{{if}}")},
+		"sets/3.2.10/default/invalid": &fstest.MapFile{Data: []byte("{{if}}")},
 	}}
 
 	tests := []struct {
@@ -256,19 +275,19 @@ func TestManagedTemplatesReturnsTemplateSetErrors(t *testing.T) {
 
 func TestResolveTemplates(t *testing.T) {
 	loader := loader{files: fstest.MapFS{
-		"3.2.10/default/base-only": &fstest.MapFile{
+		"sets/3.2.10/default/base-only": &fstest.MapFile{
 			Data: []byte("base only"),
 		},
-		"3.2.10/default/replaced": &fstest.MapFile{
+		"sets/3.2.10/default/replaced": &fstest.MapFile{
 			Data: []byte("base"),
 		},
-		"3.2.10/overlays/first/replaced": &fstest.MapFile{
+		"overlays/3.2.10/first/replaced": &fstest.MapFile{
 			Data: []byte("first"),
 		},
-		"3.2.10/overlays/first/added": &fstest.MapFile{
+		"overlays/3.2.10/first/added": &fstest.MapFile{
 			Data: []byte("added"),
 		},
-		"3.2.10/overlays/second/replaced": &fstest.MapFile{
+		"overlays/3.2.10/second/replaced": &fstest.MapFile{
 			Data: []byte("second"),
 		},
 	}}
@@ -283,9 +302,9 @@ func TestResolveTemplates(t *testing.T) {
 	}
 
 	want := map[string]string{
-		"base-only": "3.2.10/default/base-only",
-		"added":     "3.2.10/overlays/first/added",
-		"replaced":  "3.2.10/overlays/second/replaced",
+		"base-only": "sets/3.2.10/default/base-only",
+		"added":     "overlays/3.2.10/first/added",
+		"replaced":  "overlays/3.2.10/second/replaced",
 	}
 
 	if !reflect.DeepEqual(resolved.files, want) {
@@ -295,7 +314,7 @@ func TestResolveTemplates(t *testing.T) {
 
 func TestResolveTemplatesReturnsOverlayErrors(t *testing.T) {
 	loader := loader{files: fstest.MapFS{
-		"3.2.10/default/base": &fstest.MapFile{
+		"sets/3.2.10/default/base": &fstest.MapFile{
 			Data: []byte("base"),
 		},
 	}}
@@ -351,13 +370,13 @@ func TestResolveTemplatesReturnsOverlayErrors(t *testing.T) {
 
 func TestLoaderLoadsWinningOverlay(t *testing.T) {
 	loader := loader{files: fstest.MapFS{
-		"3.2.10/default/example": &fstest.MapFile{
+		"sets/3.2.10/default/example": &fstest.MapFile{
 			Data: []byte("base {{.Value}}"),
 		},
-		"3.2.10/overlays/first/example": &fstest.MapFile{
+		"overlays/3.2.10/first/example": &fstest.MapFile{
 			Data: []byte("first {{.Value}}"),
 		},
-		"3.2.10/overlays/second/example": &fstest.MapFile{
+		"overlays/3.2.10/second/example": &fstest.MapFile{
 			Data: []byte("second {{.Value}}"),
 		},
 	}}
@@ -388,16 +407,16 @@ func TestLoaderLoadsWinningOverlay(t *testing.T) {
 
 func TestManagedTemplatesIncludesOverlayFiles(t *testing.T) {
 	loader := loader{files: fstest.MapFS{
-		"3.2.10/default/base-only": &fstest.MapFile{
+		"sets/3.2.10/default/base-only": &fstest.MapFile{
 			Data: []byte("base"),
 		},
-		"3.2.10/default/replaced": &fstest.MapFile{
+		"sets/3.2.10/default/replaced": &fstest.MapFile{
 			Data: []byte("base"),
 		},
-		"3.2.10/overlays/test/replaced": &fstest.MapFile{
+		"overlays/3.2.10/test/replaced": &fstest.MapFile{
 			Data: []byte("overlay"),
 		},
-		"3.2.10/overlays/test/added": &fstest.MapFile{
+		"overlays/3.2.10/test/added": &fstest.MapFile{
 			Data: []byte("added"),
 		},
 	}}

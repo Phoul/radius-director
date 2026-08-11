@@ -2,7 +2,6 @@
 package templates
 
 import (
-	"embed"
 	"fmt"
 	"io"
 	"io/fs"
@@ -10,10 +9,9 @@ import (
 	"sort"
 	"strings"
 	"text/template"
-)
 
-//go:embed all:*
-var embeddedFiles embed.FS
+	"github.com/gobcn/radius-director/templates"
+)
 
 // Executor executes a parsed managed configuration template.
 type Executor interface {
@@ -40,30 +38,30 @@ func validSetName(name string) bool {
 
 // EmbeddedLoader returns a Loader backed by templates embedded in the binary.
 func EmbeddedLoader() Loader {
-	return loader{files: embeddedFiles}
+	return loader{files: templateassets.Files}
 }
 
 // SupportsVersion reports whether an embedded template set supports version.
 func SupportsVersion(version string) bool {
-	return loader{files: embeddedFiles}.supportsVersion(version)
+	return loader{files: templateassets.Files}.supportsVersion(version)
 }
 
 // SupportsTemplateSet reports whether an embedded template set is available
 // for a FreeRADIUS version.
 func SupportsTemplateSet(version, templateSet string) bool {
-	return loader{files: embeddedFiles}.supportsTemplateSet(version, templateSet)
+	return loader{files: templateassets.Files}.supportsTemplateSet(version, templateSet)
 }
 
 // SupportsOverlay reports whether an embedded overlay is available for a
 // FreeRADIUS version.
 func SupportsOverlay(version, overlay string) bool {
-	return loader{files: embeddedFiles}.supportsOverlay(version, overlay)
+	return loader{files: templateassets.Files}.supportsOverlay(version, overlay)
 }
 
 // ManagedTemplates returns every managed template for a supported
 // FreeRADIUS version.
 func ManagedTemplates(version, templateSet string, overlays []string) ([]string, error) {
-	return loader{files: embeddedFiles}.managedTemplates(version, templateSet, overlays)
+	return loader{files: templateassets.Files}.managedTemplates(version, templateSet, overlays)
 }
 
 func (l loader) Load(
@@ -118,7 +116,7 @@ func (l loader) supportsVersion(version string) bool {
 		return false
 	}
 
-	info, err := fs.Stat(l.files, version)
+	info, err := fs.Stat(l.files, path.Join("sets", version))
 	return err == nil && info.IsDir()
 }
 
@@ -127,7 +125,7 @@ func (l loader) supportsTemplateSet(version, templateSet string) bool {
 		return false
 	}
 
-	info, err := fs.Stat(l.files, path.Join(version, templateSet))
+	info, err := fs.Stat(l.files, path.Join("sets", version, templateSet))
 	return err == nil && info.IsDir()
 }
 
@@ -136,7 +134,7 @@ func (l loader) supportsOverlay(version, overlay string) bool {
 		return false
 	}
 
-	info, err := fs.Stat(l.files, path.Join(version, "overlays", overlay))
+	info, err := fs.Stat(l.files, path.Join("overlays", version, overlay))
 	return err == nil && info.IsDir()
 }
 
@@ -191,7 +189,7 @@ func (l loader) resolve(
 
 	if err := l.mergeTemplateTree(
 		resolved,
-		path.Join(version, templateSet),
+		path.Join("sets", version, templateSet),
 	); err != nil {
 		return nil, err
 	}
@@ -209,7 +207,7 @@ func (l loader) resolve(
 			)
 		}
 
-		overlayPath := path.Join(version, "overlays", overlay)
+		overlayPath := path.Join("overlays", version, overlay)
 
 		if err := l.mergeTemplateTree(resolved, overlayPath); err != nil {
 			return nil, err
