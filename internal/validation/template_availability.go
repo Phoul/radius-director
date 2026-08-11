@@ -9,12 +9,12 @@ import (
 
 // validateTemplateAvailability verifies that each tenant's deployment profile
 // can be resolved for its selected FreeRADIUS version.
-func validateTemplateAvailability(configuration model.Configuration) []error {
+func validateTemplateAvailability(configuration model.Configuration, templateLoader templates.Loader) []error {
 	var validationErrors []error
 
 	for _, tenantIdentifier := range sortedKeys(configuration.Tenants) {
 		tenant := configuration.Tenants[tenantIdentifier]
-		if tenant.DeploymentProfile == "" || tenant.RADIUSServer.Version == "" || !templates.SupportsVersion(tenant.RADIUSServer.Version) {
+		if tenant.DeploymentProfile == "" || tenant.RADIUSServer.Version == "" || !templateLoader.SupportsVersion(tenant.RADIUSServer.Version) {
 			continue
 		}
 
@@ -23,7 +23,7 @@ func validateTemplateAvailability(configuration model.Configuration) []error {
 			continue
 		}
 
-		if validDeploymentProfileIdentifier(profile.Template) && !templates.SupportsTemplateSet(tenant.RADIUSServer.Version, profile.Template) {
+		if validDeploymentProfileIdentifier(profile.Template) && !templateLoader.SupportsTemplateSet(tenant.RADIUSServer.Version, profile.Template) {
 			validationErrors = append(validationErrors, fmt.Errorf(
 				"tenant %q: deployment profile %q: template set %q is not available for FreeRADIUS version %q",
 				tenantIdentifier,
@@ -34,7 +34,7 @@ func validateTemplateAvailability(configuration model.Configuration) []error {
 		}
 
 		for _, overlay := range profile.Overlays {
-			if validDeploymentProfileIdentifier(overlay) && !templates.SupportsOverlay(tenant.RADIUSServer.Version, overlay) {
+			if validDeploymentProfileIdentifier(overlay) && !templateLoader.SupportsOverlay(tenant.RADIUSServer.Version, overlay) {
 				validationErrors = append(validationErrors, fmt.Errorf(
 					"tenant %q: deployment profile %q: overlay %q is not available for FreeRADIUS version %q",
 					tenantIdentifier,

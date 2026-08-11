@@ -2,18 +2,27 @@ package templates
 
 import (
 	"bytes"
-	"errors"
-	"io/fs"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 	"testing/fstest"
-
-	"github.com/gobcn/radius-director/templates"
 )
 
+func externalTemplateLoader(t *testing.T) Loader {
+	t.Helper()
+
+	directory, err := filepath.Abs(filepath.Join("..", "..", "templates"))
+	if err != nil {
+		t.Fatalf("resolve template directory: %v", err)
+	}
+
+	return NewLoader(os.DirFS(directory))
+}
+
 func TestLoaderSelectsTemplateForSupportedVersion(t *testing.T) {
-	loader := loader{files: fstest.MapFS{
+	loader := Loader{files: fstest.MapFS{
 		"sets/3.2.10/default/mods-available/sql": &fstest.MapFile{Data: []byte("version=3.2.10 host={{.Host}}\n")},
 	}}
 
@@ -42,22 +51,8 @@ func TestLoaderSelectsTemplateForSupportedVersion(t *testing.T) {
 	}
 }
 
-func TestEmbeddedAssetLayout(t *testing.T) {
-	for _, assetPath := range []string{
-		"sets/3.2.10/default/mods-available/sql",
-		"overlays/3.2.10/test-overlay/overlay-test.conf",
-	} {
-		if _, err := fs.Stat(templateassets.Files, assetPath); err != nil {
-			t.Fatalf("embedded asset %q is unavailable: %v", assetPath, err)
-		}
-	}
-
-	if _, err := fs.Stat(templateassets.Files, "3.2.10/overlays/test-overlay/overlay-test.conf"); !errors.Is(err, fs.ErrNotExist) {
-		t.Fatalf("old embedded overlay path error = %v, want not exist", err)
-	}
-}
-
 func TestSupportsVersion(t *testing.T) {
+	loader := externalTemplateLoader(t)
 	tests := []struct {
 		version string
 		want    bool
@@ -69,14 +64,15 @@ func TestSupportsVersion(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.version, func(t *testing.T) {
-			if got := SupportsVersion(test.version); got != test.want {
-				t.Fatalf("SupportsVersion(%q) = %t, want %t", test.version, got, test.want)
+			if got := loader.SupportsVersion(test.version); got != test.want {
+				t.Fatalf("loader.SupportsVersion(%q) = %t, want %t", test.version, got, test.want)
 			}
 		})
 	}
 }
 
 func TestSupportsTemplateSet(t *testing.T) {
+	loader := externalTemplateLoader(t)
 	tests := []struct {
 		version     string
 		templateSet string
@@ -89,14 +85,15 @@ func TestSupportsTemplateSet(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.templateSet, func(t *testing.T) {
-			if got := SupportsTemplateSet(test.version, test.templateSet); got != test.want {
-				t.Fatalf("SupportsTemplateSet(%q, %q) = %t, want %t", test.version, test.templateSet, got, test.want)
+			if got := loader.SupportsTemplateSet(test.version, test.templateSet); got != test.want {
+				t.Fatalf("loader.SupportsTemplateSet(%q, %q) = %t, want %t", test.version, test.templateSet, got, test.want)
 			}
 		})
 	}
 }
 
 func TestSupportsOverlay(t *testing.T) {
+	loader := externalTemplateLoader(t)
 	tests := []struct {
 		overlay string
 		want    bool
@@ -108,15 +105,15 @@ func TestSupportsOverlay(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.overlay, func(t *testing.T) {
-			if got := SupportsOverlay("3.2.10", test.overlay); got != test.want {
-				t.Fatalf("SupportsOverlay(%q, %q) = %t, want %t", "3.2.10", test.overlay, got, test.want)
+			if got := loader.SupportsOverlay("3.2.10", test.overlay); got != test.want {
+				t.Fatalf("loader.SupportsOverlay(%q, %q) = %t, want %t", "3.2.10", test.overlay, got, test.want)
 			}
 		})
 	}
 }
 
 func TestLoaderReturnsErrors(t *testing.T) {
-	loader := loader{files: fstest.MapFS{
+	loader := Loader{files: fstest.MapFS{
 		"sets/3.2.10/default/invalid": &fstest.MapFile{Data: []byte("{{if}}")},
 	}}
 
@@ -198,14 +195,14 @@ func TestLoaderReturnsErrors(t *testing.T) {
 	}
 }
 
-func TestEmbeddedLoaderLoadsCurrentTemplateSet(t *testing.T) {
-	if _, err := EmbeddedLoader().Load("3.2.10", "default", nil, "mods-available/sql"); err != nil {
-		t.Fatalf("EmbeddedLoader().Load() error = %v", err)
+func TestExternalLoaderLoadsCurrentTemplateSet(t *testing.T) {
+	if _, err := externalTemplateLoader(t).Load("3.2.10", "default", nil, "mods-available/sql"); err != nil {
+		t.Fatalf("Load() error = %v", err)
 	}
 }
 
 func TestManagedTemplates(t *testing.T) {
-	got, err := ManagedTemplates("3.2.10", "default", nil)
+	got, err := externalTemplateLoader(t).ManagedTemplates("3.2.10", "default", nil)
 	if err != nil {
 		t.Fatalf("ManagedTemplates() error = %v", err)
 	}
@@ -257,7 +254,7 @@ func TestManagedTemplatesReturnsTemplateSetErrors(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := ManagedTemplates("3.2.10", test.templateSet, nil)
+			_, err := externalTemplateLoader(t).ManagedTemplates("3.2.10", test.templateSet, nil)
 			if err == nil {
 				t.Fatal("ManagedTemplates() error = nil, want error")
 			}
@@ -274,7 +271,7 @@ func TestManagedTemplatesReturnsTemplateSetErrors(t *testing.T) {
 }
 
 func TestResolveTemplates(t *testing.T) {
-	loader := loader{files: fstest.MapFS{
+	loader := Loader{files: fstest.MapFS{
 		"sets/3.2.10/default/base-only": &fstest.MapFile{
 			Data: []byte("base only"),
 		},
@@ -313,7 +310,7 @@ func TestResolveTemplates(t *testing.T) {
 }
 
 func TestResolveTemplatesReturnsOverlayErrors(t *testing.T) {
-	loader := loader{files: fstest.MapFS{
+	loader := Loader{files: fstest.MapFS{
 		"sets/3.2.10/default/base": &fstest.MapFile{
 			Data: []byte("base"),
 		},
@@ -369,7 +366,7 @@ func TestResolveTemplatesReturnsOverlayErrors(t *testing.T) {
 }
 
 func TestLoaderLoadsWinningOverlay(t *testing.T) {
-	loader := loader{files: fstest.MapFS{
+	loader := Loader{files: fstest.MapFS{
 		"sets/3.2.10/default/example": &fstest.MapFile{
 			Data: []byte("base {{.Value}}"),
 		},
@@ -406,7 +403,7 @@ func TestLoaderLoadsWinningOverlay(t *testing.T) {
 }
 
 func TestManagedTemplatesIncludesOverlayFiles(t *testing.T) {
-	loader := loader{files: fstest.MapFS{
+	loader := Loader{files: fstest.MapFS{
 		"sets/3.2.10/default/base-only": &fstest.MapFile{
 			Data: []byte("base"),
 		},
@@ -421,7 +418,7 @@ func TestManagedTemplatesIncludesOverlayFiles(t *testing.T) {
 		},
 	}}
 
-	got, err := loader.managedTemplates(
+	got, err := loader.ManagedTemplates(
 		"3.2.10",
 		"default",
 		[]string{"test"},
@@ -441,15 +438,15 @@ func TestManagedTemplatesIncludesOverlayFiles(t *testing.T) {
 	}
 }
 
-func TestEmbeddedLoaderLoadsOverlay(t *testing.T) {
-	executor, err := EmbeddedLoader().Load(
+func TestExternalLoaderLoadsOverlay(t *testing.T) {
+	executor, err := externalTemplateLoader(t).Load(
 		"3.2.10",
 		"default",
 		[]string{"test-overlay"},
 		"overlay-test.conf",
 	)
 	if err != nil {
-		t.Fatalf("EmbeddedLoader().Load() error = %v", err)
+		t.Fatalf("Load() error = %v", err)
 	}
 
 	var rendered bytes.Buffer
@@ -473,8 +470,8 @@ func TestEmbeddedLoaderLoadsOverlay(t *testing.T) {
 	}
 }
 
-func TestManagedTemplatesIncludesEmbeddedOverlay(t *testing.T) {
-	got, err := ManagedTemplates(
+func TestManagedTemplatesIncludesExternalOverlay(t *testing.T) {
+	got, err := externalTemplateLoader(t).ManagedTemplates(
 		"3.2.10",
 		"default",
 		[]string{"test-overlay"},

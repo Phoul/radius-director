@@ -10,17 +10,18 @@ import (
 	"github.com/gobcn/radius-director/internal/config"
 	"github.com/gobcn/radius-director/internal/generator"
 	"github.com/gobcn/radius-director/internal/maintenance/accounting"
+	"github.com/gobcn/radius-director/internal/templates"
 	"github.com/gobcn/radius-director/internal/validation"
 )
 
 // Run executes the command-line interface and returns its exit code.
-func Run(args []string, stdout, stderr io.Writer) int {
+func Run(args []string, stdout, stderr io.Writer, templateLoader templates.Loader) int {
 	if len(args) > 0 {
 		switch args[0] {
 		case "validate":
-			return runValidate(args[1:], stdout, stderr)
+			return runValidate(args[1:], stdout, stderr, templateLoader)
 		case "maintenance":
-			return runMaintenance(args[1:], stdout, stderr)
+			return runMaintenance(args[1:], stdout, stderr, templateLoader)
 		}
 	}
 
@@ -59,7 +60,7 @@ func Run(args []string, stdout, stderr io.Writer) int {
 	return 0
 }
 
-func runValidate(args []string, stdout, stderr io.Writer) int {
+func runValidate(args []string, stdout, stderr io.Writer, templateLoader templates.Loader) int {
 	if len(args) == 1 && (args[0] == "-h" || args[0] == "--help") {
 		fmt.Fprintln(stdout, "Usage:")
 		fmt.Fprintln(stdout, "  radius-director validate <config.yaml>")
@@ -77,7 +78,7 @@ func runValidate(args []string, stdout, stderr io.Writer) int {
 		return 1
 	}
 
-	if err := validation.Validate(configuration); err != nil {
+	if err := validation.Validate(configuration, templateLoader); err != nil {
 		fmt.Fprintln(stderr, err)
 		return 1
 	}
@@ -86,7 +87,7 @@ func runValidate(args []string, stdout, stderr io.Writer) int {
 	return 0
 }
 
-func runMaintenance(args []string, stdout, stderr io.Writer) int {
+func runMaintenance(args []string, stdout, stderr io.Writer, templateLoader templates.Loader) int {
 	if len(args) == 1 && (args[0] == "-h" || args[0] == "--help") {
 		printMaintenanceUsage(stdout)
 		return 0
@@ -96,7 +97,7 @@ func runMaintenance(args []string, stdout, stderr io.Writer) int {
 		printMaintenanceUsage(stderr)
 		return 2
 	}
-	return runAccountingMaintenance(args[1:], stdout, stderr)
+	return runAccountingMaintenance(args[1:], stdout, stderr, templateLoader)
 }
 
 func printMaintenanceUsage(output io.Writer) {
@@ -104,7 +105,7 @@ func printMaintenanceUsage(output io.Writer) {
 	fmt.Fprintln(output, "  radius-director maintenance accounting <config.yaml> <tenant>")
 }
 
-func runAccountingMaintenance(args []string, stdout, stderr io.Writer) int {
+func runAccountingMaintenance(args []string, stdout, stderr io.Writer, templateLoader templates.Loader) int {
 	if len(args) == 1 && (args[0] == "-h" || args[0] == "--help") {
 		printMaintenanceUsage(stdout)
 		return 0
@@ -119,7 +120,7 @@ func runAccountingMaintenance(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, err)
 		return 1
 	}
-	if err := validation.Validate(configuration); err != nil {
+	if err := validation.Validate(configuration, templateLoader); err != nil {
 		fmt.Fprintln(stderr, err)
 		return 1
 	}

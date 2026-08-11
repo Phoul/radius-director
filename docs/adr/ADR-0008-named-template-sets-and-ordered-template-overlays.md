@@ -11,6 +11,8 @@ The original design selected the managed template tree primarily from the FreeRA
 
 RADIUS Director now supports deployment profiles. A deployment profile selects a named base template set and may additionally specify an ordered list of overlays.
 
+The template library is external, user-customizable installation content. Its default location is `./templates`; deployment YAML supplies template-set and overlay identifiers, not filesystem paths.
+
 This establishes a distinction between:
 
 - the FreeRADIUS version being deployed;
@@ -214,9 +216,9 @@ A deployment profile may be defined as:
 
 For a tenant using `coa-relay-test` with FreeRADIUS 3.2.10, RADIUS Director resolves:
 
-    3.2.10/default/
+    sets/3.2.10/default/
         +
-    3.2.10/overlays/coa-relay-test/
+    overlays/3.2.10/coa-relay-test/
 
 into one effective template tree.
 

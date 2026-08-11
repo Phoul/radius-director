@@ -42,7 +42,7 @@ Managed templates SHALL be based on the upstream FreeRADIUS configuration for a 
 
 Templates SHALL be versioned alongside the supported FreeRADIUS version.
 
-The configured FreeRADIUS version determines which template set is used during generation.
+The configured FreeRADIUS version scopes the template sets and overlays available during generation. The tenant's deployment profile selects the base template set and any ordered overlays, as defined by ADR-0008.
 
 Templates SHALL act as the version-specific translation layer between the RADIUS Director domain model and FreeRADIUS configuration.
 
@@ -84,8 +84,8 @@ The domain model is responsible for describing deployment intent using stable op
 
 The renderer is responsible for:
 
-- selecting the template set associated with the configured FreeRADIUS version
-- discovering the managed templates contained within the selected template set
+- resolving the base template set and ordered overlays selected by the tenant's deployment profile for the configured FreeRADIUS version
+- discovering the managed templates contained within the resulting effective template tree
 - supplying the appropriate domain-model data to each template
 - executing each template
 - preserving the template directory structure within the generated managed configuration tree
@@ -132,24 +132,30 @@ These trade-offs are preferable to reimplementing large portions of FreeRADIUS c
 
 ## Template Layout
 
-Template sets are organized by supported FreeRADIUS version.
+The template library is external, user-customizable installation content. Its default location is `./templates`. Deployment YAML selects template-set and overlay identifiers only; it does not specify filesystem paths.
+
+Base template sets and overlays are organized separately by supported FreeRADIUS version.
 
 Example:
 
 ```text
-internal/
-    templates/
+templates/
+    sets/
         3.2.10/
-            clients.conf
-            mods-available/
-                sql
-            sites-available/
+            default/
+                clients.conf
+                mods-available/
+                    sql
+                sites-available/
+    overlays/
+        3.2.10/
+            coa-relay-test/
 ```
 
-The rendering pipeline selects the appropriate template set using the tenant's configured `RADIUSServer.Version`.
+The rendering pipeline resolves the template set and overlays selected by the tenant's deployment profile within the namespace of the tenant's configured `RADIUSServer.Version`.
 
-Every managed template contained within the selected version-specific template set participates in generation.
+Every managed template in the resulting effective template tree participates in generation.
 
 The directory structure of the template set defines the directory structure of the generated managed configuration tree.
 
-The presence of an embedded template set for a FreeRADIUS version determines whether that version is supported by RADIUS Director.
+The presence of at least one template set for a FreeRADIUS version in the configured template library determines whether that version is supported by RADIUS Director.

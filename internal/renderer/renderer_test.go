@@ -1,11 +1,25 @@
 package renderer
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/gobcn/radius-director/internal/generator"
+	"github.com/gobcn/radius-director/internal/templates"
 )
+
+func testRenderer(t *testing.T) Renderer {
+	t.Helper()
+
+	directory, err := filepath.Abs(filepath.Join("..", "..", "templates"))
+	if err != nil {
+		t.Fatalf("resolve template directory: %v", err)
+	}
+
+	return New(templates.NewLoader(os.DirFS(directory)))
+}
 
 func TestRender(t *testing.T) {
 	one := 1
@@ -20,7 +34,7 @@ func TestRender(t *testing.T) {
 		},
 	}
 
-	files, err := Render(tenant)
+	files, err := testRenderer(t).Render(tenant)
 	if err != nil {
 		t.Fatalf("Render() error = %v", err)
 	}
@@ -63,7 +77,7 @@ func TestRenderWithOverlay(t *testing.T) {
 		Overlays: []string{"test-overlay"},
 	}
 
-	files, err := Render(tenant)
+	files, err := testRenderer(t).Render(tenant)
 	if err != nil {
 		t.Fatalf("Render() error = %v", err)
 	}

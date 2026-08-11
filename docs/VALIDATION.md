@@ -212,8 +212,10 @@ Validation rules:
 - accounting_port must be between 1 and 65535
 - coa_port must be between 1 and 65535
 
-A FreeRADIUS version is supported when RADIUS Director includes an embedded
-managed template set for that version.
+A FreeRADIUS version is supported when the configured template library contains
+at least one managed template set for that version. The default template-library
+location is `./templates`; deployment YAML selects template-set and overlay
+identifiers, not filesystem paths.
 
 ---
 

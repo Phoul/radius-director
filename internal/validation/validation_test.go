@@ -1,12 +1,26 @@
 package validation
 
 import (
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/gobcn/radius-director/internal/model"
+	"github.com/gobcn/radius-director/internal/templates"
 )
+
+func testTemplateLoader(t *testing.T) templates.Loader {
+	t.Helper()
+
+	directory, err := filepath.Abs(filepath.Join("..", "..", "templates"))
+	if err != nil {
+		t.Fatalf("resolve template directory: %v", err)
+	}
+
+	return templates.NewLoader(os.DirFS(directory))
+}
 
 func TestValidate(t *testing.T) {
 	one := 1
@@ -64,7 +78,7 @@ func TestValidate(t *testing.T) {
 		},
 	}
 
-	if err := Validate(configuration); err != nil {
+	if err := Validate(configuration, testTemplateLoader(t)); err != nil {
 		t.Fatalf("Validate() error = %v, want nil", err)
 	}
 }
@@ -509,7 +523,7 @@ func TestValidateTenant(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			validationErrors := validateTenant("customer-a", test.tenant)
+			validationErrors := validateTenant("customer-a", test.tenant, testTemplateLoader(t))
 			if len(validationErrors) != len(test.wantErrs) {
 				t.Fatalf("validateTenant() returned %d errors, want %d", len(validationErrors), len(test.wantErrs))
 			}
@@ -668,7 +682,7 @@ func TestValidateRADIUSServer(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			validationErrors := validateRADIUSServer("customer-a", test.server)
+			validationErrors := validateRADIUSServer("customer-a", test.server, testTemplateLoader(t))
 			if len(validationErrors) != len(test.wantErrs) {
 				t.Fatalf("validateRADIUSServer() returned %d errors, want %d", len(validationErrors), len(test.wantErrs))
 			}
@@ -1438,7 +1452,7 @@ func TestValidateTemplateAvailability(t *testing.T) {
 			}
 			test.mutate(&configurationCopy)
 
-			errs := validateTemplateAvailability(configurationCopy)
+			errs := validateTemplateAvailability(configurationCopy, testTemplateLoader(t))
 			if len(errs) != len(test.wantErrs) {
 				t.Fatalf("validateTemplateAvailability() returned %d errors, want %d: %v", len(errs), len(test.wantErrs), errs)
 			}
@@ -1466,7 +1480,7 @@ func TestValidateIncludesTemplateAvailability(t *testing.T) {
 		},
 	}
 
-	err := Validate(configuration)
+	err := Validate(configuration, testTemplateLoader(t))
 	if err == nil || !strings.Contains(err.Error(), `tenant "customer-a": deployment profile "default": template set "missing" is not available for FreeRADIUS version "3.2.10"`) {
 		t.Fatalf("Validate() error = %v, want template availability error", err)
 	}

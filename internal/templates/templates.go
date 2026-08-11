@@ -1,4 +1,4 @@
-// Package templates loads embedded, versioned managed configuration templates.
+// Package templates loads versioned managed configuration templates.
 package templates
 
 import (
@@ -9,8 +9,6 @@ import (
 	"sort"
 	"strings"
 	"text/template"
-
-	"github.com/gobcn/radius-director/templates"
 )
 
 // Executor executes a parsed managed configuration template.
@@ -18,13 +16,9 @@ type Executor interface {
 	Execute(io.Writer, any) error
 }
 
-// Loader selects and loads a managed configuration template for a FreeRADIUS
-// version.
-type Loader interface {
-	Load(version, templateSet string, overlays []string, name string) (Executor, error)
-}
-
-type loader struct {
+// Loader selects and loads managed configuration templates from a template
+// library filesystem.
+type Loader struct {
 	files fs.FS
 }
 
@@ -32,39 +26,16 @@ type resolvedTemplates struct {
 	files map[string]string
 }
 
+// NewLoader creates a Loader for a template library filesystem.
+func NewLoader(files fs.FS) Loader {
+	return Loader{files: files}
+}
+
 func validSetName(name string) bool {
 	return name != "." && fs.ValidPath(name) && !strings.Contains(name, "/")
 }
 
-// EmbeddedLoader returns a Loader backed by templates embedded in the binary.
-func EmbeddedLoader() Loader {
-	return loader{files: templateassets.Files}
-}
-
-// SupportsVersion reports whether an embedded template set supports version.
-func SupportsVersion(version string) bool {
-	return loader{files: templateassets.Files}.supportsVersion(version)
-}
-
-// SupportsTemplateSet reports whether an embedded template set is available
-// for a FreeRADIUS version.
-func SupportsTemplateSet(version, templateSet string) bool {
-	return loader{files: templateassets.Files}.supportsTemplateSet(version, templateSet)
-}
-
-// SupportsOverlay reports whether an embedded overlay is available for a
-// FreeRADIUS version.
-func SupportsOverlay(version, overlay string) bool {
-	return loader{files: templateassets.Files}.supportsOverlay(version, overlay)
-}
-
-// ManagedTemplates returns every managed template for a supported
-// FreeRADIUS version.
-func ManagedTemplates(version, templateSet string, overlays []string) ([]string, error) {
-	return loader{files: templateassets.Files}.managedTemplates(version, templateSet, overlays)
-}
-
-func (l loader) Load(
+func (l Loader) Load(
 	version,
 	templateSet string,
 	overlays []string,
@@ -111,7 +82,8 @@ func (l loader) Load(
 	return parsed, nil
 }
 
-func (l loader) supportsVersion(version string) bool {
+// SupportsVersion reports whether the template library supports version.
+func (l Loader) SupportsVersion(version string) bool {
 	if !fs.ValidPath(version) {
 		return false
 	}
@@ -120,8 +92,10 @@ func (l loader) supportsVersion(version string) bool {
 	return err == nil && info.IsDir()
 }
 
-func (l loader) supportsTemplateSet(version, templateSet string) bool {
-	if !l.supportsVersion(version) || !validSetName(templateSet) {
+// SupportsTemplateSet reports whether a template set is available for a
+// FreeRADIUS version.
+func (l Loader) SupportsTemplateSet(version, templateSet string) bool {
+	if !l.SupportsVersion(version) || !validSetName(templateSet) {
 		return false
 	}
 
@@ -129,8 +103,10 @@ func (l loader) supportsTemplateSet(version, templateSet string) bool {
 	return err == nil && info.IsDir()
 }
 
-func (l loader) supportsOverlay(version, overlay string) bool {
-	if !l.supportsVersion(version) || !validSetName(overlay) {
+// SupportsOverlay reports whether an overlay is available for a FreeRADIUS
+// version.
+func (l Loader) SupportsOverlay(version, overlay string) bool {
+	if !l.SupportsVersion(version) || !validSetName(overlay) {
 		return false
 	}
 
@@ -138,7 +114,7 @@ func (l loader) supportsOverlay(version, overlay string) bool {
 	return err == nil && info.IsDir()
 }
 
-func (l loader) mergeTemplateTree(
+func (l Loader) mergeTemplateTree(
 	resolved *resolvedTemplates,
 	rootPath string,
 ) error {
@@ -162,12 +138,12 @@ func (l loader) mergeTemplateTree(
 	})
 }
 
-func (l loader) resolve(
+func (l Loader) resolve(
 	version,
 	templateSet string,
 	overlays []string,
 ) (*resolvedTemplates, error) {
-	if !l.supportsVersion(version) {
+	if !l.SupportsVersion(version) {
 		return nil, fmt.Errorf("FreeRADIUS version %q is not supported", version)
 	}
 
@@ -175,7 +151,7 @@ func (l loader) resolve(
 		return nil, fmt.Errorf("template set %q is invalid", templateSet)
 	}
 
-	if !l.supportsTemplateSet(version, templateSet) {
+	if !l.SupportsTemplateSet(version, templateSet) {
 		return nil, fmt.Errorf(
 			"template set %q is not available for FreeRADIUS version %q",
 			templateSet,
@@ -199,7 +175,7 @@ func (l loader) resolve(
 			return nil, fmt.Errorf("overlay %q is invalid", overlay)
 		}
 
-		if !l.supportsOverlay(version, overlay) {
+		if !l.SupportsOverlay(version, overlay) {
 			return nil, fmt.Errorf(
 				"overlay %q is not available for FreeRADIUS version %q",
 				overlay,
@@ -217,7 +193,9 @@ func (l loader) resolve(
 	return resolved, nil
 }
 
-func (l loader) managedTemplates(
+// ManagedTemplates returns every managed template for a supported FreeRADIUS
+// version.
+func (l Loader) ManagedTemplates(
 	version,
 	templateSet string,
 	overlays []string,

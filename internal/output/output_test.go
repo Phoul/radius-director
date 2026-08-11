@@ -1,19 +1,33 @@
 package output
 
 import (
-	"errors"
+	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
+	"testing/fstest"
 
 	"github.com/gobcn/radius-director/internal/generator"
 	"github.com/gobcn/radius-director/internal/renderer"
+	"github.com/gobcn/radius-director/internal/templates"
 )
+
+func testRenderer(t *testing.T) renderer.Renderer {
+	t.Helper()
+
+	directory, err := filepath.Abs(filepath.Join("..", "..", "templates"))
+	if err != nil {
+		t.Fatalf("resolve template directory: %v", err)
+	}
+
+	return renderer.New(templates.NewLoader(os.DirFS(directory)))
+}
 
 func TestBuildCreatesFilesForEachTenant(t *testing.T) {
 	configuration := testConfiguration()
+	templateRenderer := testRenderer(t)
 
-	generated, err := Build(configuration)
+	generated, err := Build(configuration, templateRenderer)
 	if err != nil {
 		t.Fatalf("Build() error = %v", err)
 	}
@@ -21,7 +35,7 @@ func TestBuildCreatesFilesForEachTenant(t *testing.T) {
 	want := Output{}
 
 	for _, tenant := range configuration.Tenants {
-		rendered, err := renderer.Render(tenant)
+		rendered, err := templateRenderer.Render(tenant)
 		if err != nil {
 			t.Fatalf("Render() error = %v", err)
 		}
@@ -41,13 +55,14 @@ func TestBuildCreatesFilesForEachTenant(t *testing.T) {
 
 func TestBuildIsDeterministic(t *testing.T) {
 	configuration := testConfiguration()
+	templateRenderer := testRenderer(t)
 
-	first, err := Build(configuration)
+	first, err := Build(configuration, templateRenderer)
 	if err != nil {
 		t.Fatalf("first Build() error = %v", err)
 	}
 
-	second, err := Build(configuration)
+	second, err := Build(configuration, templateRenderer)
 	if err != nil {
 		t.Fatalf("second Build() error = %v", err)
 	}
@@ -58,22 +73,13 @@ func TestBuildIsDeterministic(t *testing.T) {
 }
 
 func TestBuildPropagatesRendererError(t *testing.T) {
-	want := errors.New("render failed")
+	generated, err := Build(
+		testConfiguration(),
+		renderer.New(templates.NewLoader(fstest.MapFS{})),
+	)
 
-	originalRender := render
-
-	render = func(generator.Tenant) ([]renderer.RenderedFile, error) {
-		return nil, want
-	}
-
-	t.Cleanup(func() {
-		render = originalRender
-	})
-
-	generated, err := Build(testConfiguration())
-
-	if !errors.Is(err, want) {
-		t.Fatalf("Build() error = %v, want %v", err, want)
+	if err == nil {
+		t.Fatal("Build() error = nil, want error")
 	}
 
 	if !reflect.DeepEqual(generated, Output{}) {

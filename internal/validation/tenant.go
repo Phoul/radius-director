@@ -7,16 +7,16 @@ import (
 	"github.com/gobcn/radius-director/internal/templates"
 )
 
-func validateTenants(tenants map[string]model.Tenant) []error {
+func validateTenants(tenants map[string]model.Tenant, templateLoader templates.Loader) []error {
 	var validationErrors []error
 	for _, identifier := range sortedKeys(tenants) {
-		validationErrors = append(validationErrors, validateTenant(identifier, tenants[identifier])...)
+		validationErrors = append(validationErrors, validateTenant(identifier, tenants[identifier], templateLoader)...)
 	}
 
 	return validationErrors
 }
 
-func validateTenant(identifier string, tenant model.Tenant) []error {
+func validateTenant(identifier string, tenant model.Tenant, templateLoader templates.Loader) []error {
 	var validationErrors []error
 	if tenant.AuthenticationProfile == "" {
 		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: authentication_profile must be specified", identifier))
@@ -32,7 +32,7 @@ func validateTenant(identifier string, tenant model.Tenant) []error {
 	if tenant.RADIUSServer == (model.RADIUSServer{}) {
 		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: exactly one radius server must be defined", identifier))
 	} else {
-		validationErrors = append(validationErrors, validateRADIUSServer(identifier, tenant.RADIUSServer)...)
+		validationErrors = append(validationErrors, validateRADIUSServer(identifier, tenant.RADIUSServer, templateLoader)...)
 	}
 	if len(tenant.NASAssignments) == 0 {
 		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: at least one nas assignment must be defined", identifier))
@@ -70,11 +70,11 @@ func validateDatabase(tenantIdentifier string, database model.Database) []error 
 	return validationErrors
 }
 
-func validateRADIUSServer(tenantIdentifier string, server model.RADIUSServer) []error {
+func validateRADIUSServer(tenantIdentifier string, server model.RADIUSServer, templateLoader templates.Loader) []error {
 	var validationErrors []error
 	if server.Version == "" {
 		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: radius server version must be specified", tenantIdentifier))
-	} else if !templates.SupportsVersion(server.Version) {
+	} else if !templateLoader.SupportsVersion(server.Version) {
 		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: radius server version %q is not supported", tenantIdentifier, server.Version))
 	}
 	if server.AuthenticationPort < 1 || server.AuthenticationPort > 65535 {

@@ -9,21 +9,29 @@ import (
 	"github.com/gobcn/radius-director/internal/templates"
 )
 
+// Renderer renders managed configuration using a template library.
+type Renderer struct {
+	templateLoader templates.Loader
+}
+
+// New creates a Renderer that uses templateLoader.
+func New(templateLoader templates.Loader) Renderer {
+	return Renderer{templateLoader: templateLoader}
+}
+
 // Render renders every managed configuration file for a tenant.
-func Render(tenant generator.Tenant) ([]RenderedFile, error) {
+func (r Renderer) Render(tenant generator.Tenant) ([]RenderedFile, error) {
 	version := tenant.RADIUSServer.Version
 
-	paths, err := templates.ManagedTemplates(version, tenant.Template, tenant.Overlays)
+	paths, err := r.templateLoader.ManagedTemplates(version, tenant.Template, tenant.Overlays)
 	if err != nil {
 		return nil, err
 	}
 
-	loader := templates.EmbeddedLoader()
-
 	files := make([]RenderedFile, 0, len(paths))
 
 	for _, path := range paths {
-		tmpl, err := loader.Load(version, tenant.Template, tenant.Overlays, path)
+		tmpl, err := r.templateLoader.Load(version, tenant.Template, tenant.Overlays, path)
 		if err != nil {
 			return nil, err
 		}

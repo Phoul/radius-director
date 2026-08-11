@@ -8,8 +8,6 @@ import (
 	"github.com/gobcn/radius-director/internal/renderer"
 )
 
-var render = renderer.Render
-
 // Output contains the generated files that are ready to be written.
 type Output struct {
 	Files []File
@@ -22,13 +20,13 @@ type File struct {
 }
 
 // Build renders each tenant's files and assembles them into an Output object.
-func Build(configuration generator.Configuration) (Output, error) {
+func Build(configuration generator.Configuration, templateRenderer renderer.Renderer) (Output, error) {
 	generated := Output{
 		Files: make([]File, 0),
 	}
 
 	for _, tenant := range configuration.Tenants {
-		renderedFiles, err := render(tenant)
+		renderedFiles, err := templateRenderer.Render(tenant)
 		if err != nil {
 			return Output{}, err
 		}
