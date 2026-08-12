@@ -23,29 +23,55 @@ func New(templateLoader templates.Loader) Renderer {
 func (r Renderer) Render(tenant generator.Tenant) ([]RenderedFile, error) {
 	version := tenant.RADIUSServer.Version
 
-	paths, err := r.templateLoader.ManagedTemplates(version, tenant.Template, tenant.Overlays)
+	entries, err := r.templateLoader.ManagedTemplateEntries(
+		version,
+		tenant.Template,
+		tenant.Overlays,
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	files := make([]RenderedFile, 0, len(paths))
+	files := make([]RenderedFile, 0, len(entries))
 
-	for _, path := range paths {
-		tmpl, err := r.templateLoader.Load(version, tenant.Template, tenant.Overlays, path)
-		if err != nil {
-			return nil, err
+	for _, entry := range entries {
+		switch entry.Kind {
+		case templates.ManagedTemplateKindRegular:
+			tmpl, err := r.templateLoader.Load(
+				version,
+				tenant.Template,
+				tenant.Overlays,
+				entry.Path,
+			)
+			if err != nil {
+				return nil, err
+			}
+
+			var rendered bytes.Buffer
+
+			if err := tmpl.Execute(&rendered, tenant); err != nil {
+				return nil, fmt.Errorf("render %q: %w", entry.Path, err)
+			}
+
+			files = append(files, RenderedFile{
+				RelativePath: entry.Path,
+				Kind:         RenderedFileKindRegular,
+				Content:      rendered.String(),
+			})
+
+		case templates.ManagedTemplateKindSymlink:
+			files = append(files, RenderedFile{
+				RelativePath: entry.Path,
+				Kind:         RenderedFileKindSymlink,
+				Target:       entry.Target,
+			})
+
+		default:
+			return nil, fmt.Errorf(
+				"unsupported managed template kind for %q",
+				entry.Path,
+			)
 		}
-
-		var rendered bytes.Buffer
-
-		if err := tmpl.Execute(&rendered, tenant); err != nil {
-			return nil, fmt.Errorf("render %q: %w", path, err)
-		}
-
-		files = append(files, RenderedFile{
-			RelativePath: path,
-			Content:      rendered.String(),
-		})
 	}
 
 	return files, nil

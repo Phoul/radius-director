@@ -34,12 +34,48 @@ func Write(root string, generated output.Output) error {
 		if err := os.MkdirAll(filepath.Dir(destination), directoryPermissions); err != nil {
 			return err
 		}
-		if err := os.WriteFile(destination, []byte(file.Content), filePermissions); err != nil {
+
+		if file.Kind != output.FileKindRegular && file.Kind != output.FileKindSymlink {
+			return fmt.Errorf("unsupported output file kind for %q", file.Path)
+		}
+
+		if err := removeExisting(destination); err != nil {
 			return err
+		}
+
+		switch file.Kind {
+		case output.FileKindRegular:
+			if err := os.WriteFile(destination, []byte(file.Content), filePermissions); err != nil {
+				return err
+			}
+
+		case output.FileKindSymlink:
+			if err := os.Symlink(file.Target, destination); err != nil {
+				return err
+			}
+
+		default:
+			return fmt.Errorf("unsupported output file kind for %q", file.Path)
 		}
 	}
 
 	return nil
+}
+
+func removeExisting(path string) error {
+	info, err := os.Lstat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+
+	if info.IsDir() {
+		return fmt.Errorf("cannot replace directory %q", path)
+	}
+
+	return os.Remove(path)
 }
 
 func isWithinRoot(root, path string) bool {

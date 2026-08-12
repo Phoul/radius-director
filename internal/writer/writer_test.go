@@ -21,6 +21,156 @@ func TestWriteSingleFile(t *testing.T) {
 	assertFileContent(t, filepath.Join(root, "clients.conf"), "client router {}\n")
 }
 
+func TestWriteSymlink(t *testing.T) {
+	root := t.TempDir()
+	target := filepath.Join("..", "mods-available", "sql")
+
+	generated := output.Output{Files: []output.File{
+		{
+			Path:   "mods-enabled/sql",
+			Kind:   output.FileKindSymlink,
+			Target: target,
+		},
+	}}
+
+	if err := Write(root, generated); err != nil {
+		t.Fatalf("Write() error = %v", err)
+	}
+
+	path := filepath.Join(root, "mods-enabled", "sql")
+
+	info, err := os.Lstat(path)
+	if err != nil {
+		t.Fatalf("Lstat() error = %v", err)
+	}
+
+	if info.Mode()&os.ModeSymlink == 0 {
+		t.Fatalf("path mode = %v, want symbolic link", info.Mode())
+	}
+
+	actualTarget, err := os.Readlink(path)
+	if err != nil {
+		t.Fatalf("Readlink() error = %v", err)
+	}
+
+	if actualTarget != target {
+		t.Fatalf("symlink target = %q, want %q",
+			actualTarget, target)
+	}
+}
+
+func TestWriteReplacesSymlinkWithFile(t *testing.T) {
+	root := t.TempDir()
+
+	path := filepath.Join(root, "config")
+
+	if err := os.Symlink("old.conf", path); err != nil {
+		t.Fatalf("Symlink() setup error = %v", err)
+	}
+
+	generated := output.Output{Files: []output.File{
+		{
+			Path:    "config",
+			Content: "new content",
+		},
+	}}
+
+	if err := Write(root, generated); err != nil {
+		t.Fatalf("Write() error = %v", err)
+	}
+
+	assertFileContent(t, path, "new content")
+
+	info, err := os.Lstat(path)
+	if err != nil {
+		t.Fatalf("Lstat() error = %v", err)
+	}
+
+	if info.Mode()&os.ModeSymlink != 0 {
+		t.Fatal("config is still a symbolic link")
+	}
+}
+
+func TestWriteReplacesFileWithSymlink(t *testing.T) {
+	root := t.TempDir()
+
+	path := filepath.Join(root, "config")
+
+	if err := os.WriteFile(path, []byte("old content"), 0o644); err != nil {
+		t.Fatalf("WriteFile() setup error = %v", err)
+	}
+
+	generated := output.Output{Files: []output.File{
+		{
+			Path:   "config",
+			Kind:   output.FileKindSymlink,
+			Target: "new.conf",
+		},
+	}}
+
+	if err := Write(root, generated); err != nil {
+		t.Fatalf("Write() error = %v", err)
+	}
+
+	info, err := os.Lstat(path)
+	if err != nil {
+		t.Fatalf("Lstat() error = %v", err)
+	}
+
+	if info.Mode()&os.ModeSymlink == 0 {
+		t.Fatal("config is not a symbolic link")
+	}
+
+	target, err := os.Readlink(path)
+	if err != nil {
+		t.Fatalf("Readlink() error = %v", err)
+	}
+
+	if target != "new.conf" {
+		t.Fatalf("symlink target = %q, want %q", target, "new.conf")
+	}
+}
+
+func TestWriteReplacesSymlinkWithSymlink(t *testing.T) {
+	root := t.TempDir()
+
+	path := filepath.Join(root, "config")
+
+	if err := os.Symlink("old.conf", path); err != nil {
+		t.Fatalf("Symlink() setup error = %v", err)
+	}
+
+	generated := output.Output{Files: []output.File{
+		{
+			Path:   "config",
+			Kind:   output.FileKindSymlink,
+			Target: "new.conf",
+		},
+	}}
+
+	if err := Write(root, generated); err != nil {
+		t.Fatalf("Write() error = %v", err)
+	}
+
+	info, err := os.Lstat(path)
+	if err != nil {
+		t.Fatalf("Lstat() error = %v", err)
+	}
+
+	if info.Mode()&os.ModeSymlink == 0 {
+		t.Fatal("config is not a symbolic link")
+	}
+
+	target, err := os.Readlink(path)
+	if err != nil {
+		t.Fatalf("Readlink() error = %v", err)
+	}
+
+	if target != "new.conf" {
+		t.Fatalf("symlink target = %q, want %q", target, "new.conf")
+	}
+}
+
 func TestWriteWithRelativeRoot(t *testing.T) {
 	t.Chdir(t.TempDir())
 	generated := output.Output{Files: []output.File{

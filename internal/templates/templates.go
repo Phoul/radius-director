@@ -39,6 +39,21 @@ type resolvedTemplates struct {
 	entries map[string]resolvedEntry
 }
 
+// ManagedTemplateKind identifies the type of a managed template object.
+type ManagedTemplateKind int
+
+const (
+	ManagedTemplateKindRegular ManagedTemplateKind = iota
+	ManagedTemplateKindSymlink
+)
+
+// ManagedTemplate describes one resolved template filesystem object.
+type ManagedTemplate struct {
+	Path   string
+	Kind   ManagedTemplateKind
+	Target string
+}
+
 // NewLoader creates a Loader for a template library filesystem.
 func NewLoader(files fs.FS) Loader {
 	return Loader{files: files}
@@ -321,6 +336,50 @@ func (l Loader) resolve(
 	return resolved, nil
 }
 
+// ManagedTemplateEntries returns every managed template object for a supported
+// FreeRADIUS version.
+func (l Loader) ManagedTemplateEntries(
+	version,
+	templateSet string,
+	overlays []string,
+) ([]ManagedTemplate, error) {
+	resolved, err := l.resolve(version, templateSet, overlays)
+	if err != nil {
+		return nil, err
+	}
+
+	entries := make([]ManagedTemplate, 0, len(resolved.entries))
+
+	for name, entry := range resolved.entries {
+		managed := ManagedTemplate{
+			Path: name,
+		}
+
+		switch entry.kind {
+		case resolvedFile:
+			managed.Kind = ManagedTemplateKindRegular
+
+		case resolvedSymlink:
+			managed.Kind = ManagedTemplateKindSymlink
+			managed.Target = entry.target
+
+		default:
+			return nil, fmt.Errorf(
+				"unsupported resolved template entry %q",
+				name,
+			)
+		}
+
+		entries = append(entries, managed)
+	}
+
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].Path < entries[j].Path
+	})
+
+	return entries, nil
+}
+
 // ManagedTemplates returns every managed template for a supported FreeRADIUS
 // version.
 func (l Loader) ManagedTemplates(
@@ -328,18 +387,16 @@ func (l Loader) ManagedTemplates(
 	templateSet string,
 	overlays []string,
 ) ([]string, error) {
-	resolved, err := l.resolve(version, templateSet, overlays)
+	entries, err := l.ManagedTemplateEntries(version, templateSet, overlays)
 	if err != nil {
 		return nil, err
 	}
 
-	templates := make([]string, 0, len(resolved.entries))
+	templates := make([]string, 0, len(entries))
 
-	for name := range resolved.entries {
-		templates = append(templates, name)
+	for _, entry := range entries {
+		templates = append(templates, entry.Path)
 	}
-
-	sort.Strings(templates)
 
 	return templates, nil
 }

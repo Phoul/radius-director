@@ -2,6 +2,7 @@
 package output
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"github.com/gobcn/radius-director/internal/generator"
@@ -13,10 +14,22 @@ type Output struct {
 	Files []File
 }
 
-// File is a generated file and its content.
+// FileKind identifies the type of filesystem object in the generated output.
+type FileKind int
+
+const (
+	FileKindRegular FileKind = iota
+	FileKindSymlink
+)
+
+// File is a generated filesystem object.
+//
+// Regular files use Content. Symlinks use Target.
 type File struct {
 	Path    string
+	Kind    FileKind
 	Content string
+	Target  string
 }
 
 // Build renders each tenant's files and assembles them into an Output object.
@@ -32,10 +45,27 @@ func Build(configuration generator.Configuration, templateRenderer renderer.Rend
 		}
 
 		for _, rendered := range renderedFiles {
-			generated.Files = append(generated.Files, File{
-				Path:    filepath.Join(tenant.Identifier, rendered.RelativePath),
-				Content: rendered.Content,
-			})
+			file := File{
+				Path: filepath.Join(tenant.Identifier, rendered.RelativePath),
+			}
+
+			switch rendered.Kind {
+			case renderer.RenderedFileKindRegular:
+				file.Kind = FileKindRegular
+				file.Content = rendered.Content
+
+			case renderer.RenderedFileKindSymlink:
+				file.Kind = FileKindSymlink
+				file.Target = rendered.Target
+
+			default:
+				return Output{}, fmt.Errorf(
+					"unsupported rendered file kind for %q",
+					rendered.RelativePath,
+				)
+			}
+
+			generated.Files = append(generated.Files, file)
 		}
 	}
 

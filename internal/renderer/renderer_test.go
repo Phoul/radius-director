@@ -61,9 +61,112 @@ func TestRender(t *testing.T) {
 				i, files[i].RelativePath, want)
 		}
 
+		if files[i].Kind != RenderedFileKindRegular {
+			t.Errorf("files[%d].Kind = %v, want %v",
+				i, files[i].Kind, RenderedFileKindRegular)
+		}
+
 		if files[i].Content == "" {
 			t.Errorf("files[%d].Content is empty", i)
 		}
+	}
+}
+
+func TestRenderWithSymlink(t *testing.T) {
+	directory := t.TempDir()
+
+	templateDirectory := filepath.Join(directory, "sets", "3.2.10", "default")
+	if err := os.MkdirAll(templateDirectory, 0o755); err != nil {
+		t.Fatalf("create template directory: %v", err)
+	}
+
+	if err := os.WriteFile(
+		filepath.Join(templateDirectory, "real.conf"),
+		[]byte("real = true\n"),
+		0o644,
+	); err != nil {
+		t.Fatalf("write real.conf: %v", err)
+	}
+
+	if err := os.Symlink(
+		"real.conf",
+		filepath.Join(templateDirectory, "link.conf"),
+	); err != nil {
+		t.Fatalf("create link.conf: %v", err)
+	}
+
+	loader := templates.NewLoader(os.DirFS(directory))
+	renderer := New(loader)
+
+	tenant := generator.Tenant{
+		Template: "default",
+		RADIUSServer: generator.RADIUSServer{
+			Version: "3.2.10",
+		},
+	}
+
+	files, err := renderer.Render(tenant)
+	if err != nil {
+		t.Fatalf("Render() error = %v", err)
+	}
+
+	if len(files) != 2 {
+		t.Fatalf("Render() returned %d files, want 2", len(files))
+	}
+
+	if files[0].RelativePath != "link.conf" {
+		t.Errorf(
+			"files[0].RelativePath = %q, want %q",
+			files[0].RelativePath,
+			"link.conf",
+		)
+	}
+
+	if files[0].Kind != RenderedFileKindSymlink {
+		t.Errorf(
+			"files[0].Kind = %v, want %v",
+			files[0].Kind,
+			RenderedFileKindSymlink,
+		)
+	}
+
+	if files[0].Target != "real.conf" {
+		t.Errorf(
+			"files[0].Target = %q, want %q",
+			files[0].Target,
+			"real.conf",
+		)
+	}
+
+	if files[0].Content != "" {
+		t.Errorf(
+			"files[0].Content = %q, want empty",
+			files[0].Content,
+		)
+	}
+
+	if files[1].RelativePath != "real.conf" {
+		t.Errorf(
+			"files[1].RelativePath = %q, want %q",
+			files[1].RelativePath,
+			"real.conf",
+		)
+	}
+
+	if files[1].Kind != RenderedFileKindRegular {
+		t.Errorf(
+			"files[1].Kind = %v, want %v",
+			files[1].Kind,
+			RenderedFileKindRegular,
+		)
+	}
+
+	if files[1].Content != "real = true\n" {
+		t.Errorf(
+			"files[1].Content = %q, want %q",
+			files[1].Content,
+			"real = true\n",
+		)
 	}
 }
 
@@ -90,6 +193,11 @@ func TestRenderWithOverlay(t *testing.T) {
 		}
 
 		found = true
+
+		if file.Kind != RenderedFileKindRegular {
+			t.Errorf("file.Kind = %v, want %v",
+				file.Kind, RenderedFileKindRegular)
+		}
 
 		got := strings.ReplaceAll(file.Content, "\r\n", "\n")
 		want := "# This file exists only to verify external overlay resolution.\noverlay_test = \"customer-a\""
