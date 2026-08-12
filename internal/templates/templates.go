@@ -22,8 +22,21 @@ type Loader struct {
 	files fs.FS
 }
 
+type resolvedEntryKind int
+
+const (
+	resolvedFile resolvedEntryKind = iota
+	resolvedSymlink
+)
+
+type resolvedEntry struct {
+	kind   resolvedEntryKind
+	source string
+	target string
+}
+
 type resolvedTemplates struct {
-	files map[string]string
+	entries map[string]resolvedEntry
 }
 
 // NewLoader creates a Loader for a template library filesystem.
@@ -50,7 +63,7 @@ func (l Loader) Load(
 		return nil, err
 	}
 
-	templatePath, ok := resolved.files[name]
+	entry, ok := resolved.entries[name]
 	if !ok {
 		return nil, fmt.Errorf(
 			"load template %q for FreeRADIUS version %q: template does not exist",
@@ -59,7 +72,15 @@ func (l Loader) Load(
 		)
 	}
 
-	contents, err := fs.ReadFile(l.files, templatePath)
+	if entry.kind != resolvedFile {
+		return nil, fmt.Errorf(
+			"load template %q for FreeRADIUS version %q: template is not a regular file",
+			name,
+			version,
+		)
+	}
+
+	contents, err := fs.ReadFile(l.files, entry.source)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"load template %q for FreeRADIUS version %q: %w",
@@ -114,6 +135,90 @@ func (l Loader) SupportsOverlay(version, overlay string) bool {
 	return err == nil && info.IsDir()
 }
 
+func (l Loader) validateSymlink(
+	layerRoot string,
+	symlinkPath string,
+) (string, error) {
+	visited := make(map[string]bool)
+	return l.resolveSymlink(layerRoot, symlinkPath, visited)
+}
+
+func (l Loader) resolveSymlink(
+	layerRoot string,
+	symlinkPath string,
+	visited map[string]bool,
+) (string, error) {
+	if visited[symlinkPath] {
+		return "", fmt.Errorf("symlink cycle detected at %q", symlinkPath)
+	}
+	visited[symlinkPath] = true
+
+	target, err := fs.ReadLink(l.files, symlinkPath)
+	if err != nil {
+		return "", fmt.Errorf("read symlink target: %w", err)
+	}
+
+	if target == "" {
+		return "", fmt.Errorf("symlink target is empty")
+	}
+
+	if strings.Contains(target, `\`) {
+		return "", fmt.Errorf(
+			"symlink target %q contains a backslash",
+			target,
+		)
+	}
+
+	if path.IsAbs(target) {
+		return "", fmt.Errorf("symlink target %q is absolute", target)
+	}
+
+	if len(target) >= 3 &&
+		((target[0] >= 'A' && target[0] <= 'Z') ||
+			(target[0] >= 'a' && target[0] <= 'z')) &&
+		target[1] == ':' &&
+		target[2] == '/' {
+		return "", fmt.Errorf(
+			"symlink target %q is absolute",
+			target,
+		)
+	}
+
+	linkDir := path.Dir(symlinkPath)
+	targetPath := path.Clean(path.Join(linkDir, target))
+	rootPath := path.Clean(layerRoot)
+
+	if targetPath != rootPath && !strings.HasPrefix(targetPath, rootPath+"/") {
+		return "", fmt.Errorf(
+			"symlink target %q escapes template layer %q",
+			target,
+			layerRoot,
+		)
+	}
+
+	info, err := fs.Lstat(l.files, targetPath)
+	if err != nil {
+		return "", fmt.Errorf(
+			"symlink target %q does not exist: %w",
+			target,
+			err,
+		)
+	}
+
+	if info.Mode()&fs.ModeSymlink != 0 {
+		if _, err := l.resolveSymlink(layerRoot, targetPath, visited); err != nil {
+			return "", err
+		}
+	} else if !info.Mode().IsRegular() && !info.IsDir() {
+		return "", fmt.Errorf(
+			"symlink target %q is not a regular file or directory",
+			target,
+		)
+	}
+
+	return target, nil
+}
+
 func (l Loader) mergeTemplateTree(
 	resolved *resolvedTemplates,
 	rootPath string,
@@ -132,9 +237,32 @@ func (l Loader) mergeTemplateTree(
 			return nil
 		}
 
-		resolved.files[relativePath] = path.Join(rootPath, relativePath)
+		fullPath := path.Join(rootPath, relativePath)
 
-		return nil
+		if d.Type()&fs.ModeSymlink != 0 {
+			target, err := l.validateSymlink(rootPath, fullPath)
+			if err != nil {
+				return fmt.Errorf("validate symlink %q: %w", fullPath, err)
+			}
+
+			resolved.entries[relativePath] = resolvedEntry{
+				kind:   resolvedSymlink,
+				target: target,
+			}
+
+			return nil
+		}
+
+		if d.Type().IsRegular() {
+			resolved.entries[relativePath] = resolvedEntry{
+				kind:   resolvedFile,
+				source: fullPath,
+			}
+
+			return nil
+		}
+
+		return fmt.Errorf("unsupported template filesystem entry %q", fullPath)
 	})
 }
 
@@ -160,7 +288,7 @@ func (l Loader) resolve(
 	}
 
 	resolved := &resolvedTemplates{
-		files: make(map[string]string),
+		entries: make(map[string]resolvedEntry),
 	}
 
 	if err := l.mergeTemplateTree(
@@ -205,9 +333,9 @@ func (l Loader) ManagedTemplates(
 		return nil, err
 	}
 
-	templates := make([]string, 0, len(resolved.files))
+	templates := make([]string, 0, len(resolved.entries))
 
-	for name := range resolved.files {
+	for name := range resolved.entries {
 		templates = append(templates, name)
 	}
 

@@ -92,7 +92,7 @@ func TestRenderWithOverlay(t *testing.T) {
 		found = true
 
 		got := strings.ReplaceAll(file.Content, "\r\n", "\n")
-		want := "# This file exists only to verify embedded overlay resolution.\noverlay_test = \"customer-a\""
+		want := "# This file exists only to verify external overlay resolution.\noverlay_test = \"customer-a\""
 
 		if got != want {
 			t.Fatalf(
