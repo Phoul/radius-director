@@ -20,6 +20,7 @@ type Tenant struct {
 	RADIUSServer         RADIUSServer
 	Template             string
 	Overlays             []string
+	Remove               []string
 }
 
 // AuthenticationPolicy contains resolved tenant-wide subscriber authentication policy.

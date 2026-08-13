@@ -41,6 +41,7 @@ func Generate(configuration model.Configuration) Configuration {
 			},
 			Template: deploymentProfile.Template,
 			Overlays: deploymentProfile.Overlays,
+			Remove:   deploymentProfile.Remove,
 		}
 
 		for _, assignmentIdentifier := range sortedKeys(tenant.NASAssignments) {

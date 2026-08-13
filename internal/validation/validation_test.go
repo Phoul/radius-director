@@ -1325,6 +1325,68 @@ func TestValidateDeploymentProfile(t *testing.T) {
 			},
 			wantErr: `deployment profile "default": overlay "experiments/coa-relay" is invalid`,
 		},
+		{
+			name: "valid remove path",
+			profile: model.DeploymentProfile{
+				Template: "default",
+				Remove: []string{
+					"sites-enabled/inner-tunnel",
+					"mods-enabled/sql",
+					"users",
+					"mods-config/files/authorize",
+				},
+			},
+		},
+		{
+			name: "remove path with backslash",
+			profile: model.DeploymentProfile{
+				Template: "default",
+				Remove: []string{
+					`sites-enabled\inner-tunnel`,
+				},
+			},
+			wantErr: `deployment profile "default": remove[0]: path must use '/' as the separator`,
+		},
+		{
+			name: "absolute remove path",
+			profile: model.DeploymentProfile{
+				Template: "default",
+				Remove: []string{
+					"/etc/freeradius/users",
+				},
+			},
+			wantErr: `deployment profile "default": remove[0]: path must be a valid relative path`,
+		},
+		{
+			name: "parent traversal remove path",
+			profile: model.DeploymentProfile{
+				Template: "default",
+				Remove: []string{
+					"../users",
+				},
+			},
+			wantErr: `deployment profile "default": remove[0]: path must be a valid relative path`,
+		},
+		{
+			name: "nested parent traversal remove path",
+			profile: model.DeploymentProfile{
+				Template: "default",
+				Remove: []string{
+					"sites-enabled/../../users",
+				},
+			},
+			wantErr: `deployment profile "default": remove[0]: path must be a valid relative path`,
+		},
+		{
+			name: "empty remove path",
+			profile: model.DeploymentProfile{
+				Template: "default",
+				Remove: []string{
+					"",
+				},
+			},
+			wantErr: `deployment profile "default": remove[0]: path must not be empty`,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

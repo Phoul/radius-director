@@ -43,6 +43,7 @@ type MonitoringProfile struct{}
 type DeploymentProfile struct {
 	Template string   `yaml:"template"`
 	Overlays []string `yaml:"overlays"`
+	Remove   []string `yaml:"remove"`
 }
 
 // NASDevice represents a physical or virtual RADIUS client.

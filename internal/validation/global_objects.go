@@ -143,11 +143,41 @@ func validateDeploymentProfile(identifier string, profile model.DeploymentProfil
 		}
 	}
 
+	for index, removePath := range profile.Remove {
+		if err := validateRemovePath(removePath); err != nil {
+			validationErrors = append(
+				validationErrors,
+				fmt.Errorf(
+					"deployment profile %q: remove[%d]: %w",
+					identifier,
+					index,
+					err,
+				),
+			)
+		}
+	}
+
 	return validationErrors
 }
 
 func validDeploymentProfileIdentifier(identifier string) bool {
 	return identifier != "." && fs.ValidPath(identifier) && !strings.Contains(identifier, "/")
+}
+
+func validateRemovePath(value string) error {
+	if value == "" {
+		return fmt.Errorf("path must not be empty")
+	}
+
+	if strings.Contains(value, `\`) {
+		return fmt.Errorf("path must use '/' as the separator")
+	}
+
+	if !fs.ValidPath(value) {
+		return fmt.Errorf("path must be a valid relative path")
+	}
+
+	return nil
 }
 
 func validateNASDevices(devices map[string]model.NASDevice) []error {
