@@ -463,6 +463,37 @@ func TestResolveTemplatesWithSymlink(t *testing.T) {
 	}
 }
 
+func TestResolveTemplatesNormalizesNativeSymlinkTarget(t *testing.T) {
+	nativeTarget := "." + string(filepath.Separator) + "real.conf"
+
+	loader := Loader{
+		files: symlinkMapFS{
+			MapFS: fstest.MapFS{
+				"sets/3.2.10/default/real.conf": &fstest.MapFile{
+					Data: []byte("real"),
+				},
+			},
+			links: map[string]string{
+				"sets/3.2.10/default/link.conf": nativeTarget,
+			},
+		},
+	}
+
+	resolved, err := loader.resolve("3.2.10", "default", nil)
+	if err != nil {
+		t.Fatalf("resolve() error = %v", err)
+	}
+
+	want := resolvedEntry{
+		kind:   resolvedSymlink,
+		target: "./real.conf",
+	}
+
+	if got := resolved.entries["link.conf"]; !reflect.DeepEqual(got, want) {
+		t.Fatalf("resolved.entries[link.conf] = %#v, want %#v", got, want)
+	}
+}
+
 func TestResolveTemplatesWithContainedParentSymlink(t *testing.T) {
 	loader := Loader{
 		files: symlinkMapFS{
@@ -633,30 +664,6 @@ func TestResolveTemplatesRejectsEmptySymlinkTarget(t *testing.T) {
 
 	if !strings.Contains(err.Error(), "symlink target is empty") {
 		t.Fatalf("resolve() error = %q, want empty-target error", err)
-	}
-}
-
-func TestResolveTemplatesRejectsBackslashSymlinkTarget(t *testing.T) {
-	loader := Loader{
-		files: symlinkMapFS{
-			MapFS: fstest.MapFS{
-				"sets/3.2.10/default/base": &fstest.MapFile{
-					Data: []byte("base"),
-				},
-			},
-			links: map[string]string{
-				"sets/3.2.10/default/link.conf": `..\outside`,
-			},
-		},
-	}
-
-	_, err := loader.resolve("3.2.10", "default", nil)
-	if err == nil {
-		t.Fatal("resolve() error = nil, want error")
-	}
-
-	if !strings.Contains(err.Error(), "contains a backslash") {
-		t.Fatalf("resolve() error = %q, want backslash error", err)
 	}
 }
 

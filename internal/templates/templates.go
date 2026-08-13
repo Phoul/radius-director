@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/fs"
 	"path"
+	"path/filepath"
 	"sort"
 	"strings"
 	"text/template"
@@ -177,6 +178,16 @@ func (l Loader) resolveSymlink(
 		return "", fmt.Errorf("symlink target is empty")
 	}
 
+	if filepath.VolumeName(target) != "" {
+		return "", fmt.Errorf("symlink target %q is absolute", target)
+	}
+
+	if filepath.IsAbs(target) {
+		return "", fmt.Errorf("symlink target %q is absolute", target)
+	}
+
+	target = filepath.ToSlash(target)
+
 	if strings.Contains(target, `\`) {
 		return "", fmt.Errorf(
 			"symlink target %q contains a backslash",
@@ -188,11 +199,10 @@ func (l Loader) resolveSymlink(
 		return "", fmt.Errorf("symlink target %q is absolute", target)
 	}
 
-	if len(target) >= 3 &&
+	if len(target) >= 2 &&
 		((target[0] >= 'A' && target[0] <= 'Z') ||
 			(target[0] >= 'a' && target[0] <= 'z')) &&
-		target[1] == ':' &&
-		target[2] == '/' {
+		target[1] == ':' {
 		return "", fmt.Errorf(
 			"symlink target %q is absolute",
 			target,
