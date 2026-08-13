@@ -21,6 +21,17 @@ func testTemplateLoader(t *testing.T) templates.Loader {
 	return templates.NewLoader(os.DirFS(directory))
 }
 
+func exampleConfigPath(t *testing.T) string {
+	t.Helper()
+
+	path, err := filepath.Abs(filepath.Join("..", "..", "examples", "example.yaml"))
+	if err != nil {
+		t.Fatalf("resolve example configuration: %v", err)
+	}
+
+	return path
+}
+
 func TestRunHelp(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -57,6 +68,80 @@ func TestRunValidate(t *testing.T) {
 	}
 	if stderr.Len() != 0 {
 		t.Fatalf("stderr = %q, want empty", stderr.String())
+	}
+}
+
+func TestRunGenerate(t *testing.T) {
+	configPath := exampleConfigPath(t)
+	outputDir := t.TempDir()
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	if exitCode := Run(
+		[]string{"generate", configPath, outputDir},
+		&stdout,
+		&stderr,
+		testTemplateLoader(t),
+	); exitCode != 0 {
+		t.Fatalf("Run() exit code = %d, want 0; stderr = %q", exitCode, stderr.String())
+	}
+
+	if stdout.String() != "Configuration generated successfully.\n" {
+		t.Fatalf("stdout = %q, want success message", stdout.String())
+	}
+
+	if stderr.Len() != 0 {
+		t.Fatalf("stderr = %q, want empty", stderr.String())
+	}
+
+	tenantRoot := filepath.Join(outputDir, "customer-a")
+
+	expectedFiles := []string{
+		"clients.conf",
+		"clients.d/radius-director.conf",
+		"mods-available/sql",
+		"mods-config/files/authorize",
+		"mods-config/files/authorize.d/radius-director",
+		"proxy.conf",
+		"proxy.d/radius-director.conf",
+		"sites-available/coa",
+		"sites-available/default",
+	}
+
+	for _, relativePath := range expectedFiles {
+		path := filepath.Join(tenantRoot, filepath.FromSlash(relativePath))
+
+		info, err := os.Stat(path)
+		if err != nil {
+			t.Errorf("expected generated file %q: %v", relativePath, err)
+			continue
+		}
+
+		if !info.Mode().IsRegular() {
+			t.Errorf("generated path %q is not a regular file", relativePath)
+		}
+	}
+
+	expectedSymlinks := map[string]string{
+		"mods-enabled/sql":      filepath.Join("..", "mods-available", "sql"),
+		"sites-enabled/coa":     filepath.Join("..", "sites-available", "coa"),
+		"sites-enabled/default": filepath.Join("..", "sites-available", "default"),
+		"users":                 filepath.Join("mods-config", "files", "authorize"),
+	}
+
+	for relativePath, wantTarget := range expectedSymlinks {
+		path := filepath.Join(tenantRoot, filepath.FromSlash(relativePath))
+
+		target, err := os.Readlink(path)
+		if err != nil {
+			t.Errorf("expected generated symlink %q: %v", relativePath, err)
+			continue
+		}
+
+		if target != wantTarget {
+			t.Errorf("symlink %q = %q, want %q", relativePath, target, wantTarget)
+		}
 	}
 }
 

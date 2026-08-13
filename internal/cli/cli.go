@@ -10,8 +10,11 @@ import (
 	"github.com/gobcn/radius-director/internal/config"
 	"github.com/gobcn/radius-director/internal/generator"
 	"github.com/gobcn/radius-director/internal/maintenance/accounting"
+	"github.com/gobcn/radius-director/internal/output"
+	"github.com/gobcn/radius-director/internal/renderer"
 	"github.com/gobcn/radius-director/internal/templates"
 	"github.com/gobcn/radius-director/internal/validation"
+	"github.com/gobcn/radius-director/internal/writer"
 )
 
 // Run executes the command-line interface and returns its exit code.
@@ -20,6 +23,8 @@ func Run(args []string, stdout, stderr io.Writer, templateLoader templates.Loade
 		switch args[0] {
 		case "validate":
 			return runValidate(args[1:], stdout, stderr, templateLoader)
+		case "generate":
+			return runGenerate(args[1:], stdout, stderr, templateLoader)
 		case "maintenance":
 			return runMaintenance(args[1:], stdout, stderr, templateLoader)
 		}
@@ -34,6 +39,7 @@ func Run(args []string, stdout, stderr io.Writer, templateLoader templates.Loade
 		fmt.Fprintln(stdout)
 		fmt.Fprintln(stdout, "Usage:")
 		fmt.Fprintln(stdout, "  radius-director validate <config.yaml>")
+		fmt.Fprintln(stdout, "  radius-director generate <config.yaml> <output-directory>")
 		fmt.Fprintln(stdout, "  radius-director maintenance accounting <config.yaml> <tenant>")
 		fmt.Fprintln(stdout)
 		fmt.Fprintln(stdout, "Options:")
@@ -84,6 +90,47 @@ func runValidate(args []string, stdout, stderr io.Writer, templateLoader templat
 	}
 
 	fmt.Fprintln(stdout, "Configuration parsed and validated successfully.")
+	return 0
+}
+
+func runGenerate(args []string, stdout, stderr io.Writer, templateLoader templates.Loader) int {
+	if len(args) == 1 && (args[0] == "-h" || args[0] == "--help") {
+		fmt.Fprintln(stdout, "Usage:")
+		fmt.Fprintln(stdout, "  radius-director generate <config.yaml> <output-directory>")
+		return 0
+	}
+
+	if len(args) != 2 {
+		fmt.Fprintln(stderr, "generate requires a configuration file and output directory")
+		return 2
+	}
+
+	configuration, err := config.Load(args[0])
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 1
+	}
+
+	if err := validation.Validate(configuration, templateLoader); err != nil {
+		fmt.Fprintln(stderr, err)
+		return 1
+	}
+
+	generated := generator.Generate(configuration)
+
+	templateRenderer := renderer.New(templateLoader)
+	generatedOutput, err := output.Build(generated, templateRenderer)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 1
+	}
+
+	if err := writer.Write(args[1], generatedOutput); err != nil {
+		fmt.Fprintln(stderr, err)
+		return 1
+	}
+
+	fmt.Fprintln(stdout, "Configuration generated successfully.")
 	return 0
 }
 
