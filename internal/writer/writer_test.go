@@ -245,6 +245,72 @@ func TestWritePreservesFileContent(t *testing.T) {
 	assertFileContent(t, filepath.Join(root, "exact.conf"), content)
 }
 
+func TestWritePerTenantManifests(t *testing.T) {
+	root := t.TempDir()
+
+	generated := output.Output{
+		Tenants: []string{"customer-a", "customer-b"},
+		Files: []output.File{
+			{Path: "customer-a/clients.conf", Content: "client router {}\n"},
+			{Path: "customer-b/clients.conf", Content: "client other {}\n"},
+		},
+		Remove: []string{
+			"customer-a/sites-enabled/inner-tunnel",
+			"customer-a/mods-enabled/foo",
+			"customer-b/sites-enabled/inner-tunnel",
+		},
+	}
+
+	if err := Write(root, generated); err != nil {
+		t.Fatalf("Write() error = %v", err)
+	}
+
+	assertFileContent(
+		t,
+		filepath.Join(root, "customer-a", ".radius-director", "manifest.yaml"),
+		"remove:\n    - sites-enabled/inner-tunnel\n    - mods-enabled/foo\n",
+	)
+
+	assertFileContent(
+		t,
+		filepath.Join(root, "customer-b", ".radius-director", "manifest.yaml"),
+		"remove:\n    - sites-enabled/inner-tunnel\n",
+	)
+
+	assertFileContent(
+		t,
+		filepath.Join(root, "customer-a", "clients.conf"),
+		"client router {}\n",
+	)
+
+	assertFileContent(
+		t,
+		filepath.Join(root, "customer-b", "clients.conf"),
+		"client other {}\n",
+	)
+}
+
+func TestWritePerTenantManifestWithoutRemovals(t *testing.T) {
+	root := t.TempDir()
+
+	generated := output.Output{
+		Tenants: []string{"customer-a"},
+		Files: []output.File{
+			{Path: "customer-a/clients.conf", Content: "client router {}\n"},
+		},
+	}
+
+	if err := Write(root, generated); err != nil {
+		t.Fatalf("Write() error = %v", err)
+	}
+
+	assertFileContent(
+		t,
+		filepath.Join(root, "customer-a", ".radius-director", "manifest.yaml"),
+		"{}\n",
+	)
+}
+
 func TestWriteRejectsPathTraversal(t *testing.T) {
 	root := filepath.Join(t.TempDir(), "output")
 	outsidePath := filepath.Join(filepath.Dir(root), "outside.txt")

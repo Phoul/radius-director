@@ -35,6 +35,8 @@ func TestBuildCreatesFilesForEachTenant(t *testing.T) {
 	want := Output{}
 
 	for _, tenant := range configuration.Tenants {
+		want.Tenants = append(want.Tenants, tenant.Identifier)
+
 		rendered, err := templateRenderer.Render(tenant)
 		if err != nil {
 			t.Fatalf("Render() error = %v", err)

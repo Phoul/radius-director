@@ -11,8 +11,9 @@ import (
 
 // Output contains the generated files that are ready to be written.
 type Output struct {
-	Files  []File
-	Remove []string
+	Files   []File
+	Remove  []string
+	Tenants []string
 }
 
 // FileKind identifies the type of filesystem object in the generated output.
@@ -40,6 +41,7 @@ func Build(configuration generator.Configuration, templateRenderer renderer.Rend
 	}
 
 	for _, tenant := range configuration.Tenants {
+		generated.Tenants = append(generated.Tenants, tenant.Identifier)
 		renderedFiles, err := templateRenderer.Render(tenant)
 		if err != nil {
 			return Output{}, err

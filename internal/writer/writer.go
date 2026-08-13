@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/gobcn/radius-director/internal/output"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -15,10 +16,18 @@ const (
 	filePermissions      = 0o644
 )
 
+type manifest struct {
+	Remove []string `yaml:"remove,omitempty"`
+}
+
 // Write writes every generated file beneath root.
 func Write(root string, generated output.Output) error {
 	normalizedRoot, err := filepath.Abs(root)
 	if err != nil {
+		return err
+	}
+
+	if err := writeManifests(normalizedRoot, generated); err != nil {
 		return err
 	}
 
@@ -56,6 +65,51 @@ func Write(root string, generated output.Output) error {
 
 		default:
 			return fmt.Errorf("unsupported output file kind for %q", file.Path)
+		}
+	}
+
+	return nil
+}
+
+func writeManifests(root string, generated output.Output) error {
+	removalsByTenant := make(map[string][]string)
+
+	for _, removePath := range generated.Remove {
+		parts := strings.SplitN(filepath.ToSlash(removePath), "/", 2)
+		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+			return fmt.Errorf("invalid generated removal path %q", removePath)
+		}
+
+		tenant := parts[0]
+		relativePath := parts[1]
+
+		removalsByTenant[tenant] = append(
+			removalsByTenant[tenant],
+			relativePath,
+		)
+	}
+
+	for _, tenant := range generated.Tenants {
+		manifestPath := filepath.Join(
+			root,
+			tenant,
+			".radius-director",
+			"manifest.yaml",
+		)
+
+		if err := os.MkdirAll(filepath.Dir(manifestPath), directoryPermissions); err != nil {
+			return err
+		}
+
+		content, err := yaml.Marshal(manifest{
+			Remove: removalsByTenant[tenant],
+		})
+		if err != nil {
+			return err
+		}
+
+		if err := os.WriteFile(manifestPath, content, filePermissions); err != nil {
+			return err
 		}
 	}
 
