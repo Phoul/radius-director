@@ -199,6 +199,49 @@ func TestBuildPropagatesRendererError(t *testing.T) {
 	}
 }
 
+func TestBuildPropagatesRemovePaths(t *testing.T) {
+	configuration := testConfiguration()
+
+	configuration.Tenants[0].Remove = []string{
+		"sites-enabled/inner-tunnel",
+		"mods-enabled/foo",
+	}
+
+	configuration.Tenants[1].Remove = []string{
+		"users",
+	}
+
+	templateRenderer := testRenderer(t)
+
+	generated, err := Build(configuration, templateRenderer)
+	if err != nil {
+		t.Fatalf("Build() error = %v", err)
+	}
+
+	want := []string{
+		filepath.Join("customer-a", "sites-enabled/inner-tunnel"),
+		filepath.Join("customer-a", "mods-enabled/foo"),
+		filepath.Join("customer-b", "users"),
+	}
+
+	if !reflect.DeepEqual(generated.Remove, want) {
+		t.Fatalf("Build() Remove = %#v, want %#v", generated.Remove, want)
+	}
+}
+
+func TestBuildHasNoRemovePathsWhenNoneAreConfigured(t *testing.T) {
+	templateRenderer := testRenderer(t)
+
+	generated, err := Build(testConfiguration(), templateRenderer)
+	if err != nil {
+		t.Fatalf("Build() error = %v", err)
+	}
+
+	if len(generated.Remove) != 0 {
+		t.Fatalf("Build() Remove = %#v, want no removal paths", generated.Remove)
+	}
+}
+
 func testConfiguration() generator.Configuration {
 	return generator.Configuration{
 		Tenants: []generator.Tenant{
