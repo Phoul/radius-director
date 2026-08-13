@@ -41,11 +41,25 @@ func TestBuildCreatesFilesForEachTenant(t *testing.T) {
 		}
 
 		for _, file := range rendered {
-			want.Files = append(want.Files, File{
-				Path:    filepath.Join(tenant.Identifier, file.RelativePath),
-				Kind:    FileKindRegular,
-				Content: file.Content,
-			})
+			wantFile := File{
+				Path: filepath.Join(tenant.Identifier, file.RelativePath),
+			}
+
+			switch file.Kind {
+			case renderer.RenderedFileKindRegular:
+				wantFile.Kind = FileKindRegular
+				wantFile.Content = file.Content
+
+			case renderer.RenderedFileKindSymlink:
+				wantFile.Kind = FileKindSymlink
+				wantFile.Target = file.Target
+
+			default:
+				t.Fatalf("unexpected rendered file kind %v for %q",
+					file.Kind, file.RelativePath)
+			}
+
+			want.Files = append(want.Files, wantFile)
 		}
 	}
 

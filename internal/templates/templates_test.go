@@ -329,10 +329,14 @@ func TestManagedTemplates(t *testing.T) {
 		"mods-available/sql",
 		"mods-config/files/authorize",
 		"mods-config/files/authorize.d/radius-director",
+		"mods-enabled/sql",
 		"proxy.conf",
 		"proxy.d/radius-director.conf",
 		"sites-available/coa",
 		"sites-available/default",
+		"sites-enabled/coa",
+		"sites-enabled/default",
+		"users",
 	}
 
 	if !reflect.DeepEqual(got, want) {
@@ -942,11 +946,15 @@ func TestManagedTemplatesIncludesExternalOverlay(t *testing.T) {
 		"mods-available/sql",
 		"mods-config/files/authorize",
 		"mods-config/files/authorize.d/radius-director",
+		"mods-enabled/sql",
 		"overlay-test.conf",
 		"proxy.conf",
 		"proxy.d/radius-director.conf",
 		"sites-available/coa",
 		"sites-available/default",
+		"sites-enabled/coa",
+		"sites-enabled/default",
+		"users",
 	}
 
 	if !reflect.DeepEqual(got, want) {

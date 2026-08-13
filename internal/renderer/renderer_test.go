@@ -39,20 +39,24 @@ func TestRender(t *testing.T) {
 		t.Fatalf("Render() error = %v", err)
 	}
 
-	if len(files) != 9 {
-		t.Fatalf("Render() returned %d files, want 9", len(files))
-	}
-
 	expected := []string{
 		"clients.conf",
 		"clients.d/radius-director.conf",
 		"mods-available/sql",
 		"mods-config/files/authorize",
 		"mods-config/files/authorize.d/radius-director",
+		"mods-enabled/sql",
 		"proxy.conf",
 		"proxy.d/radius-director.conf",
 		"sites-available/coa",
 		"sites-available/default",
+		"sites-enabled/coa",
+		"sites-enabled/default",
+		"users",
+	}
+
+	if len(files) != len(expected) {
+		t.Fatalf("Render() returned %d files, want %d", len(files), len(expected))
 	}
 
 	for i, want := range expected {
@@ -61,13 +65,19 @@ func TestRender(t *testing.T) {
 				i, files[i].RelativePath, want)
 		}
 
-		if files[i].Kind != RenderedFileKindRegular {
-			t.Errorf("files[%d].Kind = %v, want %v",
-				i, files[i].Kind, RenderedFileKindRegular)
-		}
+		switch files[i].Kind {
+		case RenderedFileKindRegular:
+			if files[i].Content == "" {
+				t.Errorf("files[%d].Content is empty", i)
+			}
 
-		if files[i].Content == "" {
-			t.Errorf("files[%d].Content is empty", i)
+		case RenderedFileKindSymlink:
+			if files[i].Target == "" {
+				t.Errorf("files[%d].Target is empty", i)
+			}
+
+		default:
+			t.Errorf("files[%d].Kind = %v, want a known kind", i, files[i].Kind)
 		}
 	}
 }
