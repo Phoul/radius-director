@@ -133,7 +133,7 @@ func TestGenerateOneTenantCreatesOneSQL(t *testing.T) {
 	}
 	want := SQL{
 		Engine:   "mysql",
-		Host:     "database.internal",
+		Host:     "database-customer-a",
 		Port:     3306,
 		Database: "customer_a",
 		Username: "radius",
@@ -159,9 +159,10 @@ func TestGenerateMultipleTenantsCreatesSQLInDeterministicOrder(t *testing.T) {
 			FreeRADIUSClients:  []FreeRADIUSClient{},
 			HomeServers:        []HomeServer{},
 			AccountingPolicies: []NASAccountingPolicy{},
+			DatabaseDeployment: "container",
 			SQL: SQL{
 				Engine:   "mysql",
-				Host:     "database.tenant_a.internal",
+				Host:     "database-tenant-a",
 				Port:     3306,
 				Database: "tenant_a",
 				Username: "radius-tenant_a",
@@ -173,9 +174,10 @@ func TestGenerateMultipleTenantsCreatesSQLInDeterministicOrder(t *testing.T) {
 			FreeRADIUSClients:  []FreeRADIUSClient{},
 			HomeServers:        []HomeServer{},
 			AccountingPolicies: []NASAccountingPolicy{},
+			DatabaseDeployment: "container",
 			SQL: SQL{
 				Engine:   "mysql",
-				Host:     "database.tenant_b.internal",
+				Host:     "database-tenant-b",
 				Port:     3306,
 				Database: "tenant_b",
 				Username: "radius-tenant_b",
@@ -185,6 +187,110 @@ func TestGenerateMultipleTenantsCreatesSQLInDeterministicOrder(t *testing.T) {
 	}
 	if got := generated.Tenants; !reflect.DeepEqual(got, want) {
 		t.Fatalf("generated tenants = %#v, want %#v", got, want)
+	}
+}
+
+func TestGenerateDefaultsDatabaseDeploymentToContainer(t *testing.T) {
+	configuration := model.Configuration{
+		Tenants: map[string]model.Tenant{
+			"customer-a": {
+				Database: model.Database{
+					Engine:   "mysql",
+					Host:     "database.internal",
+					Port:     3306,
+					Database: "customer_a",
+					Username: "radius",
+					Password: "database-password",
+				},
+			},
+		},
+	}
+
+	generated := Generate(configuration)
+
+	if got, want := generated.Tenants[0].DatabaseDeployment, "container"; got != want {
+		t.Fatalf("database deployment = %q, want %q", got, want)
+	}
+}
+
+func TestGeneratePreservesExternalDatabaseDeployment(t *testing.T) {
+	configuration := model.Configuration{
+		Tenants: map[string]model.Tenant{
+			"customer-a": {
+				Database: model.Database{
+					Engine:     "mysql",
+					Deployment: "external",
+					Host:       "database.example.com",
+					Port:       3306,
+					Database:   "customer_a",
+					Username:   "radius",
+					Password:   "database-password",
+				},
+			},
+		},
+	}
+
+	generated := Generate(configuration)
+
+	if got, want := generated.Tenants[0].DatabaseDeployment, "external"; got != want {
+		t.Fatalf("database deployment = %q, want %q", got, want)
+	}
+}
+
+func TestGenerateContainerDatabaseEndpoint(t *testing.T) {
+	configuration := model.Configuration{
+		Tenants: map[string]model.Tenant{
+			"customer-a": {
+				Database: model.Database{
+					Engine:   "mysql",
+					Database: "radius",
+					Username: "radius",
+					Password: "secret",
+				},
+			},
+		},
+	}
+
+	generated := Generate(configuration)
+
+	sql := generated.Tenants[0].SQL
+
+	if got, want := sql.Host, "database-customer-a"; got != want {
+		t.Fatalf("SQL.Host = %q, want %q", got, want)
+	}
+
+	if got, want := sql.Port, 3306; got != want {
+		t.Fatalf("SQL.Port = %d, want %d", got, want)
+	}
+}
+
+func TestGenerateExternalDatabaseEndpoint(t *testing.T) {
+	configuration := model.Configuration{
+		Tenants: map[string]model.Tenant{
+			"customer-a": {
+				Database: model.Database{
+					Engine:     "mysql",
+					Deployment: "external",
+					Host:       "db.example.com",
+					Port:       3307,
+					Database:   "radius",
+					Username:   "radius",
+					Password:   "secret",
+				},
+			},
+		},
+	}
+
+	generated := Generate(configuration)
+
+	sql := generated.Tenants[0].SQL
+
+	if got, want := sql.Host, "db.example.com"; got != want {
+		t.Fatalf("SQL.Host = %q, want %q", got, want)
+	}
+
+	if got, want := sql.Port, 3307; got != want {
+		t.Fatalf("SQL.Port = %d, want %d", got, want)
 	}
 }
 

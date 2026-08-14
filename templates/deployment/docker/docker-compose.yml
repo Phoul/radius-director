@@ -2,9 +2,41 @@ services:
 {{ range .Tenants }}
   {{ .ServiceName }}:
     image: freeradius/freeradius-server:{{ .RadiusVersion }}
+{{ if eq .DatabaseDeployment "container" }}
+    depends_on:
+      {{ .DatabaseServiceName }}:
+        condition: service_healthy
+{{ end }}
     volumes:
       - ./{{ .Name }}:/opt/radius-director/tenant:ro
       - ./entrypoint.sh:/usr/local/bin/radius-director-entrypoint:ro
     entrypoint:
       - /usr/local/bin/radius-director-entrypoint
+
+{{ if eq .DatabaseDeployment "container" }}
+  {{ .DatabaseServiceName }}:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: {{ .DatabaseName }}
+      MYSQL_USER: {{ .DatabaseUsername }}
+      MYSQL_PASSWORD: {{ .DatabasePassword }}
+      MYSQL_ROOT_PASSWORD: temporary
+    volumes:
+      - {{ .DatabaseVolumeName }}:/var/lib/mysql
+      - ./{{ .Name }}/database/schema.sql:/docker-entrypoint-initdb.d/01-radius-schema.sql:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - mysqladmin ping -h 127.0.0.1 -u root -ptemporary
+      interval: 5s
+      timeout: 5s
+      retries: 10
+{{ end }}
+{{ end }}
+
+volumes:
+{{ range .Tenants }}
+{{ if eq .DatabaseDeployment "container" }}
+  {{ .DatabaseVolumeName }}:
+{{ end }}
 {{ end }}

@@ -46,25 +46,72 @@ func validateTenant(identifier string, tenant model.Tenant, templateLoader templ
 
 func validateDatabase(tenantIdentifier string, database model.Database) []error {
 	var validationErrors []error
+
 	if database.Engine == "" {
-		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: database engine must be specified", tenantIdentifier))
+		validationErrors = append(
+			validationErrors,
+			fmt.Errorf("tenant %q: database engine must be specified", tenantIdentifier),
+		)
 	} else if database.Engine != "mysql" {
-		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: database engine %q is not supported", tenantIdentifier, database.Engine))
+		validationErrors = append(
+			validationErrors,
+			fmt.Errorf("tenant %q: database engine %q is not supported", tenantIdentifier, database.Engine),
+		)
 	}
-	if database.Host == "" {
-		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: database host must be specified", tenantIdentifier))
+
+	deployment := database.Deployment
+	if deployment == "" {
+		deployment = "container"
 	}
-	if database.Port < 1 || database.Port > 65535 {
-		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: database port must be between 1 and 65535", tenantIdentifier))
+
+	switch deployment {
+	case "container", "proxysql":
+		// Host and port are determined by the deployment mechanism.
+
+	case "external":
+		if database.Host == "" {
+			validationErrors = append(
+				validationErrors,
+				fmt.Errorf("tenant %q: database host must be specified for external deployment", tenantIdentifier),
+			)
+		}
+
+		if database.Port < 1 || database.Port > 65535 {
+			validationErrors = append(
+				validationErrors,
+				fmt.Errorf(
+					"tenant %q: database port must be between 1 and 65535 for external deployment",
+					tenantIdentifier,
+				),
+			)
+		}
+
+	default:
+		validationErrors = append(
+			validationErrors,
+			fmt.Errorf("tenant %q: database deployment %q is not supported", tenantIdentifier, deployment),
+		)
 	}
+
 	if database.Database == "" {
-		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: database name must be specified", tenantIdentifier))
+		validationErrors = append(
+			validationErrors,
+			fmt.Errorf("tenant %q: database name must be specified", tenantIdentifier),
+		)
 	}
+
 	if database.Username == "" {
-		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: database username must be specified", tenantIdentifier))
+		validationErrors = append(
+			validationErrors,
+			fmt.Errorf("tenant %q: database username must be specified", tenantIdentifier),
+		)
 	}
+
 	if database.Password == "" {
-		validationErrors = append(validationErrors, fmt.Errorf("tenant %q: database password must be specified", tenantIdentifier))
+		validationErrors = append(
+			validationErrors,
+			fmt.Errorf("tenant %q: database password must be specified", tenantIdentifier),
+		)
 	}
 
 	return validationErrors

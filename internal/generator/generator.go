@@ -17,6 +17,10 @@ func Generate(configuration model.Configuration) Configuration {
 		tenant := configuration.Tenants[tenantIdentifier]
 		authenticationProfile := configuration.GlobalObjects.AuthenticationProfiles[tenant.AuthenticationProfile]
 		deploymentProfile := configuration.GlobalObjects.DeploymentProfiles[tenant.DeploymentProfile]
+		databaseHost, databasePort := databaseEndpoint(
+			tenantIdentifier,
+			tenant.Database,
+		)
 		generatedTenant := Tenant{
 			Identifier: tenantIdentifier,
 			AuthenticationPolicy: AuthenticationPolicy{
@@ -25,10 +29,11 @@ func Generate(configuration model.Configuration) Configuration {
 			FreeRADIUSClients:  make([]FreeRADIUSClient, 0, len(tenant.NASAssignments)+len(tenant.TrustedRADIUSClientAssignments)),
 			HomeServers:        make([]HomeServer, 0, len(tenant.NASAssignments)),
 			AccountingPolicies: make([]NASAccountingPolicy, 0, len(tenant.NASAssignments)),
+			DatabaseDeployment: databaseDeployment(tenant.Database),
 			SQL: SQL{
 				Engine:   tenant.Database.Engine,
-				Host:     tenant.Database.Host,
-				Port:     tenant.Database.Port,
+				Host:     databaseHost,
+				Port:     databasePort,
 				Database: tenant.Database.Database,
 				Username: tenant.Database.Username,
 				Password: tenant.Database.Password,
@@ -103,4 +108,27 @@ func sortedKeys[T any](values map[string]T) []string {
 	sort.Strings(keys)
 
 	return keys
+}
+
+func databaseDeployment(database model.Database) string {
+	if database.Deployment == "" {
+		return "container"
+	}
+
+	return database.Deployment
+}
+
+func databaseEndpoint(tenantIdentifier string, database model.Database) (string, int) {
+	deployment := databaseDeployment(database)
+
+	switch deployment {
+	case "container":
+		return "database-" + tenantIdentifier, 3306
+
+	case "external":
+		return database.Host, database.Port
+
+	default:
+		return database.Host, database.Port
+	}
 }

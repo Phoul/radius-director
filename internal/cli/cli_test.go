@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/gobcn/radius-director/internal/deployment/docker"
+	"github.com/gobcn/radius-director/internal/schemas"
 	"github.com/gobcn/radius-director/internal/templates"
 )
 
@@ -20,6 +21,17 @@ func testTemplateLoader(t *testing.T) templates.Loader {
 	}
 
 	return templates.NewLoader(os.DirFS(directory))
+}
+
+func testSchemaLoader(t *testing.T) schemas.Loader {
+	t.Helper()
+
+	directory, err := filepath.Abs(filepath.Join("..", "..", "schemas"))
+	if err != nil {
+		t.Fatalf("resolve schema directory: %v", err)
+	}
+
+	return schemas.NewLoader(os.DirFS(directory))
 }
 
 func exampleConfigPath(t *testing.T) string {
@@ -37,7 +49,7 @@ func TestRunHelp(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	if exitCode := Run([]string{"--help"}, &stdout, &stderr, testTemplateLoader(t)); exitCode != 0 {
+	if exitCode := Run([]string{"--help"}, &stdout, &stderr, testTemplateLoader(t), testSchemaLoader(t)); exitCode != 0 {
 		t.Fatalf("Run() exit code = %d, want 0", exitCode)
 	}
 
@@ -61,7 +73,7 @@ func TestRunValidate(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	if exitCode := Run([]string{"validate", path}, &stdout, &stderr, testTemplateLoader(t)); exitCode != 0 {
+	if exitCode := Run([]string{"validate", path}, &stdout, &stderr, testTemplateLoader(t), testSchemaLoader(t)); exitCode != 0 {
 		t.Fatalf("Run() exit code = %d, want 0", exitCode)
 	}
 	if got := stdout.String(); got != "Configuration parsed and validated successfully.\n" {
@@ -84,6 +96,7 @@ func TestRunGenerate(t *testing.T) {
 		&stdout,
 		&stderr,
 		testTemplateLoader(t),
+		testSchemaLoader(t),
 	); exitCode != 0 {
 		t.Fatalf("Run() exit code = %d, want 0; stderr = %q", exitCode, stderr.String())
 	}
@@ -187,7 +200,7 @@ func TestRunMaintenanceAccountingHelp(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	if exitCode := Run([]string{"maintenance", "accounting", "--help"}, &stdout, &stderr, testTemplateLoader(t)); exitCode != 0 {
+	if exitCode := Run([]string{"maintenance", "accounting", "--help"}, &stdout, &stderr, testTemplateLoader(t), testSchemaLoader(t)); exitCode != 0 {
 		t.Fatalf("Run() exit code = %d, want 0", exitCode)
 	}
 	if !strings.Contains(stdout.String(), "maintenance accounting <config.yaml> <tenant>") {
@@ -207,7 +220,7 @@ func TestRunMaintenanceAccountingUnknownTenant(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	if exitCode := Run([]string{"maintenance", "accounting", path, "missing"}, &stdout, &stderr, testTemplateLoader(t)); exitCode != 1 {
+	if exitCode := Run([]string{"maintenance", "accounting", path, "missing"}, &stdout, &stderr, testTemplateLoader(t), testSchemaLoader(t)); exitCode != 1 {
 		t.Fatalf("Run() exit code = %d, want 1", exitCode)
 	}
 	if !strings.Contains(stderr.String(), `tenant "missing" does not exist`) {
@@ -266,7 +279,7 @@ tenants:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	if exitCode := Run([]string{"maintenance", "accounting", path, "customer-a"}, &stdout, &stderr, testTemplateLoader(t)); exitCode != 0 {
+	if exitCode := Run([]string{"maintenance", "accounting", path, "customer-a"}, &stdout, &stderr, testTemplateLoader(t), testSchemaLoader(t)); exitCode != 0 {
 		t.Fatalf("Run() exit code = %d, want 0; stderr = %q", exitCode, stderr.String())
 	}
 	if !strings.Contains(stdout.String(), "no stale-session maintenance policies are enabled") {

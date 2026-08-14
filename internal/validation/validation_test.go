@@ -697,13 +697,22 @@ func TestValidateRADIUSServer(t *testing.T) {
 }
 
 func TestValidateDatabase(t *testing.T) {
-	validDatabase := model.Database{
-		Engine:   "mysql",
-		Host:     "db.example.com",
-		Port:     3306,
-		Database: "radius",
-		Username: "radius",
-		Password: "secret",
+	validExternalDatabase := model.Database{
+		Engine:     "mysql",
+		Deployment: "external",
+		Host:       "db.example.com",
+		Port:       3306,
+		Database:   "radius",
+		Username:   "radius",
+		Password:   "secret",
+	}
+
+	validContainerDatabase := model.Database{
+		Engine:     "mysql",
+		Deployment: "container",
+		Database:   "radius",
+		Username:   "radius",
+		Password:   "secret",
 	}
 
 	tests := []struct {
@@ -712,39 +721,53 @@ func TestValidateDatabase(t *testing.T) {
 		wantErrs []string
 	}{
 		{
-			name:     "valid database",
-			database: validDatabase,
+			name:     "valid external database",
+			database: validExternalDatabase,
 		},
 		{
-			name: "minimum valid port",
+			name:     "valid container database",
+			database: validContainerDatabase,
+		},
+		{
+			name: "default deployment is container",
 			database: model.Database{
-				Engine:   validDatabase.Engine,
-				Host:     validDatabase.Host,
-				Port:     1,
-				Database: validDatabase.Database,
-				Username: validDatabase.Username,
-				Password: validDatabase.Password,
+				Engine:   "mysql",
+				Database: "radius",
+				Username: "radius",
+				Password: "secret",
 			},
 		},
 		{
-			name: "maximum valid port",
+			name: "minimum valid external port",
 			database: model.Database{
-				Engine:   validDatabase.Engine,
-				Host:     validDatabase.Host,
-				Port:     65535,
-				Database: validDatabase.Database,
-				Username: validDatabase.Username,
-				Password: validDatabase.Password,
+				Engine:     validExternalDatabase.Engine,
+				Deployment: validExternalDatabase.Deployment,
+				Host:       validExternalDatabase.Host,
+				Port:       1,
+				Database:   validExternalDatabase.Database,
+				Username:   validExternalDatabase.Username,
+				Password:   validExternalDatabase.Password,
+			},
+		},
+		{
+			name: "maximum valid external port",
+			database: model.Database{
+				Engine:     validExternalDatabase.Engine,
+				Deployment: validExternalDatabase.Deployment,
+				Host:       validExternalDatabase.Host,
+				Port:       65535,
+				Database:   validExternalDatabase.Database,
+				Username:   validExternalDatabase.Username,
+				Password:   validExternalDatabase.Password,
 			},
 		},
 		{
 			name: "engine missing",
 			database: model.Database{
-				Host:     validDatabase.Host,
-				Port:     validDatabase.Port,
-				Database: validDatabase.Database,
-				Username: validDatabase.Username,
-				Password: validDatabase.Password,
+				Deployment: "container",
+				Database:   validContainerDatabase.Database,
+				Username:   validContainerDatabase.Username,
+				Password:   validContainerDatabase.Password,
 			},
 			wantErrs: []string{
 				`tenant "customer-a": database engine must be specified`,
@@ -753,66 +776,111 @@ func TestValidateDatabase(t *testing.T) {
 		{
 			name: "engine unsupported",
 			database: model.Database{
-				Engine:   "postgresql",
-				Host:     validDatabase.Host,
-				Port:     validDatabase.Port,
-				Database: validDatabase.Database,
-				Username: validDatabase.Username,
-				Password: validDatabase.Password,
+				Engine:     "postgresql",
+				Deployment: "container",
+				Database:   validContainerDatabase.Database,
+				Username:   validContainerDatabase.Username,
+				Password:   validContainerDatabase.Password,
 			},
 			wantErrs: []string{
 				`tenant "customer-a": database engine "postgresql" is not supported`,
 			},
 		},
 		{
-			name: "host missing",
+			name: "deployment unsupported",
 			database: model.Database{
-				Engine:   validDatabase.Engine,
-				Port:     validDatabase.Port,
-				Database: validDatabase.Database,
-				Username: validDatabase.Username,
-				Password: validDatabase.Password,
+				Engine:     "mysql",
+				Deployment: "unsupported",
+				Database:   validContainerDatabase.Database,
+				Username:   validContainerDatabase.Username,
+				Password:   validContainerDatabase.Password,
 			},
 			wantErrs: []string{
-				`tenant "customer-a": database host must be specified`,
+				`tenant "customer-a": database deployment "unsupported" is not supported`,
 			},
 		},
 		{
-			name: "port below range",
+			name: "external host missing",
 			database: model.Database{
-				Engine:   validDatabase.Engine,
-				Host:     validDatabase.Host,
-				Port:     0,
-				Database: validDatabase.Database,
-				Username: validDatabase.Username,
-				Password: validDatabase.Password,
+				Engine:     validExternalDatabase.Engine,
+				Deployment: "external",
+				Port:       validExternalDatabase.Port,
+				Database:   validExternalDatabase.Database,
+				Username:   validExternalDatabase.Username,
+				Password:   validExternalDatabase.Password,
 			},
 			wantErrs: []string{
-				`tenant "customer-a": database port must be between 1 and 65535`,
+				`tenant "customer-a": database host must be specified for external deployment`,
 			},
 		},
 		{
-			name: "port above range",
+			name: "external port below range",
 			database: model.Database{
-				Engine:   validDatabase.Engine,
-				Host:     validDatabase.Host,
-				Port:     65536,
-				Database: validDatabase.Database,
-				Username: validDatabase.Username,
-				Password: validDatabase.Password,
+				Engine:     validExternalDatabase.Engine,
+				Deployment: "external",
+				Host:       validExternalDatabase.Host,
+				Port:       0,
+				Database:   validExternalDatabase.Database,
+				Username:   validExternalDatabase.Username,
+				Password:   validExternalDatabase.Password,
 			},
 			wantErrs: []string{
-				`tenant "customer-a": database port must be between 1 and 65535`,
+				`tenant "customer-a": database port must be between 1 and 65535 for external deployment`,
+			},
+		},
+		{
+			name: "external port above range",
+			database: model.Database{
+				Engine:     validExternalDatabase.Engine,
+				Deployment: "external",
+				Host:       validExternalDatabase.Host,
+				Port:       65536,
+				Database:   validExternalDatabase.Database,
+				Username:   validExternalDatabase.Username,
+				Password:   validExternalDatabase.Password,
+			},
+			wantErrs: []string{
+				`tenant "customer-a": database port must be between 1 and 65535 for external deployment`,
+			},
+		},
+		{
+			name: "container host is optional",
+			database: model.Database{
+				Engine:     validContainerDatabase.Engine,
+				Deployment: "container",
+				Database:   validContainerDatabase.Database,
+				Username:   validContainerDatabase.Username,
+				Password:   validContainerDatabase.Password,
+			},
+		},
+		{
+			name: "container port is optional",
+			database: model.Database{
+				Engine:     validContainerDatabase.Engine,
+				Deployment: "container",
+				Host:       "unused.example.com",
+				Database:   validContainerDatabase.Database,
+				Username:   validContainerDatabase.Username,
+				Password:   validContainerDatabase.Password,
+			},
+		},
+		{
+			name: "valid proxysql database",
+			database: model.Database{
+				Engine:     "mysql",
+				Deployment: "proxysql",
+				Database:   "radius",
+				Username:   "radius",
+				Password:   "secret",
 			},
 		},
 		{
 			name: "database name missing",
 			database: model.Database{
-				Engine:   validDatabase.Engine,
-				Host:     validDatabase.Host,
-				Port:     validDatabase.Port,
-				Username: validDatabase.Username,
-				Password: validDatabase.Password,
+				Engine:     validContainerDatabase.Engine,
+				Deployment: "container",
+				Username:   validContainerDatabase.Username,
+				Password:   validContainerDatabase.Password,
 			},
 			wantErrs: []string{
 				`tenant "customer-a": database name must be specified`,
@@ -821,11 +889,10 @@ func TestValidateDatabase(t *testing.T) {
 		{
 			name: "username missing",
 			database: model.Database{
-				Engine:   validDatabase.Engine,
-				Host:     validDatabase.Host,
-				Port:     validDatabase.Port,
-				Database: validDatabase.Database,
-				Password: validDatabase.Password,
+				Engine:     validContainerDatabase.Engine,
+				Deployment: "container",
+				Database:   validContainerDatabase.Database,
+				Password:   validContainerDatabase.Password,
 			},
 			wantErrs: []string{
 				`tenant "customer-a": database username must be specified`,
@@ -834,11 +901,10 @@ func TestValidateDatabase(t *testing.T) {
 		{
 			name: "password missing",
 			database: model.Database{
-				Engine:   validDatabase.Engine,
-				Host:     validDatabase.Host,
-				Port:     validDatabase.Port,
-				Database: validDatabase.Database,
-				Username: validDatabase.Username,
+				Engine:     validContainerDatabase.Engine,
+				Deployment: "container",
+				Database:   validContainerDatabase.Database,
+				Username:   validContainerDatabase.Username,
 			},
 			wantErrs: []string{
 				`tenant "customer-a": database password must be specified`,
@@ -846,10 +912,13 @@ func TestValidateDatabase(t *testing.T) {
 		},
 		{
 			name: "multiple invalid properties",
+			database: model.Database{
+				Deployment: "external",
+			},
 			wantErrs: []string{
 				`tenant "customer-a": database engine must be specified`,
-				`tenant "customer-a": database host must be specified`,
-				`tenant "customer-a": database port must be between 1 and 65535`,
+				`tenant "customer-a": database host must be specified for external deployment`,
+				`tenant "customer-a": database port must be between 1 and 65535 for external deployment`,
 				`tenant "customer-a": database name must be specified`,
 				`tenant "customer-a": database username must be specified`,
 				`tenant "customer-a": database password must be specified`,

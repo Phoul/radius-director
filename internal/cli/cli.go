@@ -13,19 +13,20 @@ import (
 	"github.com/gobcn/radius-director/internal/maintenance/accounting"
 	"github.com/gobcn/radius-director/internal/output"
 	"github.com/gobcn/radius-director/internal/renderer"
+	"github.com/gobcn/radius-director/internal/schemas"
 	"github.com/gobcn/radius-director/internal/templates"
 	"github.com/gobcn/radius-director/internal/validation"
 	"github.com/gobcn/radius-director/internal/writer"
 )
 
 // Run executes the command-line interface and returns its exit code.
-func Run(args []string, stdout, stderr io.Writer, templateLoader templates.Loader) int {
+func Run(args []string, stdout, stderr io.Writer, templateLoader templates.Loader, schemaLoader schemas.Loader) int {
 	if len(args) > 0 {
 		switch args[0] {
 		case "validate":
 			return runValidate(args[1:], stdout, stderr, templateLoader)
 		case "generate":
-			return runGenerate(args[1:], stdout, stderr, templateLoader)
+			return runGenerate(args[1:], stdout, stderr, templateLoader, schemaLoader)
 		case "maintenance":
 			return runMaintenance(args[1:], stdout, stderr, templateLoader)
 		}
@@ -94,7 +95,7 @@ func runValidate(args []string, stdout, stderr io.Writer, templateLoader templat
 	return 0
 }
 
-func runGenerate(args []string, stdout, stderr io.Writer, templateLoader templates.Loader) int {
+func runGenerate(args []string, stdout, stderr io.Writer, templateLoader templates.Loader, schemaLoader schemas.Loader) int {
 	if len(args) == 1 && (args[0] == "-h" || args[0] == "--help") {
 		fmt.Fprintln(stdout, "Usage:")
 		fmt.Fprintln(stdout, "  radius-director generate <config.yaml> <output-directory>")
@@ -126,7 +127,7 @@ func runGenerate(args []string, stdout, stderr io.Writer, templateLoader templat
 		return 1
 	}
 
-	deployment, err := docker.GenerateDeployment(templateLoader, generated)
+	deployment, err := docker.GenerateDeployment(templateLoader, schemaLoader, generated)
 	if err != nil {
 		fmt.Fprintln(stderr, err)
 		return 1

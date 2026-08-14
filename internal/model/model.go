@@ -70,12 +70,13 @@ type Tenant struct {
 
 // Database defines the primary database used by a tenant.
 type Database struct {
-	Engine   string `yaml:"engine"`
-	Host     string `yaml:"host"`
-	Port     int    `yaml:"port"`
-	Database string `yaml:"database"`
-	Username string `yaml:"username"`
-	Password string `yaml:"password"`
+	Engine     string `yaml:"engine"`
+	Deployment string `yaml:"deployment"`
+	Host       string `yaml:"host"`
+	Port       int    `yaml:"port"`
+	Database   string `yaml:"database"`
+	Username   string `yaml:"username"`
+	Password   string `yaml:"password"`
 }
 
 // RADIUSServer represents a FreeRADIUS instance.

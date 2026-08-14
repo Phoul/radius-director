@@ -16,6 +16,7 @@ type Tenant struct {
 	HomeServers          []HomeServer
 	AuthenticationPolicy AuthenticationPolicy
 	AccountingPolicies   []NASAccountingPolicy
+	DatabaseDeployment   string
 	SQL                  SQL
 	RADIUSServer         RADIUSServer
 	Template             string

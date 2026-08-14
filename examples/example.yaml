@@ -24,8 +24,10 @@ tenants:
     deployment_profile: default
     database:
       engine: mysql
-      host: db.example.com
-      port: 3306
+      deployment: container
+      # if deployment is not container, host and port must be specified
+      # host: db.example.com
+      # port: 3306
       database: radius
       username: radius
       password: password

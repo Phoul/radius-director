@@ -3,9 +3,11 @@ package docker
 import (
 	"bytes"
 	"fmt"
+	"path/filepath"
 
 	"github.com/gobcn/radius-director/internal/generator"
 	"github.com/gobcn/radius-director/internal/output"
+	"github.com/gobcn/radius-director/internal/schemas"
 	"github.com/gobcn/radius-director/internal/templates"
 )
 
@@ -14,12 +16,18 @@ type ComposeData struct {
 }
 
 type ComposeTenant struct {
-	Name               string
-	ServiceName        string
-	RadiusVersion      string
-	AuthenticationPort int
-	AccountingPort     int
-	COAPort            int
+	Name                string
+	ServiceName         string
+	DatabaseDeployment  string
+	DatabaseServiceName string
+	DatabaseVolumeName  string
+	DatabaseName        string
+	DatabaseUsername    string
+	DatabasePassword    string
+	RadiusVersion       string
+	AuthenticationPort  int
+	AccountingPort      int
+	COAPort             int
 }
 
 type Deployment struct {
@@ -38,12 +46,18 @@ func NewComposeData(configuration generator.Configuration) ComposeData {
 
 	for _, tenant := range configuration.Tenants {
 		data.Tenants = append(data.Tenants, ComposeTenant{
-			Name:               tenant.Identifier,
-			ServiceName:        "radius-" + tenant.Identifier,
-			RadiusVersion:      tenant.RADIUSServer.Version,
-			AuthenticationPort: tenant.RADIUSServer.AuthenticationPort,
-			AccountingPort:     tenant.RADIUSServer.AccountingPort,
-			COAPort:            tenant.RADIUSServer.COAPort,
+			Name:                tenant.Identifier,
+			ServiceName:         "radius-" + tenant.Identifier,
+			DatabaseDeployment:  tenant.DatabaseDeployment,
+			DatabaseServiceName: "database-" + tenant.Identifier,
+			DatabaseVolumeName:  "database-" + tenant.Identifier + "-data",
+			DatabaseName:        tenant.SQL.Database,
+			DatabaseUsername:    tenant.SQL.Username,
+			DatabasePassword:    tenant.SQL.Password,
+			RadiusVersion:       tenant.RADIUSServer.Version,
+			AuthenticationPort:  tenant.RADIUSServer.AuthenticationPort,
+			AccountingPort:      tenant.RADIUSServer.AccountingPort,
+			COAPort:             tenant.RADIUSServer.COAPort,
 		})
 	}
 
@@ -52,6 +66,7 @@ func NewComposeData(configuration generator.Configuration) ComposeData {
 
 func GenerateDeployment(
 	loader templates.Loader,
+	schemaLoader schemas.Loader,
 	configuration generator.Configuration,
 ) (Deployment, error) {
 	data := NewComposeData(configuration)
@@ -78,19 +93,42 @@ func GenerateDeployment(
 		return Deployment{}, fmt.Errorf("render Docker entrypoint template: %w", err)
 	}
 
-	return Deployment{
-		Files: []output.File{
-			{
-				Path:    ComposeOutputPath,
-				Kind:    output.FileKindRegular,
-				Content: compose.String(),
-			},
-			{
-				Path:        EntrypointOutputPath,
-				Kind:        output.FileKindRegular,
-				Content:     entrypoint.String(),
-				Permissions: 0o755,
-			},
+	var files = []output.File{
+		{
+			Path:    ComposeOutputPath,
+			Kind:    output.FileKindRegular,
+			Content: compose.String(),
 		},
+		{
+			Path:        EntrypointOutputPath,
+			Kind:        output.FileKindRegular,
+			Permissions: 0o755,
+			Content:     entrypoint.String(),
+		},
+	}
+
+	for _, tenant := range configuration.Tenants {
+		if tenant.DatabaseDeployment != "container" {
+			continue
+		}
+
+		schema, err := schemaLoader.LoadMySQLSchema(tenant.RADIUSServer.Version)
+		if err != nil {
+			return Deployment{}, fmt.Errorf(
+				"load MySQL schema for tenant %q: %w",
+				tenant.Identifier,
+				err,
+			)
+		}
+
+		files = append(files, output.File{
+			Path:    filepath.Join(tenant.Identifier, "database", "schema.sql"),
+			Kind:    output.FileKindRegular,
+			Content: schema,
+		})
+	}
+
+	return Deployment{
+		Files: files,
 	}, nil
 }
