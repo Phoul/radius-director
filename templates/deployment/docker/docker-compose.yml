@@ -17,10 +17,10 @@ services:
   {{ .DatabaseServiceName }}:
     image: mysql:8.4
     environment:
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
       MYSQL_DATABASE: {{ .DatabaseName }}
       MYSQL_USER: {{ .DatabaseUsername }}
       MYSQL_PASSWORD: {{ .DatabasePassword }}
-      MYSQL_ROOT_PASSWORD: temporary
     volumes:
       - {{ .DatabaseVolumeName }}:/var/lib/mysql
       - ./{{ .Name }}/database/schema.sql:/docker-entrypoint-initdb.d/01-radius-schema.sql:ro

@@ -80,6 +80,7 @@ func TestGenerateDeployment(t *testing.T) {
 
 		"database-customer-a:",
 		"image: mysql:8.4",
+		"MYSQL_RANDOM_ROOT_PASSWORD: \"yes\"",
 		"MYSQL_DATABASE: customer_a",
 		"MYSQL_USER: radius",
 		"MYSQL_PASSWORD: database-password",
