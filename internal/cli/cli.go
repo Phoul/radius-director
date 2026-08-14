@@ -8,6 +8,7 @@ import (
 	"io"
 
 	"github.com/gobcn/radius-director/internal/config"
+	"github.com/gobcn/radius-director/internal/deployment/docker"
 	"github.com/gobcn/radius-director/internal/generator"
 	"github.com/gobcn/radius-director/internal/maintenance/accounting"
 	"github.com/gobcn/radius-director/internal/output"
@@ -124,6 +125,14 @@ func runGenerate(args []string, stdout, stderr io.Writer, templateLoader templat
 		fmt.Fprintln(stderr, err)
 		return 1
 	}
+
+	deployment, err := docker.GenerateDeployment(templateLoader, generated)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 1
+	}
+
+	generatedOutput.Files = append(generatedOutput.Files, deployment.Files...)
 
 	if err := writer.Write(args[1], generatedOutput); err != nil {
 		fmt.Fprintln(stderr, err)

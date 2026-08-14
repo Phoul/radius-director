@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gobcn/radius-director/internal/deployment/docker"
 	"github.com/gobcn/radius-director/internal/templates"
 )
 
@@ -142,6 +143,43 @@ func TestRunGenerate(t *testing.T) {
 		if target != wantTarget {
 			t.Errorf("symlink %q = %q, want %q", relativePath, target, wantTarget)
 		}
+	}
+
+	composePath := filepath.Join(outputDir, docker.ComposeOutputPath)
+
+	composeContent, err := os.ReadFile(composePath)
+	if err != nil {
+		t.Fatalf("expected generated Docker Compose file: %v", err)
+	}
+
+	compose := string(composeContent)
+
+	expectedComposeContent := []string{
+		"radius-customer-a:",
+		"image: freeradius/freeradius-server:3.2.10",
+	}
+
+	for _, value := range expectedComposeContent {
+		if !strings.Contains(compose, value) {
+			t.Errorf("generated Docker Compose file does not contain %q:\n%s", value, compose)
+		}
+	}
+
+	entrypointPath := filepath.Join(outputDir, docker.EntrypointOutputPath)
+
+	entrypointContent, err := os.ReadFile(entrypointPath)
+	if err != nil {
+		t.Fatalf("expected generated Docker entrypoint: %v", err)
+	}
+
+	entrypoint := string(entrypointContent)
+
+	if !strings.Contains(entrypoint, "#!/bin/sh") {
+		t.Errorf("generated entrypoint does not contain shell shebang:\n%s", entrypoint)
+	}
+
+	if !strings.Contains(entrypoint, "freeradius -f") {
+		t.Errorf("generated entrypoint does not contain FreeRADIUS startup command:\n%s", entrypoint)
 	}
 }
 

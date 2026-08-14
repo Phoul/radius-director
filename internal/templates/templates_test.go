@@ -961,3 +961,21 @@ func TestManagedTemplatesIncludesExternalOverlay(t *testing.T) {
 		t.Fatalf("ManagedTemplates() = %#v, want %#v", got, want)
 	}
 }
+
+func TestLoadDeploymentDockerCompose(t *testing.T) {
+	directory, err := filepath.Abs(filepath.Join("..", "..", "templates"))
+	if err != nil {
+		t.Fatalf("resolve template directory: %v", err)
+	}
+
+	loader := NewLoader(os.DirFS(directory))
+
+	executor, err := loader.LoadDeployment("docker", "docker-compose.yml")
+	if err != nil {
+		t.Fatalf("LoadDeployment() error = %v", err)
+	}
+
+	if executor == nil {
+		t.Fatal("LoadDeployment() returned nil executor")
+	}
+}

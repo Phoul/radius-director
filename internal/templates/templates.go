@@ -23,6 +23,11 @@ type Loader struct {
 	files fs.FS
 }
 
+// DeploymentLoader loads a deployment template.
+type DeploymentLoader interface {
+	LoadDeployment(deployment, name string) (Executor, error)
+}
+
 type resolvedEntryKind int
 
 const (
@@ -112,6 +117,30 @@ func (l Loader) Load(
 			"load template %q for FreeRADIUS version %q: %w",
 			name,
 			version,
+			err,
+		)
+	}
+
+	return parsed, nil
+}
+
+func (l Loader) LoadDeployment(deployment, name string) (Executor, error) {
+	if !fs.ValidPath(deployment) || deployment == "." {
+		return nil, fmt.Errorf("deployment template %q is invalid", deployment)
+	}
+
+	if !fs.ValidPath(name) {
+		return nil, fmt.Errorf("deployment template name %q is invalid", name)
+	}
+
+	templatePath := path.Join("deployment", deployment, name)
+
+	parsed, err := template.ParseFS(l.files, templatePath)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"load deployment template %q for %q: %w",
+			name,
+			deployment,
 			err,
 		)
 	}

@@ -1,0 +1,10 @@
+services:
+{{ range .Tenants }}
+  {{ .ServiceName }}:
+    image: freeradius/freeradius-server:{{ .RadiusVersion }}
+    volumes:
+      - ./{{ .Name }}:/opt/radius-director/tenant:ro
+      - ./entrypoint.sh:/usr/local/bin/radius-director-entrypoint:ro
+    entrypoint:
+      - /usr/local/bin/radius-director-entrypoint
+{{ end }}
