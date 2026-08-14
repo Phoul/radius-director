@@ -3,6 +3,7 @@ package writer
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/gobcn/radius-director/internal/output"
@@ -378,7 +379,9 @@ func TestWriteUsesFilePermissions(t *testing.T) {
 		t.Fatalf("Stat() error = %v", err)
 	}
 
-	if info.Mode().Perm() != 0o755 {
-		t.Errorf("file permissions = %o, want 755", info.Mode().Perm())
+	if runtime.GOOS != "windows" {
+		if info.Mode().Perm() != 0o755 {
+			t.Errorf("file permissions = %o, want 755", info.Mode().Perm())
+		}
 	}
 }
