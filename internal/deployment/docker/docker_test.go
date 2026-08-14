@@ -74,6 +74,10 @@ func TestGenerateDeployment(t *testing.T) {
 		t.Fatalf("generated deployment does not contain %q", EntrypointOutputPath)
 	}
 
+	if entrypoint.Permissions != 0o755 {
+		t.Errorf("entrypoint permissions = %o, want 755", entrypoint.Permissions)
+	}
+
 	if !strings.Contains(entrypoint.Content, "#!/bin/sh") {
 		t.Errorf("generated entrypoint does not contain shell shebang:\n%s", entrypoint.Content)
 	}

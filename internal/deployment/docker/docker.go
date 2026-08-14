@@ -86,9 +86,10 @@ func GenerateDeployment(
 				Content: compose.String(),
 			},
 			{
-				Path:    EntrypointOutputPath,
-				Kind:    output.FileKindRegular,
-				Content: entrypoint.String(),
+				Path:        EntrypointOutputPath,
+				Kind:        output.FileKindRegular,
+				Content:     entrypoint.String(),
+				Permissions: 0o755,
 			},
 		},
 	}, nil

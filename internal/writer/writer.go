@@ -54,7 +54,12 @@ func Write(root string, generated output.Output) error {
 
 		switch file.Kind {
 		case output.FileKindRegular:
-			if err := os.WriteFile(destination, []byte(file.Content), filePermissions); err != nil {
+			permissions := file.Permissions
+			if permissions == 0 {
+				permissions = filePermissions
+			}
+
+			if err := os.WriteFile(destination, []byte(file.Content), permissions); err != nil {
 				return err
 			}
 

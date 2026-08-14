@@ -352,3 +352,33 @@ func assertFileContent(t *testing.T, path, want string) {
 		t.Fatalf("file content = %q, want %q", content, want)
 	}
 }
+
+func TestWriteUsesFilePermissions(t *testing.T) {
+	root := t.TempDir()
+
+	generated := output.Output{
+		Files: []output.File{
+			{
+				Path:        "entrypoint.sh",
+				Kind:        output.FileKindRegular,
+				Content:     "#!/bin/sh\n",
+				Permissions: 0o755,
+			},
+		},
+	}
+
+	if err := Write(root, generated); err != nil {
+		t.Fatalf("Write() error = %v", err)
+	}
+
+	path := filepath.Join(root, "entrypoint.sh")
+
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("Stat() error = %v", err)
+	}
+
+	if info.Mode().Perm() != 0o755 {
+		t.Errorf("file permissions = %o, want 755", info.Mode().Perm())
+	}
+}

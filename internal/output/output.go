@@ -3,6 +3,7 @@ package output
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/gobcn/radius-director/internal/generator"
@@ -28,10 +29,11 @@ const (
 //
 // Regular files use Content. Symlinks use Target.
 type File struct {
-	Path    string
-	Kind    FileKind
-	Content string
-	Target  string
+	Path        string
+	Kind        FileKind
+	Content     string
+	Target      string
+	Permissions os.FileMode
 }
 
 // Build renders each tenant's files and assembles them into an Output object.
