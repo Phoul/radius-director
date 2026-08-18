@@ -21,6 +21,15 @@ func Generate(configuration model.Configuration) Configuration {
 			tenantIdentifier,
 			tenant.Database,
 		)
+
+		var proxySQL *ProxySQL
+
+		if databaseDeployment(tenant.Database) == "proxysql" {
+			proxySQL = &ProxySQL{
+				BackendHost: tenant.Database.Host,
+				BackendPort: tenant.Database.Port,
+			}
+		}
 		generatedTenant := Tenant{
 			Identifier: tenantIdentifier,
 			AuthenticationPolicy: AuthenticationPolicy{
@@ -38,6 +47,7 @@ func Generate(configuration model.Configuration) Configuration {
 				Username: tenant.Database.Username,
 				Password: tenant.Database.Password,
 			},
+			ProxySQL: proxySQL,
 			RADIUSServer: RADIUSServer{
 				Version:            tenant.RADIUSServer.Version,
 				AuthenticationPort: tenant.RADIUSServer.AuthenticationPort,
@@ -124,6 +134,9 @@ func databaseEndpoint(tenantIdentifier string, database model.Database) (string,
 	switch deployment {
 	case "container":
 		return "database-" + tenantIdentifier, 3306
+
+	case "proxysql":
+		return "proxysql", 6033
 
 	case "external":
 		return database.Host, database.Port

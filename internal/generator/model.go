@@ -18,6 +18,7 @@ type Tenant struct {
 	AccountingPolicies   []NASAccountingPolicy
 	DatabaseDeployment   string
 	SQL                  SQL
+	ProxySQL             *ProxySQL
 	RADIUSServer         RADIUSServer
 	Template             string
 	Overlays             []string
@@ -64,6 +65,13 @@ type SQL struct {
 	Database string
 	Username string
 	Password string
+}
+
+// ProxySQL contains the information needed to configure a ProxySQL
+// instance for a tenant.
+type ProxySQL struct {
+	BackendHost string
+	BackendPort int
 }
 
 // RADIUSServer contains the information needed to render a FreeRADIUS server.

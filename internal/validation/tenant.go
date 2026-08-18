@@ -65,14 +65,18 @@ func validateDatabase(tenantIdentifier string, database model.Database) []error 
 	}
 
 	switch deployment {
-	case "container", "proxysql":
+	case "container":
 		// Host and port are determined by the deployment mechanism.
 
-	case "external":
+	case "proxysql", "external":
 		if database.Host == "" {
 			validationErrors = append(
 				validationErrors,
-				fmt.Errorf("tenant %q: database host must be specified for external deployment", tenantIdentifier),
+				fmt.Errorf(
+					"tenant %q: database host must be specified for %s deployment",
+					tenantIdentifier,
+					deployment,
+				),
 			)
 		}
 
@@ -80,8 +84,9 @@ func validateDatabase(tenantIdentifier string, database model.Database) []error 
 			validationErrors = append(
 				validationErrors,
 				fmt.Errorf(
-					"tenant %q: database port must be between 1 and 65535 for external deployment",
+					"tenant %q: database port must be between 1 and 65535 for %s deployment",
 					tenantIdentifier,
+					deployment,
 				),
 			)
 		}
@@ -89,7 +94,11 @@ func validateDatabase(tenantIdentifier string, database model.Database) []error 
 	default:
 		validationErrors = append(
 			validationErrors,
-			fmt.Errorf("tenant %q: database deployment %q is not supported", tenantIdentifier, deployment),
+			fmt.Errorf(
+				"tenant %q: database deployment %q is not supported",
+				tenantIdentifier,
+				deployment,
+			),
 		)
 	}
 

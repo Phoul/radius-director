@@ -1,4 +1,11 @@
 services:
+{{ if .ProxySQL }}
+  {{ .ProxySQL.ServiceName }}:
+    image: proxysql/proxysql:latest
+    volumes:
+      - ./proxysql.cnf:/etc/proxysql.cnf:ro
+
+{{ end }}
 {{ range .Tenants }}
   {{ .ServiceName }}:
     image: freeradius/freeradius-server:{{ .RadiusVersion }}
@@ -6,6 +13,10 @@ services:
     depends_on:
       {{ .DatabaseServiceName }}:
         condition: service_healthy
+{{ else if eq .DatabaseDeployment "proxysql" }}
+    depends_on:
+      proxysql:
+        condition: service_started
 {{ end }}
     volumes:
       - ./{{ .Name }}:/opt/radius-director/tenant:ro

@@ -82,6 +82,81 @@ func TestRender(t *testing.T) {
 	}
 }
 
+func TestRenderProxySQLDatabase(t *testing.T) {
+	tenant := generator.Tenant{
+		Identifier: "customer-a",
+		Template:   "default",
+		RADIUSServer: generator.RADIUSServer{
+			Version: "3.2.10",
+		},
+		DatabaseDeployment: "proxysql",
+		SQL: generator.SQL{
+			Engine:   "mysql",
+			Host:     "proxysql",
+			Port:     6033,
+			Database: "radius_a",
+			Username: "radius_a",
+			Password: "password-a",
+		},
+		ProxySQL: &generator.ProxySQL{
+			BackendHost: "database-a.example.com",
+			BackendPort: 3306,
+		},
+	}
+
+	files, err := testRenderer(t).Render(tenant)
+	if err != nil {
+		t.Fatalf("Render() error = %v", err)
+	}
+
+	var sqlConfig string
+
+	for _, file := range files {
+		if file.RelativePath == "mods-available/sql" {
+			sqlConfig = file.Content
+			break
+		}
+	}
+
+	if sqlConfig == "" {
+		t.Fatal("Render() did not produce mods-available/sql")
+	}
+
+	expected := []string{
+		`dialect = "mysql"`,
+		`server = "proxysql"`,
+		`port = 6033`,
+		`login = "radius_a"`,
+		`password = "password-a"`,
+		`radius_db = "radius_a"`,
+	}
+
+	for _, value := range expected {
+		if !strings.Contains(sqlConfig, value) {
+			t.Errorf(
+				"generated mods-available/sql does not contain %q:\n%s",
+				value,
+				sqlConfig,
+			)
+		}
+	}
+
+	unexpected := []string{
+		"database-a.example.com",
+		"3306",
+	}
+
+	for _, value := range unexpected {
+		if strings.Contains(sqlConfig, value) {
+			t.Errorf(
+				"generated mods-available/sql unexpectedly contains backend value %q:\n%s",
+				value,
+				sqlConfig,
+			)
+		}
+	}
+}
+
 func TestRenderWithSymlink(t *testing.T) {
 	directory := t.TempDir()
 

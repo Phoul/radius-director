@@ -1,0 +1,35 @@
+datadir="/var/lib/proxysql"
+
+admin_variables=
+{
+    admin_credentials="admin:admin"
+    mysql_ifaces="127.0.0.1:6032"
+}
+
+mysql_variables=
+{
+    interfaces="0.0.0.0:6033"
+    monitor_enabled=false
+}
+
+mysql_servers =
+(
+{{- range .ProxySQL.Backends }}
+    {
+        address="{{.Host}}"
+        port={{.Port}}
+        hostgroup={{.Hostgroup}}
+    },
+{{- end }}
+)
+
+mysql_users =
+(
+{{- range .ProxySQL.Backends }}
+    {
+        username="{{.Username}}"
+        password="{{.Password}}"
+        default_hostgroup={{.Hostgroup}}
+    },
+{{- end }}
+)

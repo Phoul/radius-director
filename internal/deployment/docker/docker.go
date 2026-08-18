@@ -12,7 +12,8 @@ import (
 )
 
 type ComposeData struct {
-	Tenants []ComposeTenant
+	Tenants  []ComposeTenant
+	ProxySQL *ComposeProxySQL
 }
 
 type ComposeTenant struct {
@@ -30,6 +31,24 @@ type ComposeTenant struct {
 	COAPort             int
 }
 
+type ComposeProxySQL struct {
+	ServiceName string
+	Backends    []ComposeProxySQLBackend
+}
+
+type ComposeProxySQLBackend struct {
+	TenantName string
+
+	Host string
+	Port int
+
+	Database string
+	Username string
+	Password string
+
+	Hostgroup int
+}
+
 type Deployment struct {
 	Files []output.File
 }
@@ -37,6 +56,7 @@ type Deployment struct {
 const (
 	ComposeOutputPath    = "docker-compose.yml"
 	EntrypointOutputPath = "entrypoint.sh"
+	ProxySQLOutputPath   = "proxysql.cnf"
 )
 
 func NewComposeData(configuration generator.Configuration) ComposeData {
@@ -59,6 +79,32 @@ func NewComposeData(configuration generator.Configuration) ComposeData {
 			AccountingPort:      tenant.RADIUSServer.AccountingPort,
 			COAPort:             tenant.RADIUSServer.COAPort,
 		})
+
+		if tenant.ProxySQL == nil {
+			continue
+		}
+
+		if data.ProxySQL == nil {
+			data.ProxySQL = &ComposeProxySQL{
+				ServiceName: "proxysql",
+				Backends:    make([]ComposeProxySQLBackend, 0),
+			}
+		}
+
+		hostgroup := 10 + len(data.ProxySQL.Backends)
+
+		data.ProxySQL.Backends = append(
+			data.ProxySQL.Backends,
+			ComposeProxySQLBackend{
+				TenantName: tenant.Identifier,
+				Host:       tenant.ProxySQL.BackendHost,
+				Port:       tenant.ProxySQL.BackendPort,
+				Database:   tenant.SQL.Database,
+				Username:   tenant.SQL.Username,
+				Password:   tenant.SQL.Password,
+				Hostgroup:  hostgroup,
+			},
+		)
 	}
 
 	return data
@@ -93,6 +139,25 @@ func GenerateDeployment(
 		return Deployment{}, fmt.Errorf("render Docker entrypoint template: %w", err)
 	}
 
+	var proxySQL bytes.Buffer
+
+	if data.ProxySQL != nil {
+		proxySQLExecutor, err := loader.LoadDeployment("docker", "proxysql.cnf")
+		if err != nil {
+			return Deployment{}, fmt.Errorf(
+				"load ProxySQL configuration template: %w",
+				err,
+			)
+		}
+
+		if err := proxySQLExecutor.Execute(&proxySQL, data); err != nil {
+			return Deployment{}, fmt.Errorf(
+				"render ProxySQL configuration template: %w",
+				err,
+			)
+		}
+	}
+
 	var files = []output.File{
 		{
 			Path:    ComposeOutputPath,
@@ -105,6 +170,14 @@ func GenerateDeployment(
 			Permissions: 0o755,
 			Content:     entrypoint.String(),
 		},
+	}
+
+	if data.ProxySQL != nil {
+		files = append(files, output.File{
+			Path:    ProxySQLOutputPath,
+			Kind:    output.FileKindRegular,
+			Content: proxySQL.String(),
+		})
 	}
 
 	for _, tenant := range configuration.Tenants {

@@ -294,6 +294,77 @@ func TestGenerateExternalDatabaseEndpoint(t *testing.T) {
 	}
 }
 
+func TestGeneratePreservesProxySQLDatabaseBackend(t *testing.T) {
+	configuration := model.Configuration{
+		Tenants: map[string]model.Tenant{
+			"customer-a": {
+				Database: model.Database{
+					Engine:     "mysql",
+					Deployment: "proxysql",
+					Host:       "db.example.com",
+					Port:       3307,
+					Database:   "radius",
+					Username:   "radius",
+					Password:   "secret",
+				},
+			},
+		},
+	}
+
+	generated := Generate(configuration)
+
+	if len(generated.Tenants) != 1 {
+		t.Fatalf("generated tenants = %d, want 1", len(generated.Tenants))
+	}
+
+	proxySQL := generated.Tenants[0].ProxySQL
+	if proxySQL == nil {
+		t.Fatal("ProxySQL configuration is nil, want non-nil")
+	}
+
+	if got, want := proxySQL.BackendHost, "db.example.com"; got != want {
+		t.Fatalf("ProxySQL.BackendHost = %q, want %q", got, want)
+	}
+
+	if got, want := proxySQL.BackendPort, 3307; got != want {
+		t.Fatalf("ProxySQL.BackendPort = %d, want %d", got, want)
+	}
+}
+
+func TestGenerateProxySQLDatabaseEndpoint(t *testing.T) {
+	configuration := model.Configuration{
+		Tenants: map[string]model.Tenant{
+			"customer-a": {
+				Database: model.Database{
+					Engine:     "mysql",
+					Deployment: "proxysql",
+					Host:       "db.example.com",
+					Port:       3307,
+					Database:   "radius",
+					Username:   "radius",
+					Password:   "secret",
+				},
+			},
+		},
+	}
+
+	generated := Generate(configuration)
+
+	if len(generated.Tenants) != 1 {
+		t.Fatalf("generated tenants = %d, want 1", len(generated.Tenants))
+	}
+
+	sql := generated.Tenants[0].SQL
+
+	if got, want := sql.Host, "proxysql"; got != want {
+		t.Fatalf("SQL.Host = %q, want %q", got, want)
+	}
+
+	if got, want := sql.Port, 6033; got != want {
+		t.Fatalf("SQL.Port = %d, want %d", got, want)
+	}
+}
+
 func TestGenerateTrustedRADIUSClientAssignments(t *testing.T) {
 	configuration := model.Configuration{
 		GlobalObjects: model.GlobalObjects{

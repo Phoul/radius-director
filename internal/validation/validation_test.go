@@ -869,9 +869,55 @@ func TestValidateDatabase(t *testing.T) {
 			database: model.Database{
 				Engine:     "mysql",
 				Deployment: "proxysql",
+				Host:       "db.example.com",
+				Port:       3306,
 				Database:   "radius",
 				Username:   "radius",
 				Password:   "secret",
+			},
+		},
+		{
+			name: "proxysql host missing",
+			database: model.Database{
+				Engine:     "mysql",
+				Deployment: "proxysql",
+				Port:       3306,
+				Database:   "radius",
+				Username:   "radius",
+				Password:   "secret",
+			},
+			wantErrs: []string{
+				`tenant "customer-a": database host must be specified for proxysql deployment`,
+			},
+		},
+		{
+			name: "proxysql port below range",
+			database: model.Database{
+				Engine:     "mysql",
+				Deployment: "proxysql",
+				Host:       "db.example.com",
+				Port:       0,
+				Database:   "radius",
+				Username:   "radius",
+				Password:   "secret",
+			},
+			wantErrs: []string{
+				`tenant "customer-a": database port must be between 1 and 65535 for proxysql deployment`,
+			},
+		},
+		{
+			name: "proxysql port above range",
+			database: model.Database{
+				Engine:     "mysql",
+				Deployment: "proxysql",
+				Host:       "db.example.com",
+				Port:       65536,
+				Database:   "radius",
+				Username:   "radius",
+				Password:   "secret",
+			},
+			wantErrs: []string{
+				`tenant "customer-a": database port must be between 1 and 65535 for proxysql deployment`,
 			},
 		},
 		{
