@@ -88,13 +88,6 @@ func NewComposeData(configuration generator.Configuration) ComposeData {
 			data.HasContainerDatabase = true
 		}
 
-		fmt.Printf(
-			"DEBUG: tenant=%s deployment=%q HasContainerDatabase=%v\n",
-			tenant.Identifier,
-			tenant.DatabaseDeployment,
-			data.HasContainerDatabase,
-		)
-
 		if tenant.ProxySQL == nil {
 			continue
 		}
