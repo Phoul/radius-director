@@ -27,7 +27,7 @@ services:
     healthcheck:
       test:
         - CMD-SHELL
-        - mysqladmin ping -h 127.0.0.1 -u root -ptemporary
+        - mysqladmin ping -h 127.0.0.1
       interval: 5s
       timeout: 5s
       retries: 10
