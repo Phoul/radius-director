@@ -12,8 +12,8 @@ permissions:
   contents: read
 
 jobs:
-  test:
-    name: Build and test
+  test-linux:
+    name: Build and test on Ubuntu
     runs-on: ubuntu-latest
 
     steps:
@@ -31,3 +31,23 @@ jobs:
 
       - name: Test
         run: go test ./...
+      
+  test-windows:
+    name: Build and test on Windows
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build
+        run: go build ./...
+
+      - name: Test
+        run: go test ./...    
