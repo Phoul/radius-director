@@ -249,6 +249,12 @@ func TestGenerateDeploymentWithProxySQL(t *testing.T) {
 		)
 	}
 
+	if strings.Contains(compose.Content, "\nvolumes:\n") {
+		t.Error(
+			"generated Docker Compose file unexpectedly contains a top-level volumes section",
+		)
+	}
+
 	proxySQL, ok := files[ProxySQLOutputPath]
 	if !ok {
 		t.Fatalf(

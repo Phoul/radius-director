@@ -12,8 +12,9 @@ import (
 )
 
 type ComposeData struct {
-	Tenants  []ComposeTenant
-	ProxySQL *ComposeProxySQL
+	Tenants              []ComposeTenant
+	ProxySQL             *ComposeProxySQL
+	HasContainerDatabase bool
 }
 
 type ComposeTenant struct {
@@ -79,6 +80,10 @@ func NewComposeData(configuration generator.Configuration) ComposeData {
 			AccountingPort:      tenant.RADIUSServer.AccountingPort,
 			COAPort:             tenant.RADIUSServer.COAPort,
 		})
+
+		if tenant.DatabaseDeployment == "container" {
+			data.HasContainerDatabase = true
+		}
 
 		if tenant.ProxySQL == nil {
 			continue

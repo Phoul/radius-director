@@ -46,8 +46,10 @@ services:
 {{ end }}
 
 volumes:
+{{ if .HasContainerDatabase }}
 {{ range .Tenants }}
 {{ if eq .DatabaseDeployment "container" }}
   {{ .DatabaseVolumeName }}:
+{{ end }}
 {{ end }}
 {{ end }}
