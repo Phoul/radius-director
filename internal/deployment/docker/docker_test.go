@@ -219,6 +219,8 @@ func TestGenerateDeploymentWithProxySQL(t *testing.T) {
 		t.Fatalf("generated deployment does not contain %q", ComposeOutputPath)
 	}
 
+	composeContent := strings.ReplaceAll(compose.Content, "\r\n", "\n")
+
 	expectedComposeContent := []string{
 		"proxysql:",
 		"radius-customer-a:",
@@ -228,7 +230,7 @@ func TestGenerateDeploymentWithProxySQL(t *testing.T) {
 	}
 
 	for _, value := range expectedComposeContent {
-		if !strings.Contains(compose.Content, value) {
+		if !strings.Contains(composeContent, value) {
 			t.Errorf(
 				"generated Docker Compose file does not contain %q:\n%s",
 				value,
@@ -237,19 +239,19 @@ func TestGenerateDeploymentWithProxySQL(t *testing.T) {
 		}
 	}
 
-	if strings.Contains(compose.Content, "proxysql-customer-a:") {
+	if strings.Contains(composeContent, "proxysql-customer-a:") {
 		t.Error(
 			"generated Docker Compose file unexpectedly contains per-tenant ProxySQL service",
 		)
 	}
 
-	if strings.Contains(compose.Content, "proxysql-customer-b:") {
+	if strings.Contains(composeContent, "proxysql-customer-b:") {
 		t.Error(
 			"generated Docker Compose file unexpectedly contains per-tenant ProxySQL service",
 		)
 	}
 
-	if strings.Contains(compose.Content, "\nvolumes:\n") {
+	if strings.Contains(composeContent, "\nvolumes:\n") {
 		t.Errorf(
 			"generated Docker Compose file unexpectedly contains a top-level volumes section",
 		)
