@@ -8,8 +8,21 @@ import (
 
 func validateRelationships(configuration model.Configuration) []error {
 	var validationErrors []error
+
+	validationErrors = append(
+		validationErrors,
+		validateProxySQLUsernames(configuration)...,
+	)
+
 	for _, identifier := range sortedKeys(configuration.Tenants) {
-		validationErrors = append(validationErrors, validateTenantRelationships(identifier, configuration.Tenants[identifier], configuration.GlobalObjects)...)
+		validationErrors = append(
+			validationErrors,
+			validateTenantRelationships(
+				identifier,
+				configuration.Tenants[identifier],
+				configuration.GlobalObjects,
+			)...,
+		)
 	}
 
 	return validationErrors
@@ -51,6 +64,46 @@ func validateTenantRelationships(tenantIdentifier string, tenant model.Tenant, g
 		}
 
 		assignmentsByTrustedRADIUSClient[assignment.TrustedRADIUSClient] = identifier
+	}
+
+	return validationErrors
+}
+
+func validateProxySQLUsernames(configuration model.Configuration) []error {
+	var validationErrors []error
+	usernames := make(map[string]string)
+
+	for _, identifier := range sortedKeys(configuration.Tenants) {
+		tenant := configuration.Tenants[identifier]
+
+		deployment := tenant.Database.Deployment
+		if deployment == "" {
+			deployment = "container"
+		}
+
+		if deployment != "proxysql" {
+			continue
+		}
+
+		username := tenant.Database.Username
+		if username == "" {
+			continue
+		}
+
+		if firstTenant, exists := usernames[username]; exists {
+			validationErrors = append(
+				validationErrors,
+				fmt.Errorf(
+					"tenants %q and %q both use ProxySQL database username %q",
+					firstTenant,
+					identifier,
+					username,
+				),
+			)
+			continue
+		}
+
+		usernames[username] = identifier
 	}
 
 	return validationErrors

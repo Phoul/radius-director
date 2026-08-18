@@ -424,6 +424,147 @@ func TestValidateTenantRelationships(t *testing.T) {
 	}
 }
 
+func TestValidateProxySQLUsernames(t *testing.T) {
+	tests := []struct {
+		name          string
+		configuration model.Configuration
+		wantErrs      []string
+	}{
+		{
+			name: "unique ProxySQL usernames",
+			configuration: model.Configuration{
+				Tenants: map[string]model.Tenant{
+					"customer-a": {
+						Database: model.Database{
+							Deployment: "proxysql",
+							Username:   "radius_a",
+						},
+					},
+					"customer-b": {
+						Database: model.Database{
+							Deployment: "proxysql",
+							Username:   "radius_b",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "duplicate ProxySQL username",
+			configuration: model.Configuration{
+				Tenants: map[string]model.Tenant{
+					"customer-a": {
+						Database: model.Database{
+							Deployment: "proxysql",
+							Username:   "radius",
+						},
+					},
+					"customer-b": {
+						Database: model.Database{
+							Deployment: "proxysql",
+							Username:   "radius",
+						},
+					},
+				},
+			},
+			wantErrs: []string{
+				`tenants "customer-a" and "customer-b" both use ProxySQL database username "radius"`,
+			},
+		},
+		{
+			name: "duplicate username allowed for external databases",
+			configuration: model.Configuration{
+				Tenants: map[string]model.Tenant{
+					"customer-a": {
+						Database: model.Database{
+							Deployment: "external",
+							Username:   "radius",
+						},
+					},
+					"customer-b": {
+						Database: model.Database{
+							Deployment: "external",
+							Username:   "radius",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "duplicate username allowed for container databases",
+			configuration: model.Configuration{
+				Tenants: map[string]model.Tenant{
+					"customer-a": {
+						Database: model.Database{
+							Deployment: "container",
+							Username:   "radius",
+						},
+					},
+					"customer-b": {
+						Database: model.Database{
+							Deployment: "container",
+							Username:   "radius",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "duplicate ProxySQL username reports all conflicts",
+			configuration: model.Configuration{
+				Tenants: map[string]model.Tenant{
+					"customer-a": {
+						Database: model.Database{
+							Deployment: "proxysql",
+							Username:   "radius",
+						},
+					},
+					"customer-b": {
+						Database: model.Database{
+							Deployment: "proxysql",
+							Username:   "radius",
+						},
+					},
+					"customer-c": {
+						Database: model.Database{
+							Deployment: "proxysql",
+							Username:   "radius",
+						},
+					},
+				},
+			},
+			wantErrs: []string{
+				`tenants "customer-a" and "customer-b" both use ProxySQL database username "radius"`,
+				`tenants "customer-a" and "customer-c" both use ProxySQL database username "radius"`,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			validationErrors := validateProxySQLUsernames(test.configuration)
+
+			if len(validationErrors) != len(test.wantErrs) {
+				t.Fatalf(
+					"validateProxySQLUsernames() returned %d errors, want %d",
+					len(validationErrors),
+					len(test.wantErrs),
+				)
+			}
+
+			for index, wantErr := range test.wantErrs {
+				if got := validationErrors[index].Error(); got != wantErr {
+					t.Errorf(
+						"validateProxySQLUsernames() error = %q, want %q",
+						got,
+						wantErr,
+					)
+				}
+			}
+		})
+	}
+}
+
 func TestValidateTenant(t *testing.T) {
 	validTenant := model.Tenant{
 		AuthenticationProfile: "default",
