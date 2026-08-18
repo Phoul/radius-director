@@ -392,3 +392,15 @@ func TestNewComposeDataProxySQL(t *testing.T) {
 		t.Errorf("second Hostgroup = %d, want 11", second.Hostgroup)
 	}
 }
+
+func TestCompactComposeWhitespace(t *testing.T) {
+	input := "services:\n\n\n  proxysql:\n    image: proxysql/proxysql:latest\n\n\n\n  radius-customer-a:\n    image: freeradius/freeradius-server:3.2.10\n\nnetworks:\n"
+
+	expected := "services:\n\n  proxysql:\n    image: proxysql/proxysql:latest\n\n  radius-customer-a:\n    image: freeradius/freeradius-server:3.2.10\n\nnetworks:\n"
+
+	actual := compactComposeWhitespace(input)
+
+	if actual != expected {
+		t.Errorf("compactComposeWhitespace() = %q, want %q", actual, expected)
+	}
+}

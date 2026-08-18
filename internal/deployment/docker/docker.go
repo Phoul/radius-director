@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"path/filepath"
+	"regexp"
 
 	"github.com/gobcn/radius-director/internal/generator"
 	"github.com/gobcn/radius-director/internal/output"
@@ -60,6 +61,8 @@ const (
 	ProxySQLOutputPath   = "proxysql.cnf"
 )
 
+var multipleBlankLines = regexp.MustCompile(`\n{3,}`)
+
 func NewComposeData(configuration generator.Configuration) ComposeData {
 	data := ComposeData{
 		Tenants: make([]ComposeTenant, 0, len(configuration.Tenants)),
@@ -115,6 +118,10 @@ func NewComposeData(configuration generator.Configuration) ComposeData {
 	return data
 }
 
+func compactComposeWhitespace(content string) string {
+	return multipleBlankLines.ReplaceAllString(content, "\n\n")
+}
+
 func GenerateDeployment(
 	loader templates.Loader,
 	schemaLoader schemas.Loader,
@@ -167,7 +174,7 @@ func GenerateDeployment(
 		{
 			Path:    ComposeOutputPath,
 			Kind:    output.FileKindRegular,
-			Content: compose.String(),
+			Content: compactComposeWhitespace(compose.String()),
 		},
 		{
 			Path:        EntrypointOutputPath,
