@@ -52,6 +52,10 @@ func TestExportPreservesSymlinks(t *testing.T) {
 
 	createTestAssetTree(t, source)
 
+	if err := Export(source, destination); err != nil {
+		t.Fatalf("Export() error = %v", err)
+	}
+
 	exportedLink := filepath.Join(
 		destination,
 		"templates",
