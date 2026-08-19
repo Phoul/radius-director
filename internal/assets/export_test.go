@@ -90,7 +90,78 @@ func TestExportPreservesSymlinks(t *testing.T) {
 	}
 }
 
-func TestExportRefusesExistingTemplatesDirectory(t *testing.T) {
+func TestExportAllowsEmptyTemplatesDirectory(t *testing.T) {
+	source := t.TempDir()
+	destination := t.TempDir()
+
+	createTestAssetTree(t, source)
+
+	if err := os.Mkdir(filepath.Join(destination, "templates"), 0o755); err != nil {
+		t.Fatalf("create empty templates directory: %v", err)
+	}
+
+	if err := Export(source, destination); err != nil {
+		t.Fatalf("Export() error = %v, want success for empty templates directory", err)
+	}
+
+	exportedFile := filepath.Join(
+		destination,
+		"templates",
+		"default",
+		"radiusd.conf",
+	)
+
+	if _, err := os.Stat(exportedFile); err != nil {
+		t.Fatalf("expected exported template %q: %v", exportedFile, err)
+	}
+}
+
+func TestExportAllowsEmptySchemasDirectory(t *testing.T) {
+	source := t.TempDir()
+	destination := t.TempDir()
+
+	createTestAssetTree(t, source)
+
+	if err := os.Mkdir(filepath.Join(destination, "schemas"), 0o755); err != nil {
+		t.Fatalf("create empty schemas directory: %v", err)
+	}
+
+	if err := Export(source, destination); err != nil {
+		t.Fatalf("Export() error = %v, want success for empty schemas directory", err)
+	}
+
+	exportedFile := filepath.Join(
+		destination,
+		"schemas",
+		"default.sql",
+	)
+
+	if _, err := os.Stat(exportedFile); err != nil {
+		t.Fatalf("expected exported schema %q: %v", exportedFile, err)
+	}
+}
+
+func TestExportRefusesTemplatesFile(t *testing.T) {
+	source := t.TempDir()
+	destination := t.TempDir()
+
+	createTestAssetTree(t, source)
+
+	if err := os.WriteFile(
+		filepath.Join(destination, "templates"),
+		[]byte("not a directory"),
+		0o644,
+	); err != nil {
+		t.Fatalf("create templates file: %v", err)
+	}
+
+	err := Export(source, destination)
+	if err == nil {
+		t.Fatal("Export() succeeded, want error when templates is a file")
+	}
+}
+
+func TestExportRefusesNonEmptyTemplatesDirectory(t *testing.T) {
 	source := t.TempDir()
 	destination := t.TempDir()
 
@@ -127,7 +198,7 @@ func TestExportRefusesExistingTemplatesDirectory(t *testing.T) {
 	}
 }
 
-func TestExportRefusesExistingSchemasDirectory(t *testing.T) {
+func TestExportRefusesNonEmptySchemasDirectory(t *testing.T) {
 	source := t.TempDir()
 	destination := t.TempDir()
 
