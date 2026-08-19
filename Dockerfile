@@ -22,7 +22,9 @@ FROM gcr.io/distroless/static-debian12:nonroot
 WORKDIR /app
 
 COPY --from=build /out/radius-director /app/radius-director
-COPY templates /app/templates
-COPY schemas /app/schemas
+COPY templates /app/factory/templates
+COPY schemas /app/factory/schemas
+
+ENV RADIUS_DIRECTOR_ASSETS=/app/assets
 
 ENTRYPOINT ["/app/radius-director"]
