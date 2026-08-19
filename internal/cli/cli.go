@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/gobcn/radius-director/internal/assets"
 	"github.com/gobcn/radius-director/internal/config"
 	"github.com/gobcn/radius-director/internal/deployment/docker"
 	"github.com/gobcn/radius-director/internal/generator"
@@ -20,15 +21,19 @@ import (
 )
 
 // Run executes the command-line interface and returns its exit code.
-func Run(args []string, stdout, stderr io.Writer, templateLoader templates.Loader, schemaLoader schemas.Loader) int {
+func Run(args []string, stdout, stderr io.Writer, templateLoader templates.Loader, schemaLoader schemas.Loader, runtimeInitializer RuntimeInitializer) int {
 	if len(args) > 0 {
 		switch args[0] {
+		case "init":
+			return runInit(args[1:], stdout, stderr, runtimeInitializer)
 		case "validate":
 			return runValidate(args[1:], stdout, stderr, templateLoader)
 		case "generate":
 			return runGenerate(args[1:], stdout, stderr, templateLoader, schemaLoader)
 		case "maintenance":
 			return runMaintenance(args[1:], stdout, stderr, templateLoader)
+		case "export":
+			return runExport(args[1:], stdout, stderr)
 		}
 	}
 
@@ -40,9 +45,11 @@ func Run(args []string, stdout, stderr io.Writer, templateLoader templates.Loade
 		fmt.Fprintln(stdout, "RADIUS Director manages declarative FreeRADIUS configuration.")
 		fmt.Fprintln(stdout)
 		fmt.Fprintln(stdout, "Usage:")
+		fmt.Fprintln(stdout, "  radius-director init <runtime-directory> <network-name>")
 		fmt.Fprintln(stdout, "  radius-director validate <config.yaml>")
 		fmt.Fprintln(stdout, "  radius-director generate <config.yaml> <output-directory>")
 		fmt.Fprintln(stdout, "  radius-director maintenance accounting <config.yaml> <tenant>")
+		fmt.Fprintln(stdout, "  radius-director export assets <output-directory>")
 		fmt.Fprintln(stdout)
 		fmt.Fprintln(stdout, "Options:")
 		fmt.Fprintln(stdout, "  -h, --help")
@@ -66,6 +73,50 @@ func Run(args []string, stdout, stderr io.Writer, templateLoader templates.Loade
 
 	flags.Usage()
 	return 0
+}
+
+func runInit(
+	args []string,
+	stdout, stderr io.Writer,
+	runtimeInitializer RuntimeInitializer,
+) int {
+	if len(args) == 1 && (args[0] == "-h" || args[0] == "--help") {
+		printInitUsage(stdout)
+		return 0
+	}
+
+	if len(args) != 2 {
+		fmt.Fprintln(stderr, "init requires a runtime directory and network name")
+		printInitUsage(stderr)
+		return 2
+	}
+
+	if runtimeInitializer == nil {
+		fmt.Fprintln(stderr, "runtime initialization is unavailable")
+		return 1
+	}
+
+	if err := runtimeInitializer.Init(
+		context.Background(),
+		args[0],
+		args[1],
+	); err != nil {
+		fmt.Fprintln(stderr, err)
+		return 1
+	}
+
+	fmt.Fprintf(
+		stdout,
+		"RADIUS Director runtime initialized successfully in %s.\n",
+		args[0],
+	)
+
+	return 0
+}
+
+func printInitUsage(output io.Writer) {
+	fmt.Fprintln(output, "Usage:")
+	fmt.Fprintln(output, "  radius-director init <runtime-directory> <network-name>")
 }
 
 func runValidate(args []string, stdout, stderr io.Writer, templateLoader templates.Loader) int {
@@ -230,4 +281,56 @@ func generatedTenant(configuration generator.Configuration, identifier string) (
 		}
 	}
 	return generator.Tenant{}, false
+}
+
+func runExport(args []string, stdout, stderr io.Writer) int {
+	if len(args) == 1 && (args[0] == "-h" || args[0] == "--help") {
+		printExportUsage(stdout)
+		return 0
+	}
+
+	if len(args) == 0 || args[0] != "assets" {
+		fmt.Fprintln(stderr, "export requires the assets subcommand")
+		printExportUsage(stderr)
+		return 2
+	}
+
+	return runExportAssets(args[1:], stdout, stderr)
+}
+
+func printExportUsage(output io.Writer) {
+	fmt.Fprintln(output, "Usage:")
+	fmt.Fprintln(output, "  radius-director export assets <output-directory>")
+}
+
+func runExportAssets(args []string, stdout, stderr io.Writer) int {
+	return runExportAssetsFromRoot(args, stdout, stderr, assets.FactoryRoot)
+}
+
+func runExportAssetsFromRoot(args []string, stdout, stderr io.Writer, sourceRoot string) int {
+	if len(args) == 1 && (args[0] == "-h" || args[0] == "--help") {
+		printExportUsage(stdout)
+		return 0
+	}
+
+	if len(args) != 1 {
+		fmt.Fprintln(stderr, "export assets requires an output directory")
+		return 2
+	}
+
+	if err := assets.Export(sourceRoot, args[0]); err != nil {
+		fmt.Fprintln(stderr, err)
+		return 1
+	}
+
+	fmt.Fprintf(
+		stdout,
+		"RADIUS Director templates and schemas exported successfully to %s.\n",
+		args[0],
+	)
+	return 0
+}
+
+type RuntimeInitializer interface {
+	Init(ctx context.Context, root, networkName string) error
 }

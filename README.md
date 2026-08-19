@@ -118,7 +118,7 @@ The primary configuration is a YAML document containing global objects and tenan
 An example configuration is provided in:
 
 ```text
-examples/example.yaml
+resources/example.yaml
 ```
 
 A simplified example looks like:
@@ -176,7 +176,7 @@ tenants:
         monitoring_profile: default
 ```
 
-The complete example in `examples/example.yaml` should be used as the reference for the currently supported configuration structure.
+The complete example in `resources/example.yaml` should be used as the reference for the currently supported configuration structure.
 
 ## Version-Aware Deployments
 
@@ -252,7 +252,7 @@ RADIUS Director is currently run from the repository root using Go's `go run` co
 To validate a configuration:
 
 ```powershell
-go run ./cmd/radius-director validate ./examples/example.yaml
+go run ./cmd/radius-director validate ./resources/example.yaml
 ```
 
 A successful validation indicates that the configuration is valid for the current RADIUS Director configuration model.
@@ -262,7 +262,7 @@ A successful validation indicates that the configuration is valid for the curren
 To generate the managed configuration for all tenants:
 
 ```powershell
-go run ./cmd/radius-director generate ./examples/example.yaml ./generated
+go run ./cmd/radius-director generate ./resources/example.yaml ./generated
 ```
 
 The output directory will contain a separate directory for each tenant.
@@ -335,7 +335,7 @@ When testing generation, write output to a separate directory rather than modify
 For example:
 
 ```powershell
-go run ./cmd/radius-director generate ./examples/example.yaml ./generated-test
+go run ./cmd/radius-director generate ./resources/example.yaml ./generated-test
 ```
 
 The generated directory can then be inspected before being removed:
