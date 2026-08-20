@@ -84,6 +84,7 @@ For a Docker-based deployment, mount the directory that will contain the runtime
 docker run --rm \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v /opt/radius-director:/workspace \
+  --user "$(id -u):$(getent group docker | cut -d: -f3)" \
   gobcn/radius-director:latest \
   init /workspace radius-director
 ```
