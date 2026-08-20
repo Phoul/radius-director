@@ -76,10 +76,13 @@ The `init` command has the following syntax:
 radius-director init <runtime-directory> <network-name>
 ```
 
+The `init` command creates the Docker network specified by `<network-name>`, so the RADIUS Director container needs access to the host Docker daemon during initialization. The Docker socket is mounted into the container for this purpose. It is not required for normal RADIUS Director CLI operations.
+
 For a Docker-based deployment, mount the directory that will contain the runtime into the container as `/workspace`:
 
 ```bash
 docker run --rm \
+  -v /var/run/docker.sock:/var/run/docker.sock \
   -v /opt/radius-director:/workspace \
   gobcn/radius-director:latest \
   init /workspace radius-director
@@ -99,8 +102,6 @@ The resulting `.env` contains:
 ```text
 RADIUS_DIRECTOR_RUNTIME_NETWORK=radius-director
 ```
-
-The network is created by the `init` command if it does not already exist.
 
 After initialization, change to the runtime directory:
 
