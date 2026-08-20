@@ -27,6 +27,12 @@ const (
 type Runtime struct {
 	ID          string
 	NetworkName string
+	UID         int
+	GID         int
+}
+
+var currentRuntimeIdentity = func() (int, int, error) {
+	return currentRuntimeIdentityImpl()
 }
 
 func New(networkName string) (Runtime, error) {
@@ -119,6 +125,11 @@ func Init(
 	runtime, err := New(networkName)
 	if err != nil {
 		return err
+	}
+
+	runtime.UID, runtime.GID, err = currentRuntimeIdentity()
+	if err != nil {
+		return fmt.Errorf("determine runtime identity: %w", err)
 	}
 
 	return initialize(ctx, root, runtime, networkClient)
@@ -228,12 +239,19 @@ func ensureRuntimeRoot(root string) error {
 	return nil
 }
 
-func writeEnvFile(root string, runtime Runtime) error {
+func writeEnvFile(
+	root string,
+	runtime Runtime,
+) error {
 	path := filepath.Join(root, envFileName)
 
 	content := fmt.Sprintf(
-		"RADIUS_DIRECTOR_RUNTIME_NETWORK=%s\n",
+		"RADIUS_DIRECTOR_RUNTIME_NETWORK=%s\n"+
+			"RADIUS_DIRECTOR_UID=%d\n"+
+			"RADIUS_DIRECTOR_GID=%d\n",
 		runtime.NetworkName,
+		runtime.UID,
+		runtime.GID,
 	)
 
 	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
@@ -259,6 +277,7 @@ func writeComposeFile(root string) error {
 	content := `services:
   radius-director:
     image: gobcn/radius-director:latest
+    user: "${RADIUS_DIRECTOR_UID}:${RADIUS_DIRECTOR_GID}"
     environment:
       RADIUS_DIRECTOR_ASSETS: /app/assets
       RADIUS_DIRECTOR_RUNTIME_NETWORK: ${RADIUS_DIRECTOR_RUNTIME_NETWORK}
