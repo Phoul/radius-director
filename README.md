@@ -198,7 +198,7 @@ RADIUS Director uses the configured version to:
 
 This allows multiple FreeRADIUS versions to be supported while maintaining a consistent configuration model.
 
-The eventual Docker deployment uses the configured FreeRADIUS version to select the corresponding official `freeradius/freeradius-server` image.
+The Docker deployment uses the configured FreeRADIUS version to select the corresponding official `freeradius/freeradius-server` image.
 
 ## Deployment Profiles
 
@@ -245,19 +245,37 @@ Instead, the deployment layer is responsible for applying the removals to the ef
 
 ## Usage
 
-RADIUS Director is currently run from the repository root using Go's `go run` command.
+RADIUS Director is designed to be run as a Docker-based deployment.
 
-### Validate a configuration
+For complete installation, configuration, deployment, maintenance, and upgrade instructions, see:
+
+[Docker Deployment Guide](docs/docker-deployment.md)
+
+The Docker deployment guide covers:
+
+- Initializing a RADIUS Director runtime
+- Configuring the runtime
+- Exporting templates and schemas
+- Validating configurations
+- Generating tenant deployments
+- Running the generated Docker Compose deployment
+- Scheduling accounting maintenance
+- Managing the runtime and generated configuration
+- Upgrading RADIUS Director and comparing shipped assets
+
+## Development
+
+RADIUS Director is written in Go.
+
+### Running from Source
+
+During development, the CLI can be run directly from the repository root using Go.
 
 To validate a configuration:
 
 ```powershell
 go run ./cmd/radius-director validate ./resources/example.yaml
 ```
-
-A successful validation indicates that the configuration is valid for the current RADIUS Director configuration model.
-
-### Generate tenant configurations
 
 To generate the managed configuration for all tenants:
 
@@ -300,34 +318,18 @@ The generated tenant directory is the managed configuration artifact for that te
 
 It should generally be treated as generated output rather than manually edited configuration.
 
-### Command reference
-
-```text
-radius-director validate <config.yaml>
-radius-director generate <config.yaml> <output-directory>
-radius-director maintenance accounting <config.yaml> <tenant>
-```
-
 For command-line help:
 
 ```powershell
 go run ./cmd/radius-director --help
 ```
 
-## Development
-
-RADIUS Director is written in Go.
+### Testing
 
 Run the complete test suite from the repository root:
 
 ```powershell
 go test ./...
-```
-
-Run the CLI without installing it:
-
-```powershell
-go run ./cmd/radius-director --help
 ```
 
 When testing generation, write output to a separate directory rather than modifying the repository's template directories.
@@ -346,54 +348,24 @@ Remove-Item -Recurse -Force ./generated-test
 
 ## Deployment
 
-Generation and deployment are intentionally separated.
+RADIUS Director separates configuration generation from deployment.
 
-Generation produces a deterministic managed configuration tree and a per-tenant deployment manifest.
+Generation produces a deterministic managed configuration tree and a per-tenant deployment manifest. The deployment layer is responsible for materializing that configuration into a running FreeRADIUS environment.
 
-Deployment is responsible for:
+The current deployment target is Docker-based infrastructure using the official FreeRADIUS Docker images.
 
-- Installing or materializing the managed configuration
-- Provisioning supporting infrastructure
-- Applying deployment-manifest instructions
-- Starting or updating FreeRADIUS instances
+For complete installation, configuration, and operational instructions, see:
 
-The initial deployment target is Docker-based infrastructure, while allowing future deployment targets without changing the configuration model.
+[Docker Deployment Guide](docs/docker-deployment.md)
 
-### Docker deployment architecture
+The Docker deployment uses:
 
-The Docker deployment is currently under development.
-
-The intended architecture uses the official FreeRADIUS Docker image rather than maintaining a custom FreeRADIUS base image.
-
-Each tenant will have its own FreeRADIUS container, using the FreeRADIUS version specified by that tenant's configuration.
-
-Conceptually:
-
-```text
-RADIUS Director YAML
-        │
-        ▼
-   Configuration
-        │
-        ▼
-   Per-tenant generated configuration
-        │
-        ├── customer-a/
-        └── customer-b/
-        │
-        ▼
-   Docker deployment
-        │
-        ├── official FreeRADIUS image
-        │       + tenant configuration
-        │       + tenant deployment manifest
-        │
-        └── one isolated container per tenant
-```
-
-The deployment entrypoint is responsible for constructing the effective `/etc/freeradius` configuration inside the container.
-
-The generated tenant configuration is mounted separately from the container's effective FreeRADIUS configuration. Deployment-manifest removal instructions are applied inside the container so that files supplied by the base FreeRADIUS image can be removed without modifying the generated configuration on the Docker host.
+- One FreeRADIUS container per tenant
+- The official `freeradius/freeradius-server` image
+- The FreeRADIUS version specified by each tenant
+- Generated tenant-specific configuration
+- Docker Compose for deployment
+- A separate operational maintenance command for accounting maintenance
 
 ## Project Status
 
@@ -408,16 +380,18 @@ Currently implemented:
 - Per-tenant managed configuration trees
 - Per-tenant deployment manifests
 - Deployment-profile removal instructions
-- Initial Docker deployment entrypoint
+- Docker deployment entrypoint
+- Docker Compose generation
+- Per-tenant container deployment
+- Integration with official FreeRADIUS Docker images
+- Accounting maintenance
 - Automated test coverage for core generation and writing functionality
 
 Current development focus:
 
 - Docker deployment architecture
-- Docker Compose generation
-- Per-tenant container deployment
-- Integration with official FreeRADIUS Docker images
 - Deployment and runtime lifecycle
+- Operational tooling and documentation
 
 ## Goals
 
