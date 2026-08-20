@@ -150,6 +150,9 @@ func TestInitializeFilesystemWritesEnvironmentFile(t *testing.T) {
 		t.Fatalf("New() error = %v", err)
 	}
 
+	runtime.UID = 1234
+	runtime.GID = 5678
+
 	if err := InitializeFilesystem(root, runtime); err != nil {
 		t.Fatalf("InitializeFilesystem() error = %v", err)
 	}
@@ -159,7 +162,10 @@ func TestInitializeFilesystemWritesEnvironmentFile(t *testing.T) {
 		t.Fatalf("read .env: %v", err)
 	}
 
-	want := "RADIUS_DIRECTOR_RUNTIME_NETWORK=radius-director-test\n"
+	want :=
+		"RADIUS_DIRECTOR_RUNTIME_NETWORK=radius-director-test\n" +
+			"RADIUS_DIRECTOR_UID=1234\n" +
+			"RADIUS_DIRECTOR_GID=5678\n"
 
 	if string(content) != want {
 		t.Fatalf(".env = %q, want %q", string(content), want)
@@ -187,6 +193,8 @@ func TestInitializeFilesystemWritesComposeFile(t *testing.T) {
 
 	expected := []string{
 		"radius-director:",
+		"image: gobcn/radius-director:latest",
+		"user: \"${RADIUS_DIRECTOR_UID}:${RADIUS_DIRECTOR_GID}\"",
 		"RADIUS_DIRECTOR_ASSETS: /app/assets",
 		"RADIUS_DIRECTOR_RUNTIME_NETWORK: ${RADIUS_DIRECTOR_RUNTIME_NETWORK}",
 		"./assets/templates:/app/assets/templates",
@@ -261,6 +269,13 @@ func TestInitializeFilesystemCreatesMissingRoot(t *testing.T) {
 }
 
 func TestInitCreatesRuntime(t *testing.T) {
+	originalCurrentRuntimeIdentity := currentRuntimeIdentity
+	currentRuntimeIdentity = func() (int, int, error) {
+		return 1234, 5678, nil
+	}
+	t.Cleanup(func() {
+		currentRuntimeIdentity = originalCurrentRuntimeIdentity
+	})
 	root := filepath.Join(t.TempDir(), "runtime")
 
 	networkName := "radius-director-test"
