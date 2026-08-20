@@ -78,13 +78,16 @@ radius-director init <runtime-directory> <network-name>
 
 The `init` command creates the Docker network specified by `<network-name>`, so the RADIUS Director container needs access to the host Docker daemon during initialization. The Docker socket is mounted into the container for this purpose. It is not required for normal RADIUS Director CLI operations.
 
+The container should also run as the host user during initialization. This ensures that the runtime files and directories created on the host are owned by the user who will manage the deployment.
+
 For a Docker-based deployment, mount the directory that will contain the runtime into the container as `/workspace`:
 
 ```bash
 docker run --rm \
+  --user "$(id -u):$(id -g)" \
+  --group-add "$(getent group docker | cut -d: -f3)" \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v /opt/radius-director:/workspace \
-  --user "$(id -u):$(getent group docker | cut -d: -f3)" \
   gobcn/radius-director:latest \
   init /workspace radius-director
 ```
@@ -92,18 +95,24 @@ docker run --rm \
 In this example:
 
 - `/workspace` is the runtime directory as seen from inside the container.
+- `/opt/radius-director` is the corresponding runtime directory on the host.
 - `radius-director` is the name of the Docker network that will be used by the generated deployment.
-- The `id -u` and `getent group docker | cut -d: -f3` commands fetch the user's UID and Docker group's GID to ensure correct access to the Docker socket.
+- `id -u` and `id -g` provide the current user's UID and primary GID. These are used so that files created in the runtime directory are owned by the host user.
+- `getent group docker | cut -d: -f3` obtains the GID of the host's `docker` group. This is supplied as a supplementary group so that `init` can access the mounted Docker socket.
 
 The command creates the runtime structure in `/opt/radius-director`.
 
 The network is created by the `init` command if it does not already exist.
 
-The resulting `.env` contains:
+The resulting `.env` contains values similar to:
 
 ```text
 RADIUS_DIRECTOR_RUNTIME_NETWORK=radius-director
+RADIUS_DIRECTOR_UID=1000
+RADIUS_DIRECTOR_GID=1000
 ```
+
+The UID and GID values correspond to the user that ran the `init` command. They are used by the runtime's `compose.yaml` so that subsequent RADIUS Director containers run with the same host user identity and can write to the runtime's bind-mounted directories.
 
 After initialization, change to the runtime directory:
 
@@ -111,7 +120,7 @@ After initialization, change to the runtime directory:
 cd /opt/radius-director
 ```
 
-From this point onward, the runtime's `compose.yaml` can be used to run RADIUS Director commands.
+From this point onward, the runtime's `compose.yaml` can be used to run RADIUS Director commands. The Docker socket is not required for these normal operations.
 
 ### Runtime initialization does not export assets
 
