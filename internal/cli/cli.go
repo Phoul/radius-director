@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/gobcn/radius-director/internal/assets"
 	"github.com/gobcn/radius-director/internal/config"
@@ -49,7 +50,7 @@ func Run(args []string, stdout, stderr io.Writer, templateLoader templates.Loade
 		fmt.Fprintln(stdout, "  radius-director validate <config.yaml>")
 		fmt.Fprintln(stdout, "  radius-director generate <config.yaml> <output-directory>")
 		fmt.Fprintln(stdout, "  radius-director maintenance accounting <config.yaml> <tenant>")
-		fmt.Fprintln(stdout, "  radius-director export assets <output-directory>")
+		fmt.Fprintln(stdout, "  radius-director export assets [output-directory]")
 		fmt.Fprintln(stdout)
 		fmt.Fprintln(stdout, "Options:")
 		fmt.Fprintln(stdout, "  -h, --help")
@@ -300,25 +301,46 @@ func runExport(args []string, stdout, stderr io.Writer) int {
 
 func printExportUsage(output io.Writer) {
 	fmt.Fprintln(output, "Usage:")
-	fmt.Fprintln(output, "  radius-director export assets <output-directory>")
+	fmt.Fprintln(output, "  radius-director export assets [output-directory]")
+	fmt.Fprintln(output)
+	fmt.Fprintln(output, "If output-directory is omitted, RADIUS_DIRECTOR_ASSETS is used.")
 }
 
 func runExportAssets(args []string, stdout, stderr io.Writer) int {
-	return runExportAssetsFromRoot(args, stdout, stderr, assets.FactoryRoot)
+	return runExportAssetsFromRoot(
+		args,
+		stdout,
+		stderr,
+		assets.FactoryRoot,
+		os.Getenv("RADIUS_DIRECTOR_ASSETS"),
+	)
 }
 
-func runExportAssetsFromRoot(args []string, stdout, stderr io.Writer, sourceRoot string) int {
+func runExportAssetsFromRoot(args []string, stdout, stderr io.Writer, sourceRoot string, configuredOutputDirectory string) int {
 	if len(args) == 1 && (args[0] == "-h" || args[0] == "--help") {
 		printExportUsage(stdout)
 		return 0
 	}
 
-	if len(args) != 1 {
-		fmt.Fprintln(stderr, "export assets requires an output directory")
+	if len(args) > 1 {
+		fmt.Fprintln(stderr, "export assets accepts at most one output directory")
 		return 2
 	}
 
-	if err := assets.Export(sourceRoot, args[0]); err != nil {
+	outputDirectory := configuredOutputDirectory
+	if len(args) == 1 {
+		outputDirectory = args[0]
+	}
+
+	if outputDirectory == "" {
+		fmt.Fprintln(
+			stderr,
+			"export assets requires an output directory or RADIUS_DIRECTOR_ASSETS",
+		)
+		return 2
+	}
+
+	if err := assets.Export(sourceRoot, outputDirectory); err != nil {
 		fmt.Fprintln(stderr, err)
 		return 1
 	}
@@ -326,7 +348,7 @@ func runExportAssetsFromRoot(args []string, stdout, stderr io.Writer, sourceRoot
 	fmt.Fprintf(
 		stdout,
 		"RADIUS Director templates and schemas exported successfully to %s.\n",
-		args[0],
+		outputDirectory,
 	)
 	return 0
 }

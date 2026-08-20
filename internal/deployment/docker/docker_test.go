@@ -142,7 +142,89 @@ func TestGenerateDeployment(t *testing.T) {
 	}
 }
 
+func TestGenerateDeploymentWithRuntimeNetwork(t *testing.T) {
+	t.Setenv("RADIUS_DIRECTOR_RUNTIME_NETWORK", "radius-director-test")
+
+	directory, err := filepath.Abs(filepath.Join("..", "..", "..", "templates"))
+	if err != nil {
+		t.Fatalf("resolve template directory: %v", err)
+	}
+
+	loader := templates.NewLoader(os.DirFS(directory))
+
+	schemaDirectory, err := filepath.Abs(filepath.Join("..", "..", "..", "schemas"))
+	if err != nil {
+		t.Fatalf("resolve schema directory: %v", err)
+	}
+
+	schemaLoader := schemas.NewLoader(os.DirFS(schemaDirectory))
+
+	configuration := generator.Configuration{
+		Tenants: []generator.Tenant{
+			{
+				Identifier:         "customer-a",
+				DatabaseDeployment: "container",
+				SQL: generator.SQL{
+					Engine:   "mysql",
+					Database: "customer_a",
+					Username: "radius",
+					Password: "database-password",
+				},
+				RADIUSServer: generator.RADIUSServer{
+					Version: "3.2.10",
+				},
+			},
+		},
+	}
+
+	deployment, err := GenerateDeployment(loader, schemaLoader, configuration)
+	if err != nil {
+		t.Fatalf("GenerateDeployment() error = %v", err)
+	}
+
+	files := make(map[string]output.File)
+
+	for _, file := range deployment.Files {
+		files[file.Path] = file
+	}
+
+	compose, ok := files[ComposeOutputPath]
+	if !ok {
+		t.Fatalf("generated deployment does not contain %q", ComposeOutputPath)
+	}
+
+	expectedComposeContent := []string{
+		"radius-customer-a:",
+		"database-customer-a:",
+
+		"    networks:",
+		"      - radius-director",
+
+		"networks:",
+		"  radius-director:",
+		"    external: true",
+		"    name: radius-director-test",
+	}
+
+	for _, value := range expectedComposeContent {
+		if !strings.Contains(compose.Content, value) {
+			t.Errorf(
+				"generated Docker Compose file does not contain %q:\n%s",
+				value,
+				compose.Content,
+			)
+		}
+	}
+
+	if strings.Contains(compose.Content, "${RADIUS_DIRECTOR_RUNTIME_NETWORK}") {
+		t.Error(
+			"generated Docker Compose file unexpectedly contains unresolved RADIUS_DIRECTOR_RUNTIME_NETWORK reference",
+		)
+	}
+}
+
 func TestGenerateDeploymentWithProxySQL(t *testing.T) {
+	t.Setenv("RADIUS_DIRECTOR_RUNTIME_NETWORK", "radius-director-test")
 	directory, err := filepath.Abs(filepath.Join("..", "..", "..", "templates"))
 	if err != nil {
 		t.Fatalf("resolve template directory: %v", err)
@@ -227,6 +309,14 @@ func TestGenerateDeploymentWithProxySQL(t *testing.T) {
 		"image: freeradius/freeradius-server:3.2.10",
 		"radius-customer-b:",
 		"image: freeradius/freeradius-server:3.3.0",
+
+		"    networks:",
+		"      - radius-director",
+
+		"networks:",
+		"  radius-director:",
+		"    external: true",
+		"    name: radius-director-test",
 	}
 
 	for _, value := range expectedComposeContent {
@@ -286,6 +376,103 @@ func TestGenerateDeploymentWithProxySQL(t *testing.T) {
 				proxySQL.Content,
 			)
 		}
+	}
+}
+
+func TestGenerateDeploymentWithoutRuntimeNetwork(t *testing.T) {
+	t.Setenv("RADIUS_DIRECTOR_RUNTIME_NETWORK", "")
+
+	directory, err := filepath.Abs(filepath.Join("..", "..", "..", "templates"))
+	if err != nil {
+		t.Fatalf("resolve template directory: %v", err)
+	}
+
+	loader := templates.NewLoader(os.DirFS(directory))
+
+	schemaDirectory, err := filepath.Abs(filepath.Join("..", "..", "..", "schemas"))
+	if err != nil {
+		t.Fatalf("resolve schema directory: %v", err)
+	}
+
+	schemaLoader := schemas.NewLoader(os.DirFS(schemaDirectory))
+
+	configuration := generator.Configuration{
+		Tenants: []generator.Tenant{
+			{
+				Identifier:         "customer-a",
+				DatabaseDeployment: "container",
+				SQL: generator.SQL{
+					Engine:   "mysql",
+					Database: "customer_a",
+					Username: "radius",
+					Password: "database-password",
+				},
+				RADIUSServer: generator.RADIUSServer{
+					Version: "3.2.10",
+				},
+			},
+		},
+	}
+
+	deployment, err := GenerateDeployment(loader, schemaLoader, configuration)
+	if err != nil {
+		t.Fatalf("GenerateDeployment() error = %v", err)
+	}
+
+	files := make(map[string]output.File)
+
+	for _, file := range deployment.Files {
+		files[file.Path] = file
+	}
+
+	compose, ok := files[ComposeOutputPath]
+	if !ok {
+		t.Fatalf("generated deployment does not contain %q", ComposeOutputPath)
+	}
+
+	if strings.Contains(compose.Content, "RADIUS_DIRECTOR_RUNTIME_NETWORK") {
+		t.Error(
+			"generated Docker Compose unexpectedly references RADIUS_DIRECTOR_RUNTIME_NETWORK",
+		)
+	}
+
+	if strings.Contains(compose.Content, "radius-director:") {
+		t.Error(
+			"generated Docker Compose unexpectedly contains a radius-director network",
+		)
+	}
+
+	if strings.Contains(compose.Content, "      - radius-director") {
+		t.Error(
+			"generated Docker Compose unexpectedly attaches services to the radius-director network",
+		)
+	}
+}
+
+func TestNewComposeDataRuntimeNetwork(t *testing.T) {
+	t.Setenv("RADIUS_DIRECTOR_RUNTIME_NETWORK", "radius-director-test")
+
+	data := NewComposeData(generator.Configuration{})
+
+	if data.RuntimeNetworkName != "radius-director-test" {
+		t.Errorf(
+			"RuntimeNetworkName = %q, want %q",
+			data.RuntimeNetworkName,
+			"radius-director-test",
+		)
+	}
+}
+
+func TestNewComposeDataWithoutRuntimeNetwork(t *testing.T) {
+	t.Setenv("RADIUS_DIRECTOR_RUNTIME_NETWORK", "")
+
+	data := NewComposeData(generator.Configuration{})
+
+	if data.RuntimeNetworkName != "" {
+		t.Errorf(
+			"RuntimeNetworkName = %q, want empty string",
+			data.RuntimeNetworkName,
+		)
 	}
 }
 

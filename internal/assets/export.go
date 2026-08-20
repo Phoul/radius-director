@@ -30,13 +30,29 @@ func Export(sourceRoot, destination string) error {
 		source := filepath.Join(sourceRoot, name)
 		target := filepath.Join(destination, name)
 
-		if _, err := os.Lstat(target); err == nil {
+		info, err := os.Lstat(target)
+		switch {
+		case os.IsNotExist(err):
+			// The directory does not exist yet; copyTree will create it.
+		case err != nil:
+			return err
+		case !info.IsDir():
 			return fmt.Errorf(
-				"destination already contains %q; refusing to overwrite",
+				"destination %q exists and is not a directory",
 				name,
 			)
-		} else if !os.IsNotExist(err) {
-			return err
+		default:
+			entries, err := os.ReadDir(target)
+			if err != nil {
+				return err
+			}
+
+			if len(entries) != 0 {
+				return fmt.Errorf(
+					"destination %q is not empty; refusing to overwrite",
+					name,
+				)
+			}
 		}
 
 		if err := copyTree(source, target); err != nil {
@@ -82,7 +98,7 @@ func copyEntry(source, destination string, info os.FileInfo) error {
 			}
 		}
 
-		return os.Chmod(destination, info.Mode().Perm())
+		return nil
 
 	case info.Mode()&os.ModeSymlink != 0:
 		target, err := os.Readlink(source)
@@ -117,7 +133,7 @@ func copyEntry(source, destination string, info os.FileInfo) error {
 			return err
 		}
 
-		return os.Chmod(destination, info.Mode().Perm())
+		return nil
 
 	default:
 		return fmt.Errorf(

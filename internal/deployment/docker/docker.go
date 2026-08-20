@@ -3,6 +3,7 @@ package docker
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"path/filepath"
 	"regexp"
 
@@ -16,6 +17,7 @@ type ComposeData struct {
 	Tenants              []ComposeTenant
 	ProxySQL             *ComposeProxySQL
 	HasContainerDatabase bool
+	RuntimeNetworkName   string
 }
 
 type ComposeTenant struct {
@@ -65,7 +67,8 @@ var multipleBlankLines = regexp.MustCompile(`\n{3,}`)
 
 func NewComposeData(configuration generator.Configuration) ComposeData {
 	data := ComposeData{
-		Tenants: make([]ComposeTenant, 0, len(configuration.Tenants)),
+		Tenants:            make([]ComposeTenant, 0, len(configuration.Tenants)),
+		RuntimeNetworkName: os.Getenv("RADIUS_DIRECTOR_RUNTIME_NETWORK"),
 	}
 
 	for _, tenant := range configuration.Tenants {

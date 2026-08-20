@@ -1,10 +1,15 @@
+{{ $root := . }}
 services:
 {{ if .ProxySQL }}
   {{ .ProxySQL.ServiceName }}:
     image: proxysql/proxysql:latest
     volumes:
       - ./proxysql.cnf:/etc/proxysql.cnf:ro
+{{ if .RuntimeNetworkName }}
+    networks:
+      - radius-director
 
+{{ end }}
 {{ end }}
 {{ range .Tenants }}
   {{ .ServiceName }}:
@@ -23,6 +28,10 @@ services:
       - ./entrypoint.sh:/usr/local/bin/radius-director-entrypoint:ro
     entrypoint:
       - /usr/local/bin/radius-director-entrypoint
+{{ if $root.RuntimeNetworkName }}
+    networks:
+      - radius-director
+{{ end }}
 
 {{ if eq .DatabaseDeployment "container" }}
   {{ .DatabaseServiceName }}:
@@ -42,6 +51,10 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+{{ if $root.RuntimeNetworkName }}
+    networks:
+      - radius-director
+{{ end }}
 {{ end }}
 {{ end }}
 
@@ -52,4 +65,11 @@ volumes:
   {{ .DatabaseVolumeName }}:
 {{ end }}
 {{ end }}
+{{ end }}
+
+{{ if .RuntimeNetworkName }}
+networks:
+  radius-director:
+    external: true
+    name: {{ .RuntimeNetworkName }}
 {{ end }}
