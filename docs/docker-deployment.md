@@ -93,6 +93,7 @@ In this example:
 
 - `/workspace` is the runtime directory as seen from inside the container.
 - `radius-director` is the name of the Docker network that will be used by the generated deployment.
+- The `id -u` and `getent group docker | cut -d: -f3` commands fetch the user's UID and Docker group's GID.
 
 The command creates the runtime structure in `/opt/radius-director`.
 
